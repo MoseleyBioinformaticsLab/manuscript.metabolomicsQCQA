@@ -60,6 +60,14 @@ parse_json = function(mwtab_file, id, ancillary_path) {
   # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000152%2Fmwtab%2Ftxt.txt.json"
   # id = "AN000152"
 
+  # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000023%2Fmwtab%2Ftxt.txt.json" # MS file
+  # id = "AN000023"
+
+  # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000111%2Fmwtab%2Ftxt.txt.json" # MS file
+  # id = "AN000111"
+
+  # ancillary_path = "mwtab/ancillary/"
+
   mwtab_list = jsonlite::fromJSON(mwtab_file, simplifyVector = FALSE)
 
   parsed_data = purrr::imap(mwtab_list, \(block, block_id) {
@@ -129,6 +137,15 @@ create_results_txt = function(mwtab_df) {
   return(results_txt)
 }
 
+convert_lgl_to_dbl = function(data_df) {
+  col_types = readr::spec(data_df)
+
+  is_lgl = purrr::map_lgl(col_types$cols, \(x) {
+    any(grepl("logical", class(x)))
+  })
+}
+
+
 check_and_parse_ancillary_json = function(
   parsed_data,
   ancillary_path = "/big_data/data/MetabolomicsWorkbench/ancillary/"
@@ -163,9 +180,10 @@ check_and_parse_ancillary_json = function(
   ancillary_data = readr::read_delim(
     match_file,
     delim = "\t",
-    show_col_types = FALSE
+    show_col_types = FALSE,
+    name_repair = "universal_quiet"
   ) |>
-    janitor::clean_names()
+    janitor::clean_names(unique_sep = "...")
 
   check_character = function(data_df) {
     col_types = readr::spec(data_df)
@@ -209,12 +227,18 @@ check_and_parse_ancillary_json = function(
   is_character = check_character(ancillary_checked)
   if (sum(is_character) == 0) {
     metabolite_data = tibble::tibble(
-      feature_id = janitor::make_clean_names(seq_len(nrow(ancillary_checked)))
+      feature_id = janitor::make_clean_names(
+        seq_len(nrow(ancillary_checked)),
+        unique_sep = "..."
+      )
     )
     ancillary_checked$feature_id = metabolite_data$feature_id
   } else {
     metabolite_data = ancillary_checked[, is_character]
-    metabolite_data$feature_id = janitor::make_clean_names(metabolite_data[[1]])
+    metabolite_data$feature_id = janitor::make_clean_names(
+      metabolite_data[[1]],
+      unique_sep = "..."
+    )
     ancillary_checked$feature_id = metabolite_data$feature_id
   }
 
@@ -341,16 +365,26 @@ run_mwtab_checks_json = function(
     as.matrix()
   factors = ssf_wide_grouped$factors
 
-  max_measurement = max(measurements, na.rm = TRUE)
-
-  if (max_measurement <= max_min_value) {
-    check_res$RANGE_CHECK = "TOO LOW"
-  } else {
-    check_res$RANGE_CHECK = "GOOD"
-  }
+  check_res$RANGE_CHECK = check_dynamic_range(measurements)
 
   processed_mwtab$CHECK = check_res
   processed_mwtab
+}
+
+check_dynamic_range = function(in_values, value_cutoff = 20, min_range = 10) {
+  value_range = range(in_values, na.rm = TRUE)
+  if (max(value_range) < value_cutoff) {
+    value_range = 2^value_range
+  }
+
+  dynamic_range = value_range[2] / value_range[1]
+  if (dynamic_range < min_range) {
+    return("TOO LOW")
+  } else if (dynamic_range >= min_range) {
+    return("GOOD")
+  } else {
+    return("WHO KNOWS")
+  }
 }
 
 widen_ssf_json = function(ssf_data2) {
@@ -360,7 +394,7 @@ widen_ssf_json = function(ssf_data2) {
       names_from = factor,
       values_from = item
     ) |>
-    janitor::clean_names()
+    janitor::clean_names(unique_sep = "...")
 }
 
 create_factor_groups_json = function(ssf_wide) {
@@ -468,7 +502,8 @@ count_factors_replicates_long = function(subject_sample_factors) {
   )
 
   subject_sample_factors$sample_id = janitor::make_clean_names(
-    subject_sample_factors$sample_id
+    subject_sample_factors$sample_id,
+    unique_sep = "..."
   )
 
   n_samples = subject_sample_factors |>
@@ -481,7 +516,10 @@ parse_nmr_data_json = function(nmr_data) {
   # nmr_data = block_data[["NMR_BINNED_DATA"]]
   # nmr_data = mwtab_list$NMR_BINNED_DATA
 
-  nmr_df_1 = try(tibble::as_tibble(nmr_data$Data[[1]]))
+  nmr_df_1 = try(tibble::as_tibble(
+    nmr_data$Data[[1]],
+    .name_repair = "universal_quiet"
+  ))
   if (inherits(nmr_df_1, "try-error")) {
     return(NULL)
   }
@@ -498,7 +536,10 @@ parse_nmr_data_json = function(nmr_data) {
     return(NULL)
   }
 
-  nmr_data_df$feature_id = janitor::make_clean_names(nmr_data_df[[1]])
+  nmr_data_df$feature_id = janitor::make_clean_names(
+    nmr_data_df[[1]],
+    unique_sep = "..."
+  )
 
   if (!is.null(nmr_data$Metabolites)) {
     metabolite_df = tryCatch(
@@ -509,7 +550,10 @@ parse_nmr_data_json = function(nmr_data) {
         return(NULL)
       }
     )
-    metabolite_df$feature_id = janitor::make_clean_names(metabolite_df[[1]])
+    metabolite_df$feature_id = janitor::make_clean_names(
+      metabolite_df[[1]],
+      unique_sep = "..."
+    )
     if (is.null(metabolite_df)) {
       metabolite_df = tibble::tibble(feature_id = nmr_data_df$feature_id)
     }
@@ -521,10 +565,24 @@ parse_nmr_data_json = function(nmr_data) {
 }
 
 ms_create_tibble = function(ms_data_json) {
-  purrr::map(ms_data_json, tibble::as_tibble) |>
-    purrr::list_rbind() |>
-    readr::type_convert() |>
-    janitor::clean_names()
+  tmp_list = purrr::map(
+    ms_data_json,
+    tibble::as_tibble,
+    .name_repair = "minimal"
+  )
+  tmp_tibble = do.call(rbind, tmp_list)
+
+  for (icol in seq_len(ncol(tmp_tibble))) {
+    tmp_guess = readr::parse_guess(tmp_tibble[[icol]])
+    if (inherits(tmp_guess, "logical")) {
+      tmp_tibble[[icol]] = readr::parse_number(tmp_tibble[[icol]])
+    } else {
+      tmp_tibble[[icol]] = tmp_guess
+    }
+  }
+
+  tmp_tibble |>
+    janitor::clean_names(unique_sep = "...")
 }
 
 custom_convert_numeric = function(in_df) {
@@ -547,7 +605,7 @@ parse_ms_data_json = function(ms_data) {
   # ms_data = mwtab_list$MS_METABOLITE_DATA
 
   ms_df_1 = try(
-    tibble::as_tibble(ms_data$Data[[1]])
+    tibble::as_tibble(ms_data$Data[[1]], .name_repair = "minimal")
   )
   if (inherits(ms_df_1, "try-error")) {
     return(NULL)
@@ -564,7 +622,10 @@ parse_ms_data_json = function(ms_data) {
   if (is.null(ms_data_df)) {
     return(NULL)
   }
-  ms_data_df$feature_id = janitor::make_clean_names(ms_data_df[[1]])
+  ms_data_df$feature_id = janitor::make_clean_names(
+    ms_data_df[[1]],
+    unique_sep = "..."
+  )
 
   if (!is.null(ms_data$Metabolites)) {
     metabolite_df = tryCatch(
@@ -575,7 +636,10 @@ parse_ms_data_json = function(ms_data) {
         return(NULL)
       }
     )
-    metabolite_df$feature_id = janitor::make_clean_names(metabolite_df[[1]])
+    metabolite_df$feature_id = janitor::make_clean_names(
+      metabolite_df[[1]],
+      unique_sep = "..."
+    )
     if (is.null(metabolite_df)) {
       metabolite_df = tibble::tibble(feature_id = ms_data_df$feature_id)
     }
@@ -595,7 +659,10 @@ parse_factors_json = function(factor_data) {
     # in_sample = factor_data[[1]]
     sub_sample = tibble::tibble(
       subject = in_sample[["Subject ID"]],
-      sample_id = janitor::make_clean_names(in_sample[["Sample ID"]])
+      sample_id = janitor::make_clean_names(
+        in_sample[["Sample ID"]],
+        unique_sep = "..."
+      )
     )
     factors = tibble::tibble(
       factor = names(in_sample$Factors),
@@ -688,10 +755,13 @@ parse_metabolites_block = function(metabolites_block) {
 
   all_split = stringr::str_split(metabolites_block, "\t")
   if (has_id_row) {
-    col_id = janitor::make_clean_names(all_split[[1]])
+    col_id = janitor::make_clean_names(all_split[[1]], unique_sep = "...")
     all_split = all_split[-1]
   } else {
-    col_id = janitor::make_clean_names(seq(1, length(all_split[[1]])))
+    col_id = janitor::make_clean_names(
+      seq(1, length(all_split[[1]])),
+      unique_sep = "..."
+    )
   }
 
   split_bind = do.call(rbind, all_split)

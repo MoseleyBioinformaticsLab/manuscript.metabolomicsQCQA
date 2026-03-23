@@ -33,7 +33,7 @@ json_all_map = tar_assign({
     min_metabolites = 50,
     max_min_value = 20,
     min_ssf = 1,
-    use_ssf_only = "no"
+    use_ssf_only = "yes"
   ) |>
     tar_target()
 
