@@ -66,6 +66,9 @@ parse_json = function(mwtab_file, id, ancillary_path) {
   # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000111%2Fmwtab%2Ftxt.txt.json" # MS file
   # id = "AN000111"
 
+  # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000255%2Fmwtab%2Ftxt.txt.json"
+  # id = "AN000255"
+
   # ancillary_path = "mwtab/ancillary/"
 
   mwtab_list = jsonlite::fromJSON(mwtab_file, simplifyVector = FALSE)
@@ -102,14 +105,17 @@ parse_json = function(mwtab_file, id, ancillary_path) {
     parsed_data$MEASUREMENTS = parsed_data$MS_METABOLITE_DATA$DATA
     parsed_data$METABOLITES = parsed_data$MS_METABOLITE_DATA$METABOLITES
     parsed_data$MEASUREMENT_TYPE = "MS"
+    parsed_data$DATASOURCE = "mwtab"
   } else if (!is.null(parsed_data$NMR_BINNED_DATA)) {
     parsed_data$MEASUREMENTS = parsed_data$NMR_BINNED_DATA$DATA
     parsed_data$METABOLITES = parsed_data$NMR_BINNED_DATA$METABOLITES
     parsed_data$MEASUREMENT_TYPE = "NMR"
+    parsed_data$DATASOURCE = "mwtab"
   } else if (!is.null(parsed_data$NMR_METABOLITE_DATA)) {
     parsed_data$MEASUREMENTS = parsed_data$NMR_METABOLITE_DATA$DATA
     parsed_data$METABOLITES = parsed_data$NMR_METABOLITE_DATA$METABOLITES
     parsed_data$MEASUREMENT_TYPE = "NMR"
+    parsed_data$DATASOURCE = "mwtab"
   } else {
     parsed_data = check_and_parse_ancillary_json(parsed_data, ancillary_path)
   }
@@ -190,21 +196,38 @@ check_and_parse_ancillary_json = function(
     is_character = purrr::map_lgl(col_types$cols, \(x) {
       any(grepl("character", class(x)))
     })
+    names(is_character) = colnames(data_df)
     is_character
   }
+
+  check_character_2 = function(data_df) {
+    likely_character = purrr::map_lgl(data_df, \(x) {
+      rlang::is_character(x)
+    })
+    names(likely_character) = colnames(data_df)
+    likely_character
+  }
+
+  convert_all_numeric = function(data_df) {
+    for (icol in seq_len(ncol(data_df))) {
+      data_df[[icol]] = suppressWarnings(as.numeric(data_df[[icol]]))
+    }
+    data_df
+  }
   check_character_retype = function(ancillary_data) {
-    character_cols = check_character(ancillary_data)
+    character_cols = check_character_2(ancillary_data)
 
     if (sum(character_cols) == ncol(ancillary_data)) {
       ancillary_tmp = ancillary_data[-1, ] |>
         suppressMessages(readr::type_convert())
-      character_cols = check_character(ancillary_tmp)
+      character_cols = check_character_2(ancillary_tmp)
       if (sum(character_cols) == ncol(ancillary_tmp)) {
         ancillary_tmp = ancillary_data[c(-1, -2), ] |>
           suppressMessages(readr::type_convert())
-        character_cols = check_character(ancillary_tmp)
-        if (sum(character_cols) == ncol(ancillary_data)) {
-          return(NULL)
+        character_cols = check_character_2(ancillary_tmp)
+        if (sum(character_cols) == ncol(ancillary_tmp)) {
+          ancillary_num = convert_all_numeric(ancillary_tmp)
+          return(ancillary_num)
         } else {
           return(ancillary_tmp)
         }
@@ -215,35 +238,72 @@ check_and_parse_ancillary_json = function(
       return(ancillary_data)
     }
   }
-  # not everything can be a character column, there should
-  # be some numeric columns
 
-  # we assume the first character column is an ID.
-  # if there are no character columns, we just make our own.
-  ancillary_checked = check_character_retype(ancillary_data)
-  if (is.null(ancillary_checked)) {
-    return(parsed_data)
-  }
-  is_character = check_character(ancillary_checked)
-  if (sum(is_character) == 0) {
-    metabolite_data = tibble::tibble(
-      feature_id = janitor::make_clean_names(
-        seq_len(nrow(ancillary_checked)),
-        unique_sep = "..."
-      )
-    )
-    ancillary_checked$feature_id = metabolite_data$feature_id
-  } else {
-    metabolite_data = ancillary_checked[, is_character]
-    metabolite_data$feature_id = janitor::make_clean_names(
+  common_met_fields = c(
+    "quant_m_z",
+    "m_z",
+    "mz",
+    "other_id",
+    "compound",
+    "ret_index",
+    "spectra",
+    "kegg",
+    "pub_chem",
+    "reactome",
+    "chebi",
+    "che_bi",
+    "metabolite"
+  )
+
+  is_metabolite_name = purrr::map(common_met_fields, \(x) {
+    grep(x, names(ancillary_data), value = TRUE)
+  }) |>
+    purrr::list_c() |>
+    unique()
+
+  if (length(is_metabolite_name) > 0) {
+    metabolite_data = ancillary_data[, is_metabolite_name]
+    sample_ids = base::setdiff(names(ancillary_data), is_metabolite_name)
+    ancillary_checked = ancillary_data[, sample_ids]
+
+    character_cols = which(check_character_2(ancillary_checked))
+    for (icol in character_cols) {
+      ancillary_checked[[icol]] = as.numeric(ancillary_checked[[icol]])
+    }
+
+    feature_id = janitor::make_clean_names(
       metabolite_data[[1]],
       unique_sep = "..."
     )
-    ancillary_checked$feature_id = metabolite_data$feature_id
+    ancillary_checked$feature_id = feature_id
+    metabolite_data$feature_id = feature_id
+  } else {
+    ancillary_checked = check_character_retype(ancillary_data)
+    if (is.null(ancillary_checked)) {
+      return(parsed_data)
+    }
+    likely_character = check_character_2(ancillary_checked)
+    if (sum(likely_character) == 0) {
+      metabolite_data = tibble::tibble(
+        feature_id = janitor::make_clean_names(
+          seq_len(nrow(ancillary_checked)),
+          unique_sep = "..."
+        )
+      )
+      ancillary_checked$feature_id = metabolite_data$feature_id
+    } else {
+      metabolite_data = ancillary_checked[, likely_character]
+      metabolite_data$feature_id = janitor::make_clean_names(
+        metabolite_data[[1]],
+        unique_sep = "..."
+      )
+      ancillary_checked$feature_id = metabolite_data$feature_id
+    }
   }
 
   parsed_data$MEASUREMENTS = ancillary_checked
   parsed_data$METABOLITES = metabolite_data
+  parsed_data$DATASOURCE = "ancillary"
   return(parsed_data)
 }
 
@@ -274,6 +334,8 @@ run_mwtab_checks_json = function(
   # processed_mwtab = tar_read(processed_AN000033)
   # processed_mwtab = tar_read(processed_AN005159)
   # processed_mwtab = tar_read(processed_AN003251)
+  # processed_mwtab = tar_read(processed)[[28]]
+  # processed_mwtab = tar_read(processed)[[60]]
   # min_n = 3
   # min_metabolites = 50
   # max_min_value = 20
@@ -285,11 +347,17 @@ run_mwtab_checks_json = function(
     SSF_CHECK = "",
     RANGE_CHECK = "",
     RANK_CHECK = "",
+    DATASOURCE = "",
     ID = processed_mwtab$ID
   )
   if (is.null(check_res$ID)) {
     check_res$ID = ""
   }
+
+  if (!is.null(processed_mwtab$DATASOURCE)) {
+    check_res$DATASOURCE = processed_mwtab$DATASOURCE
+  }
+
   n_features = nrow(processed_mwtab$MEASUREMENTS)
   if (is.na(n_features) || is.null(n_features)) {
     check_res$FEATURE_CHECK = "NA FEATURES"
@@ -299,6 +367,8 @@ run_mwtab_checks_json = function(
 
   if (n_features < min_metabolites) {
     check_res$FEATURE_CHECK = "FEW METABOLITES"
+    processed_mwtab$CHECK = check_res
+    return(processed_mwtab)
   } else {
     check_res$FEATURE_CHECK = "GOOD"
   }
@@ -311,18 +381,24 @@ run_mwtab_checks_json = function(
 
   ssf_data = processed_mwtab$SUBJECT_SAMPLE_FACTORS
 
-  match_samples = base::intersect(
-    ssf_data$sample_id,
-    colnames(processed_mwtab$MEASUREMENTS)
-  )
+  unique_samples = unique(ssf_data$sample_id)
+  match_samples = purrr::map(unique_samples, \(x) {
+    tmp = grep(x, colnames(processed_mwtab$MEASUREMENTS), value = TRUE)
+    if (length(tmp) == 1) {
+      return(tibble::tibble(ssf = x, measurements = tmp))
+    } else {
+      return(NULL)
+    }
+  }) |>
+    purrr::list_rbind()
 
-  if (length(match_samples) == 0) {
+  if ((is.null(match_samples)) || (length(match_samples) == 0)) {
     check_res$SSF_CHECK = "NO COMMON SAMPLES"
     processed_mwtab$CHECK = check_res
     return(processed_mwtab)
   }
   ssf_data2 = ssf_data |>
-    dplyr::filter(sample_id %in% match_samples)
+    dplyr::filter(sample_id %in% match_samples$ssf)
 
   is_pooled_qc = ssf_data2 |>
     dplyr::filter(
@@ -361,11 +437,17 @@ run_mwtab_checks_json = function(
 
   check_res$SSF_CHECK = ssf_check_result
 
-  measurements = processed_mwtab$MEASUREMENTS[, ssf_wide_grouped$sample_id] |>
+  match_samples2 = match_samples |>
+    dplyr::filter(ssf %in% ssf_wide_grouped$sample_id)
+
+  measurements = processed_mwtab$MEASUREMENTS[, match_samples2$measurements] |>
     as.matrix()
   factors = ssf_wide_grouped$factors
 
-  check_res$RANGE_CHECK = check_dynamic_range(measurements)
+  check_res$RANGE_CHECK = check_dynamic_range(
+    measurements,
+    value_cutoff = max_min_value
+  )
 
   processed_mwtab$CHECK = check_res
   processed_mwtab

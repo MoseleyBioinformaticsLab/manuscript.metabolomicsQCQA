@@ -18,11 +18,12 @@ plan(multicore, workers = 3)
 ## tar_plan supports drake-style targets and also tar_target()
 json_all_map = tar_assign({
   processed = furrr::future_map2(
-    mwtab_datasets$file[1:200],
-    mwtab_datasets$id[1:200],
+    mwtab_datasets$file,
+    mwtab_datasets$id,
     \(x, y) {
       parse_json(x, y, ancillary_path)
-    }
+    },
+    .progress = TRUE
   ) |>
     tar_target()
 
@@ -33,7 +34,8 @@ json_all_map = tar_assign({
     min_metabolites = 50,
     max_min_value = 20,
     min_ssf = 1,
-    use_ssf_only = "yes"
+    use_ssf_only = "yes",
+    .progress = TRUE
   ) |>
     tar_target()
 
