@@ -69,6 +69,9 @@ parse_json = function(mwtab_file, id, ancillary_path) {
   # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000255%2Fmwtab%2Ftxt.txt.json"
   # id = "AN000255"
 
+  # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000344%2Fmwtab%2Ftxt.txt.json"
+  # id = "AN000344"
+
   # ancillary_path = "mwtab/ancillary/"
 
   mwtab_list = jsonlite::fromJSON(mwtab_file, simplifyVector = FALSE)
@@ -596,7 +599,7 @@ parse_nmr_data_json = function(nmr_data) {
 
   nmr_df_1 = try(tibble::as_tibble(
     nmr_data$Data[[1]],
-    .name_repair = "universal_quiet"
+    .name_repair = "minimal"
   ))
   if (inherits(nmr_df_1, "try-error")) {
     return(NULL)
@@ -660,6 +663,7 @@ ms_create_tibble = function(ms_data_json) {
   }
 
   tmp_tibble |>
+    custom_convert_numeric() |>
     janitor::clean_names(unique_sep = "...")
 }
 
