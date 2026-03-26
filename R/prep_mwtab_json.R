@@ -394,8 +394,7 @@ run_mwtab_checks_json = function(
 
   if ((is.null(match_samples)) || (length(match_samples) == 0)) {
     check_res$SSF_CHECK = "NO COMMON SAMPLES"
-    processed_mwtab$CHECK = check_res
-    return(processed_mwtab)
+    return(check_res)
   }
   ssf_data2 = ssf_data |>
     dplyr::filter(sample_id %in% match_samples$ssf)
@@ -432,8 +431,6 @@ run_mwtab_checks_json = function(
   ssf_wide_grouped = create_factor_groups_json(ssf_wide)
 
   ssf_check_result = check_ssf_json(ssf_wide_grouped, min_ssf, min_n)
-  processed_mwtab$SUBJECT_SAMPLE_FACTORS = ssf_data2
-  processed_mwtab$SUBJECT_METADATA = ssf_wide_grouped
 
   check_res$SSF_CHECK = ssf_check_result
 
@@ -449,8 +446,7 @@ run_mwtab_checks_json = function(
     value_cutoff = max_min_value
   )
 
-  processed_mwtab$CHECK = check_res
-  processed_mwtab
+  check_res
 }
 
 check_dynamic_range = function(in_values, value_cutoff = 20, min_range = 10) {
