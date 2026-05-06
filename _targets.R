@@ -8,6 +8,7 @@ json_files = fs::dir_ls(
 mwtab_datasets = extract_mwtab_ids(json_files)
 
 ancillary_path = "mwtab/ancillary/"
+save_path = "parsed_rds"
 
 # library(mirai)
 # daemons(3)
@@ -21,7 +22,7 @@ json_all_map = tar_assign({
     mwtab_datasets$file,
     mwtab_datasets$id,
     \(x, y) {
-      parse_json(x, y, ancillary_path)
+      parse_json_save(x, y, ancillary_path)
     },
     .progress = TRUE
   ) |>

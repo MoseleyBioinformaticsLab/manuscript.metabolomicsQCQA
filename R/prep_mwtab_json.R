@@ -10,7 +10,7 @@ extract_mwtab_ids = function(mwtab_files) {
 }
 
 
-parse_json = function(mwtab_file, id, ancillary_path) {
+parse_json_save = function(mwtab_file, id, ancillary_path, save_path) {
   #mwtab_file = "data/repaired/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000023%2Fmwtab%2Ftxt.txt"  # MS file
   # mwtab_file = "data/repaired/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000693%2Fmwtab%2Ftxt.txt"  # NMR file
 
@@ -72,6 +72,9 @@ parse_json = function(mwtab_file, id, ancillary_path) {
   # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000344%2Fmwtab%2Ftxt.txt.json"
   # id = "AN000344"
 
+  # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN003150%2Fmwtab%2Ftxt.txt.json"
+  # id = "AN003150"
+
   # ancillary_path = "mwtab/ancillary/"
 
   mwtab_list = jsonlite::fromJSON(mwtab_file, simplifyVector = FALSE)
@@ -123,7 +126,9 @@ parse_json = function(mwtab_file, id, ancillary_path) {
     parsed_data = check_and_parse_ancillary_json(parsed_data, ancillary_path)
   }
 
-  parsed_data
+  out_file = fs::path(save_path, paste0(id, ".rds"))
+  saveRDS(parsed_data, file = out_file)
+  return(out_file)
 }
 
 parse_list = function(in_list) {
@@ -317,7 +322,7 @@ get_check = function(checked_mwtab) {
 
 
 run_mwtab_checks_json = function(
-  processed_mwtab,
+  processed_rds,
   min_n = 3,
   min_metabolites = 50,
   max_min_value = 20,
@@ -345,13 +350,15 @@ run_mwtab_checks_json = function(
   # min_ssf = 1
   # use_ssf_only = "yes"
 
+  processed_mwtab = readRDS(processed_rds)
   check_res = list(
     FEATURE_CHECK = "",
     SSF_CHECK = "",
     RANGE_CHECK = "",
     RANK_CHECK = "",
     DATASOURCE = "",
-    ID = processed_mwtab$ID
+    ID = processed_mwtab$ID,
+    file = processed_rds
   )
   if (is.null(check_res$ID)) {
     check_res$ID = ""
@@ -364,22 +371,20 @@ run_mwtab_checks_json = function(
   n_features = nrow(processed_mwtab$MEASUREMENTS)
   if (is.na(n_features) || is.null(n_features)) {
     check_res$FEATURE_CHECK = "NA FEATURES"
-    processed_mwtab$CHECK = check_res
-    return(processed_mwtab)
+    return(check_res)
   }
 
   if (n_features < min_metabolites) {
     check_res$FEATURE_CHECK = "FEW METABOLITES"
     processed_mwtab$CHECK = check_res
-    return(processed_mwtab)
+    return(check_res)
   } else {
     check_res$FEATURE_CHECK = "GOOD"
   }
 
   if (is.null(processed_mwtab$SUBJECT_SAMPLE_FACTORS)) {
     check_res$SSF_CHECK = "NO SSF DATA"
-    processed_mwtab$CHECK = check_res
-    return(processed_mwtab)
+    return(check_res)
   }
 
   ssf_data = processed_mwtab$SUBJECT_SAMPLE_FACTORS
@@ -425,8 +430,7 @@ run_mwtab_checks_json = function(
 
   if (nrow(ssf_data_use) == 0) {
     check_res$SSF_CHECK = "NO SAMPLES LEFT"
-    processed_mwtab$CHECK = check_res
-    return(processed_mwtab)
+    return(check_res)
   }
 
   ssf_wide = widen_ssf_json(ssf_data_use)
