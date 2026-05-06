@@ -22,7 +22,7 @@ json_all_map = tar_assign({
     mwtab_datasets$file,
     mwtab_datasets$id,
     \(x, y) {
-      parse_json_save(x, y, ancillary_path)
+      parse_json_save(x, y, ancillary_path, save_path)
     },
     .progress = TRUE
   ) |>
