@@ -40,7 +40,9 @@ json_all_map = tar_assign({
   ) |>
     tar_target()
 
-  check_result = purrr::map(checked, get_check) |>
+  check_result = purrr::map(checked, \(x) {
+    tibble::as_tibble(x)
+  }) |>
     purrr::list_rbind() |>
     tar_target()
 })

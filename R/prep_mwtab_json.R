@@ -462,7 +462,10 @@ check_dynamic_range = function(in_values, value_cutoff = 20, min_range = 10) {
     value_range = 2^value_range
   }
 
-  dynamic_range = value_range[2] / value_range[1]
+  dynamic_range = try(value_range[2] / value_range[1])
+  if (inherits(dynamic_range, "try-error")) {
+    return("WHO KNOWS")
+  }
   if (dynamic_range < min_range) {
     return("TOO LOW")
   } else if (dynamic_range >= min_range) {
