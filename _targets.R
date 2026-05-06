@@ -13,7 +13,7 @@ save_path = "parsed_rds"
 # library(mirai)
 # daemons(3)
 library(furrr)
-plan(multicore, workers = 3)
+plan(multicore, workers = 10)
 
 
 ## tar_plan supports drake-style targets and also tar_target()
