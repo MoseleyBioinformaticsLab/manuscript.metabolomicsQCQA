@@ -76,6 +76,8 @@ parse_json_save = function(mwtab_file, id, ancillary_path, save_path) {
   # id = "AN003150"
 
   # ancillary_path = "mwtab/ancillary/"
+  mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN005285%2Fmwtab%2Ftxt.txt.json"
+  id = "AN005285"
 
   mwtab_list = jsonlite::fromJSON(mwtab_file, simplifyVector = FALSE)
 
@@ -222,16 +224,23 @@ check_and_parse_ancillary_json = function(
     }
     data_df
   }
+
+  check_row_to_numeric = function(data_df, in_row = 1) {
+    num_1 = suppressWarnings(as.numeric(data_df[in_row, ]))
+    !is.na(num_1)
+  }
   check_character_retype = function(ancillary_data) {
     character_cols = check_character_2(ancillary_data)
 
     if (sum(character_cols) == ncol(ancillary_data)) {
-      ancillary_tmp = ancillary_data[-1, ] |>
-        suppressMessages(readr::type_convert())
+      ancillary_tmp = suppressMessages(readr::type_convert(ancillary_data[
+        -1,
+      ]))
       character_cols = check_character_2(ancillary_tmp)
       if (sum(character_cols) == ncol(ancillary_tmp)) {
-        ancillary_tmp = ancillary_data[c(-1, -2), ] |>
-          suppressMessages(readr::type_convert())
+        ancillary_tmp = suppressMessages(readr::type_convert(ancillary_data[
+          c(-1, -2),
+        ]))
         character_cols = check_character_2(ancillary_tmp)
         if (sum(character_cols) == ncol(ancillary_tmp)) {
           ancillary_num = convert_all_numeric(ancillary_tmp)
