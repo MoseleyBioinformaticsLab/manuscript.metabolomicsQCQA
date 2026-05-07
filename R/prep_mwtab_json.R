@@ -182,7 +182,7 @@ check_and_parse_ancillary_json = function(
     return(parsed_data)
   }
 
-  ancillary_files = fs::dir_ls(ancillary_path)
+  ancillary_files = fs::dir_ls(ancillary_path, recurse = TRUE)
   ancillary_just_file = fs::path_file(ancillary_files)
   names(ancillary_files) = ancillary_just_file
 
