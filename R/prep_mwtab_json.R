@@ -327,7 +327,8 @@ run_mwtab_checks_json = function(
   min_metabolites = 50,
   max_min_value = 20,
   min_ssf = 1,
-  use_ssf_only = "yes"
+  use_ssf_only = "yes",
+  remove_pooled = "no"
 ) {
   # processed_mwtab = tar_read(processed_AN002428)
   # processed_mwtab = tar_read(processed_AN003177)
@@ -407,19 +408,21 @@ run_mwtab_checks_json = function(
   ssf_data2 = ssf_data |>
     dplyr::filter(sample_id %in% match_samples$ssf)
 
-  is_pooled_qc = ssf_data2 |>
-    dplyr::filter(
-      grepl(
-        ".*pool.*|.*qc.*|.*blank.*",
-        sample_id,
-        ignore.case = TRUE
-      ) |
-        grepl(".*pool.*|.*qc.*|.*blank.*", item, ignore.case = TRUE)
-    ) |>
-    dplyr::pull(sample_id)
+  if (remove_pooled %in% "yes") {
+    is_pooled_qc = ssf_data2 |>
+      dplyr::filter(
+        grepl(
+          ".*pool.*|.*qc.*|.*blank.*",
+          sample_id,
+          ignore.case = TRUE
+        ) |
+          grepl(".*pool.*|.*qc.*|.*blank.*", item, ignore.case = TRUE)
+      ) |>
+      dplyr::pull(sample_id)
 
-  ssf_data2 = ssf_data2 |>
-    dplyr::filter(!(sample_id %in% is_pooled_qc))
+    ssf_data2 = ssf_data2 |>
+      dplyr::filter(!(sample_id %in% is_pooled_qc))
+  }
 
   if (use_ssf_only %in% "yes") {
     ssf_data_use = ssf_data2 |>

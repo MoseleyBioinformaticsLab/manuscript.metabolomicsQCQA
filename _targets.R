@@ -36,6 +36,7 @@ json_all_map = tar_assign({
     max_min_value = 20,
     min_ssf = 1,
     use_ssf_only = "yes",
+    remove_pooled = "no"
     .progress = TRUE
   ) |>
     tar_target()
