@@ -46,6 +46,14 @@ json_all_map = tar_assign({
   }) |>
     purrr::list_rbind() |>
     tar_target()
+
+  use_set = check_result |>
+    dplyr::filter(
+      (FEATURE_CHECK %in% "GOOD"),
+      (SSF_CHECK %in% "GOOD SSF"),
+      (RANGE_CHECK %in% "GOOD")
+    ) |>
+    tar_target()
 })
 # json_all_map = tar_map(
 #   mwtab_datasets[1:200, ],
