@@ -76,8 +76,8 @@ parse_json_save = function(mwtab_file, id, ancillary_path, save_path) {
   # id = "AN003150"
 
   # ancillary_path = "mwtab/ancillary/"
-  mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN005285%2Fmwtab%2Ftxt.txt.json"
-  id = "AN005285"
+  # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN005285%2Fmwtab%2Ftxt.txt.json"
+  # id = "AN005285"
 
   mwtab_list = jsonlite::fromJSON(mwtab_file, simplifyVector = FALSE)
 
