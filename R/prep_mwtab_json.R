@@ -365,38 +365,37 @@ run_mwtab_checks_json = function(
   processed_md5 = digest::digest(processed_mwtab, algo = "md5")
   stopifnot(processed_rds$md5 == processed_md5)
   check_res = list(
-    FEATURE_CHECK = "",
-    SSF_CHECK = "",
-    RANGE_CHECK = "",
-    RANK_CHECK = "",
-    DATASOURCE = "",
-    ID = processed_mwtab$ID,
-    file = processed_rds
+    features = "",
+    ssf = "",
+    range = "",
+    datasource = "",
+    id = processed_mwtab$ID,
+    file = processed_rds$file,
+    md5 = processed_rds$md5
   )
   if (is.null(check_res$ID)) {
-    check_res$ID = ""
+    check_res$id = ""
   }
 
   if (!is.null(processed_mwtab$DATASOURCE)) {
-    check_res$DATASOURCE = processed_mwtab$DATASOURCE
+    check_res$datasource = processed_mwtab$DATASOURCE
   }
 
   n_features = nrow(processed_mwtab$MEASUREMENTS)
   if (is.na(n_features) || is.null(n_features)) {
-    check_res$FEATURE_CHECK = "NA"
+    check_res$features = "NA"
     return(check_res)
   }
 
   if (n_features < min_metabolites) {
-    check_res$FEATURE_CHECK = "FEW"
-    processed_mwtab$CHECK = check_res
+    check_res$features = "few"
     return(check_res)
   } else {
-    check_res$FEATURE_CHECK = "GOOD"
+    check_res$features = "good"
   }
 
   if (is.null(processed_mwtab$SUBJECT_SAMPLE_FACTORS)) {
-    check_res$SSF_CHECK = "NO SSF DATA"
+    check_res$ssf = "no ssf data"
     return(check_res)
   }
 
@@ -414,7 +413,7 @@ run_mwtab_checks_json = function(
     purrr::list_rbind()
 
   if ((is.null(match_samples)) || (length(match_samples) == 0)) {
-    check_res$SSF_CHECK = "NO COMMON SAMPLES"
+    check_res$ssf = "no common samples"
     return(check_res)
   }
   ssf_data2 = ssf_data |>
@@ -444,7 +443,7 @@ run_mwtab_checks_json = function(
   }
 
   if (nrow(ssf_data_use) == 0) {
-    check_res$SSF_CHECK = "NO SAMPLES LEFT"
+    check_res$ssf = "no samples left"
     return(check_res)
   }
 
@@ -454,7 +453,7 @@ run_mwtab_checks_json = function(
 
   ssf_check_result = check_ssf_json(ssf_wide_grouped, min_ssf, min_n)
 
-  check_res$SSF_CHECK = ssf_check_result
+  check_res$ssf = ssf_check_result
 
   match_samples2 = match_samples |>
     dplyr::filter(ssf %in% ssf_wide_grouped$sample_id)
@@ -463,7 +462,7 @@ run_mwtab_checks_json = function(
     as.matrix()
   factors = ssf_wide_grouped$factors
 
-  check_res$RANGE_CHECK = check_dynamic_range(
+  check_res$range = check_dynamic_range(
     measurements,
     value_cutoff = max_min_value
   )
@@ -473,7 +472,7 @@ run_mwtab_checks_json = function(
 
 check_dynamic_range = function(in_values, value_cutoff = 20, min_range = 10) {
   if (all(is.na(in_values))) {
-    return("UNKNOWN")
+    return("unknown")
   }
   value_range = range(in_values, na.rm = TRUE)
   if (max(value_range) < value_cutoff) {
@@ -482,14 +481,14 @@ check_dynamic_range = function(in_values, value_cutoff = 20, min_range = 10) {
 
   dynamic_range = try(value_range[2] / value_range[1])
   if (inherits(dynamic_range, "try-error")) {
-    return("UNKNOWN")
+    return("unknown")
   }
   if (dynamic_range < min_range) {
-    return("LOW")
+    return("low")
   } else if (dynamic_range >= min_range) {
-    return("GOOD")
+    return("good")
   } else {
-    return("UNKNOWN")
+    return("unknown")
   }
 }
 
@@ -530,9 +529,9 @@ check_ssf_json = function(ssf_data2, min_ssf = 2, min_n = 5) {
     dplyr::summarise(n = dplyr::n(), .by = factors)
 
   if (any(ssf_n$n >= min_n) && (nrow(ssf_n) >= min_ssf)) {
-    return("GOOD")
+    return("good")
   } else {
-    return("NOT ENOUGH SAMPLES")
+    return("not enough samples")
   }
 }
 
@@ -1321,12 +1320,24 @@ generate_output_lists = function(
   return(invisible(NULL))
 }
 
-filter_good_experiments = function(check_data) {
+filter_good_experiments_splitup = function(check_data) {
   good_data = check_data |>
     dplyr::filter(
-      (FEATURE_CHECK %in% "GOOD") &
-        (SSF_CHECK %in% "GOOD SSF") &
-        (RANK_CHECK %in% c("GOOD", "SIGN DIFFERENCE"))
+      (features %in% "good") &
+        (ssf %in% "good") &
+        (range %in% "good")
+    ) |>
+    dplyr::mutate(
+      group_process = paste0(
+        "g",
+        stringr::str_pad(
+          sample(seq(1, 20), dplyr::n(), replace = TRUE),
+          width = 2,
+          side = "left",
+          pad = "0"
+        )
+      )
     )
-  good_data
+  split_sets = split(good_data, good_data$group_process)
+  split_sets
 }

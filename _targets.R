@@ -47,12 +47,7 @@ json_all_map = tar_assign({
     purrr::list_rbind() |>
     tar_target()
 
-  use_set = check_result |>
-    dplyr::filter(
-      (FEATURE_CHECK %in% "GOOD"),
-      (SSF_CHECK %in% "GOOD SSF"),
-      (RANGE_CHECK %in% "GOOD")
-    ) |>
+  split_sets = filter_good_experiments_splitup(check_result) |>
     tar_target()
 })
 # json_all_map = tar_map(
