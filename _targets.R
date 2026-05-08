@@ -17,18 +17,18 @@ plan(multicore, workers = 10)
 
 
 ## tar_plan supports drake-style targets and also tar_target()
-json_all_map = tar_assign({
-  processed = furrr::future_map2(
+processed_t = tar_target(processed, command = {
+  furrr::future_map2(
     mwtab_datasets$file,
     mwtab_datasets$id,
     \(x, y) {
       parse_json_save(x, y, ancillary_path, save_path)
     },
     .progress = TRUE
-  ) |>
-    tar_target()
-
-  checked = furrr::future_map(
+  )
+})
+checked_t = tar_target(checked, command = {
+  furrr::future_map(
     processed,
     run_mwtab_checks_json,
     min_n = 3,
@@ -38,34 +38,25 @@ json_all_map = tar_assign({
     use_ssf_only = "yes",
     remove_pooled = "no",
     .progress = TRUE
-  ) |>
-    tar_target()
-
-  check_result = purrr::map(checked, \(x) {
-    tibble::as_tibble(x)
-  }) |>
-    purrr::list_rbind() |>
-    tar_target()
-  # we filter to what's useable, and then
-  # split them up into 20 different items to iterate over
-  # this is to try and control the number of objects
-  # targets tries to iterate over when we query
-  # anything about the project.
-  group_sets = filter_good_experiments_splitup(check_result) |>
-    tar_target()
-
-  other_sets = tar_map(
-    values = group_sets,
-    names = "group",
-    tar_target(setup, run_setup(set))
-  ) |>
-    tar_target()
+  )
 })
 
+check_result_t = tar_target(check_result, bind_check_results(checked))
+
+group_sets_t = tar_target(
+  group_sets,
+  filter_good_experiments_splitup(check_result)
+)
+
+setup_map = tar_map(
+  group_sets,
+  names = group,
+  tar_target(setup, run_setup(set))
+)
 
 # setup_map = tar_map(
 #   json_all_map[[4]],
 #   tar_target(setup, run_setup)
 # )
 
-list(json_all_map)
+list(processed_t, checked_t, check_result_t, group_sets_t, setup_map)

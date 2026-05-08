@@ -1345,3 +1345,10 @@ filter_good_experiments_splitup = function(check_result) {
     purrr::list_rbind()
   nested_sets
 }
+
+bind_check_results = function(checked) {
+  purrr::map(checked, \(x) {
+    tibble::as_tibble(x)
+  }) |>
+    purrr::list_rbind()
+}
