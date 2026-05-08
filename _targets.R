@@ -56,7 +56,8 @@ json_all_map = tar_assign({
 
   setup_map = tar_map(
     split_sets,
-    tar_target(setup, run_setup)
+    tar_target(setup, run_setup),
+    unlist = TRUE
   ) |>
     tar_target()
 })
