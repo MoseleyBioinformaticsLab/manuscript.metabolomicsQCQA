@@ -1320,7 +1320,7 @@ generate_output_lists = function(
   return(invisible(NULL))
 }
 
-filter_good_experiments_splitup = function(check_result) {
+filter_good_experiments_splitup = function(check_result, save_file) {
   good_result = check_result |>
     dplyr::filter(
       (features %in% "good") &
@@ -1343,6 +1343,7 @@ filter_good_experiments_splitup = function(check_result) {
     tibble::tibble(group = in_set$group[1], set = list(in_set))
   }) |>
     purrr::list_rbind()
+  saveRDS(nested_sets, save_file)
   nested_sets
 }
 

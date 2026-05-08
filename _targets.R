@@ -1,6 +1,18 @@
 ## Load your packages and source files e.g. library(targets).
 targets::tar_source(c("./packages.R", "R"))
 
+if (!fs::file_exists("parsed_rds/group_sets.rds")) {
+  group_sets = tibble::tibble(
+    group = paste0(
+      "g",
+      stringr::str_pad(seq(1, 20), width = 2, side = "left", pad = "0")
+    ),
+    set = ""
+  )
+} else {
+  group_sets = readRDS("parsed_rds/group_sets.rds")
+}
+
 json_files = fs::dir_ls(
   "mwtab/repaired/json_2025-11-12"
 )
@@ -44,14 +56,14 @@ checked_t = tar_target(checked, command = {
 check_result_t = tar_target(check_result, bind_check_results(checked))
 
 group_sets_t = tar_target(
-  group_sets,
-  filter_good_experiments_splitup(check_result)
+  tmp_sets,
+  filter_good_experiments_splitup(check_result, "parsed_rds/group_sets.rds")
 )
 
 setup_map = tar_map(
   group_sets,
   names = group,
-  tar_target(setup, run_setup(set))
+  tar_target(setup, run_setup(set, check_result))
 )
 
 # setup_map = tar_map(

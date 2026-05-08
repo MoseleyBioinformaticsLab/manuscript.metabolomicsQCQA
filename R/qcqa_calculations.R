@@ -1,4 +1,4 @@
-run_setup = function(in_df) {
+run_setup = function(in_df, check_result) {
   all_files = in_df$file
   all_md5 = in_df$md5
   all_id = in_df$id
