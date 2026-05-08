@@ -51,15 +51,17 @@ json_all_map = tar_assign({
   # this is to try and control the number of objects
   # targets tries to iterate over when we query
   # anything about the project.
-  split_sets = filter_good_experiments_splitup(check_result) |>
+  group_sets = filter_good_experiments_splitup(check_result) |>
     tar_target()
 
-  setup_sets = tar_target(
-    name = setup,
-    command = run_setup(split_sets),
-    pattern = map(split_sets)
-  )
+  other_sets = tar_map(
+    values = group_sets,
+    names = "group",
+    tar_target(setup, run_setup(set))
+  ) |>
+    tar_target()
 })
+
 
 # setup_map = tar_map(
 #   json_all_map[[4]],

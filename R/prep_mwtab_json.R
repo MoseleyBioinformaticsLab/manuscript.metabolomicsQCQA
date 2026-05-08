@@ -1320,15 +1320,15 @@ generate_output_lists = function(
   return(invisible(NULL))
 }
 
-filter_good_experiments_splitup = function(check_data) {
-  good_data = check_data |>
+filter_good_experiments_splitup = function(check_result) {
+  good_result = check_result |>
     dplyr::filter(
       (features %in% "good") &
         (ssf %in% "good") &
         (range %in% "good")
     ) |>
     dplyr::mutate(
-      group_process = paste0(
+      group = paste0(
         "g",
         stringr::str_pad(
           sample(seq(1, 20), dplyr::n(), replace = TRUE),
@@ -1338,6 +1338,10 @@ filter_good_experiments_splitup = function(check_data) {
         )
       )
     )
-  split_sets = split(good_data, good_data$group_process)
-  split_sets
+  split_sets = split(good_result, good_result$group)
+  nested_sets = purrr::map(split_sets, \(in_set) {
+    tibble::tibble(group = in_set$group[1], set = list(in_set))
+  }) |>
+    purrr::list_rbind()
+  nested_sets
 }
