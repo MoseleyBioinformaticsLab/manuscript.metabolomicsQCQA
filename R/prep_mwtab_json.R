@@ -373,7 +373,7 @@ run_mwtab_checks_json = function(
     file = processed_rds$file,
     md5 = processed_rds$md5
   )
-  if (is.null(check_res$ID)) {
+  if (is.null(processed_mwtab$ID)) {
     check_res$id = ""
   }
 
