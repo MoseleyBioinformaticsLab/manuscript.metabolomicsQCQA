@@ -1,4 +1,7 @@
-run_setup = function(in_df, check_result) {
+run_setup = function(in_df, tmp_sets) {
+  if (inherits(in_df, "character")) {
+    stop("Run to tmp_sets first, and then the rest!  tar_make(tmp_sets)")
+  }
   all_files = in_df$file
   all_md5 = in_df$md5
   all_id = in_df$id

@@ -63,7 +63,7 @@ group_sets_t = tar_target(
 setup_map = tar_map(
   group_sets,
   names = group,
-  tar_target(setup, run_setup(set, check_result))
+  tar_target(setup, run_setup(set, tmp_sets))
 )
 
 # setup_map = tar_map(
