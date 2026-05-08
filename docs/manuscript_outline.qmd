@@ -1,0 +1,40 @@
+---
+title: "Manuscript Outline"
+author: "Report Author"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+format: html
+---
+
+## Filtering Result
+
+- How many datasets did we lose at each stage of filtering?
+  - Have features?
+  - Have factors?
+  - 
+
+## QC - QA Results
+
+## Basic QC-QA
+
+
+## Validation of Outlier Detection
+
+## Sample Group Switching Evaluation
+
+
+## Deriving Experimental Design
+
+- For a clean dataset, can we throw away the experimental design, and then recover it.
+- Sets for common experimental designs:
+  - two groups;
+  - two way ANOVA;
+
+
+- Left-censorship;
+- Description of experimental design (i.e. subject sample factors);
+  - Are there any without experimental design?
+  - Can we salvage experimental design (levenshtein distance);
+- Correlation within and between groups;
+- Evaluate within group and between groups;
+- PCA evaluation using ANOVA;
+- Remove outliers, redo PCA and ANOVA

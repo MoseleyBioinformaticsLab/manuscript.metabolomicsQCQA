@@ -53,11 +53,17 @@ json_all_map = tar_assign({
   # anything about the project.
   split_sets = filter_good_experiments_splitup(check_result) |>
     tar_target()
+
+  setup_map = tar_map(
+    split_sets,
+    tar_target(setup, run_setup)
+  ) |>
+    tar_target()
 })
 
-setup_map = tar_map(
-  split_sets,
-  tar_target(setup, run_setup)
-)
+# setup_map = tar_map(
+#   json_all_map[[4]],
+#   tar_target(setup, run_setup)
+# )
 
 list(json_all_map)
