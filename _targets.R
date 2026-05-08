@@ -46,33 +46,18 @@ json_all_map = tar_assign({
   }) |>
     purrr::list_rbind() |>
     tar_target()
-
+  # we filter to what's useable, and then
+  # split them up into 20 different items to iterate over
+  # this is to try and control the number of objects
+  # targets tries to iterate over when we query
+  # anything about the project.
   split_sets = filter_good_experiments_splitup(check_result) |>
     tar_target()
 })
-# json_all_map = tar_map(
-#   mwtab_datasets[1:200, ],
-#   names = id,
-#   tar_target(dataset, file, format = "file"), #1
-#   tar_target(processed, parse_json(dataset, id, ancillary_path)), #2
-#   tar_target(
-#     checked,
-#     run_mwtab_checks_json(
-#       processed,
-#       min_n = 3,
-#       min_metabolites = 50,
-#       max_min_value = 20,
-#       min_ssf = 1,
-#       use_ssf_only = "yes"
-#     )
-#   ), #3
-#   tar_target(check_result, get_check(checked)) #4
-# )
 
-# check_comb = tar_combine(
-#   check_data,
-#   json_all_map[[4]],
-#   command = bind_rows(!!!.x)
-# )
+setup_map = tar_map(
+  split_sets,
+  tar_target(setup, run_setup)
+)
 
 list(json_all_map)
