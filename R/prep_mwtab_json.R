@@ -128,9 +128,10 @@ parse_json_save = function(mwtab_file, id, ancillary_path, save_path) {
     parsed_data = check_and_parse_ancillary_json(parsed_data, ancillary_path)
   }
 
+  parsed_digest = digest::digest(parsed_data, algo = "md5")
   out_file = fs::path(save_path, paste0(id, ".rds"))
   saveRDS(parsed_data, file = out_file)
-  return(out_file)
+  return(list(file = out_file, md5 = parsed_digest))
 }
 
 parse_list = function(in_list) {
@@ -360,7 +361,9 @@ run_mwtab_checks_json = function(
   # min_ssf = 1
   # use_ssf_only = "yes"
 
-  processed_mwtab = readRDS(processed_rds)
+  processed_mwtab = readRDS(processed_rds$file)
+  processed_md5 = digest::digest(processed_mwtab, algo = "md5")
+  stopifnot(processed_rds$md5 == processed_md5)
   check_res = list(
     FEATURE_CHECK = "",
     SSF_CHECK = "",
@@ -380,12 +383,12 @@ run_mwtab_checks_json = function(
 
   n_features = nrow(processed_mwtab$MEASUREMENTS)
   if (is.na(n_features) || is.null(n_features)) {
-    check_res$FEATURE_CHECK = "NA FEATURES"
+    check_res$FEATURE_CHECK = "NA"
     return(check_res)
   }
 
   if (n_features < min_metabolites) {
-    check_res$FEATURE_CHECK = "FEW METABOLITES"
+    check_res$FEATURE_CHECK = "FEW"
     processed_mwtab$CHECK = check_res
     return(check_res)
   } else {
@@ -469,6 +472,9 @@ run_mwtab_checks_json = function(
 }
 
 check_dynamic_range = function(in_values, value_cutoff = 20, min_range = 10) {
+  if (all(is.na(in_values))) {
+    return("UNKNOWN")
+  }
   value_range = range(in_values, na.rm = TRUE)
   if (max(value_range) < value_cutoff) {
     value_range = 2^value_range
@@ -476,14 +482,14 @@ check_dynamic_range = function(in_values, value_cutoff = 20, min_range = 10) {
 
   dynamic_range = try(value_range[2] / value_range[1])
   if (inherits(dynamic_range, "try-error")) {
-    return("WHO KNOWS")
+    return("UNKNOWN")
   }
   if (dynamic_range < min_range) {
-    return("TOO LOW")
+    return("LOW")
   } else if (dynamic_range >= min_range) {
     return("GOOD")
   } else {
-    return("WHO KNOWS")
+    return("UNKNOWN")
   }
 }
 
@@ -524,7 +530,7 @@ check_ssf_json = function(ssf_data2, min_ssf = 2, min_n = 5) {
     dplyr::summarise(n = dplyr::n(), .by = factors)
 
   if (any(ssf_n$n >= min_n) && (nrow(ssf_n) >= min_ssf)) {
-    return("GOOD SSF")
+    return("GOOD")
   } else {
     return("NOT ENOUGH SAMPLES")
   }
