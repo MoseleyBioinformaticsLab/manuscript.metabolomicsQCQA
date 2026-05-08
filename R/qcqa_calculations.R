@@ -1,7 +1,10 @@
 run_setup = function(in_df) {
   all_files = in_df$file
   all_md5 = in_df$md5
-  furrr::future_map2(all_files, all_md5, read_rds_setup_data)
+  all_id = in_df$id
+  all_up = furrr::future_map2(all_files, all_md5, read_rds_setup_data)
+  names(all_up) = all_id
+  all_up
 }
 
 read_rds_setup_data = function(rds_file, md5_sum) {
