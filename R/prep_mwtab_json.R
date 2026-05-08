@@ -1321,6 +1321,7 @@ generate_output_lists = function(
 }
 
 filter_good_experiments_splitup = function(check_result, save_file) {
+  fs::file_delete(save_file)
   good_result = check_result |>
     dplyr::filter(
       (features %in% "good") &
