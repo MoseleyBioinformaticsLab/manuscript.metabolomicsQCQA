@@ -86,3 +86,50 @@ filter_matching_samples = function(processed_data) {
   processed_data$FILTERED = n_filtered
   processed_data
 }
+
+
+run_group_corelations = function(in_group) {
+  # in_group = tar_read(setup_g01)
+
+  cor_data = purrr::map(in_group[1:20], run_ici_cor)
+}
+
+get_just_values = function(in_df) {
+  df_matrix = in_df |>
+    dplyr::select(-feature_id) |>
+    as.matrix()
+  rownames(df_matrix) = in_df$feature_id
+  df_matrix
+}
+
+median_normalize_matrix = function(in_matrix) {
+  med_values = apply(in_matrix, 2, median, na.rm = TRUE)
+  med_matrix = matrix(
+    med_values,
+    nrow = nrow(in_matrix),
+    ncol = ncol(in_matrix),
+    byrow = TRUE
+  )
+  norm_matrix = in_matrix / med_matrix
+  return(norm_matrix)
+}
+
+run_ici_cor = function(setup_data) {
+  # setup_data = in_group[[1]]
+  raw_matrix = get_just_values(setup_data$MEASUREMENTS)
+  norm_matrix = median_normalize_matrix(raw_matrix)
+  norm_df = as.data.frame(norm_matrix)
+  norm_df$feature_id = setup_data$MEASUREMENTS$feature_id
+  setup_ici = ICIKendallTau::ici_kendalltau(meas_matrix, return_matrix = FALSE)
+  ssf_wide = widen_ssf_json(setup_data$SUBJECT_SAMPLE_FACTORS) |>
+    create_factor_groups_json()
+
+  qcqa_data = list(
+    id = setup_data$ID,
+    raw = setup_data$MEASUREMENTS,
+    normalized = norm_df,
+    icikt_all = setup_ici$cor,
+    ssf = ssf_wide
+  )
+  qcqa_data
+}

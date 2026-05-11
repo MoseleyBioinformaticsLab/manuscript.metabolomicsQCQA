@@ -1,6 +1,9 @@
 ## Load your packages and source files e.g. library(targets).
 targets::tar_source(c("./packages.R", "R"))
 
+# todo:
+#  - in check_dynamic_range, it should check for 99% or more missing values
+
 if (!fs::file_exists("parsed_rds/group_sets.rds")) {
   group_sets = tibble::tibble(
     group = paste0(
@@ -63,7 +66,8 @@ group_sets_t = tar_target(
 setup_map = tar_map(
   group_sets,
   names = group,
-  tar_target(setup, run_setup(set, tmp_sets))
+  tar_target(setup, run_setup(set, tmp_sets)),
+  tar_target(cor, run_group_cor(setup))
 )
 
 # setup_map = tar_map(
