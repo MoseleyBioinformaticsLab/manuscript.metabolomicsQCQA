@@ -471,8 +471,11 @@ run_mwtab_checks_json = function(
 }
 
 check_dynamic_range = function(in_values, value_cutoff = 20, min_range = 10) {
-  if (all(is.na(in_values))) {
-    return("unknown")
+  n_val = nrow(in_values) * ncol(in_values)
+  n_na = sum(is.na(in_values))
+  frac_na = n_na / n_val
+  if (frac_na > 0.95) {
+    return("too many na")
   }
   value_range = range(in_values, na.rm = TRUE)
   if (max(value_range) < value_cutoff) {
@@ -481,7 +484,7 @@ check_dynamic_range = function(in_values, value_cutoff = 20, min_range = 10) {
 
   dynamic_range = try(value_range[2] / value_range[1])
   if (inherits(dynamic_range, "try-error")) {
-    return("unknown")
+    return("error")
   }
   if (dynamic_range < min_range) {
     return("low")
