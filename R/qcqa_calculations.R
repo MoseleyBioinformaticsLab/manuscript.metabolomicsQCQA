@@ -65,6 +65,10 @@ filter_matching_samples = function(processed_data) {
   all_abundance_cols = colnames(abundance_data)
 
   match_samples = base::intersect(all_samples, all_abundance_cols)
+  ssf_diff = base::setdiff(all_samples, match_samples) |>
+    paste0(collapse = "; ")
+  meas_diff = base::setdiff(all_abundance_cols, match_samples) |>
+    paste0(collapse = "; ")
   ssf_data = ssf_data |>
     dplyr::filter(sample_id %in% match_samples)
 
@@ -73,5 +77,12 @@ filter_matching_samples = function(processed_data) {
 
   processed_data$MEASUREMENTS = abundance_data
   processed_data$SUBJECT_SAMPLE_FACTORS = ssf_data
+
+  n_filtered = tibble::tribble(
+    ~source        , ~original                  , ~kept                 , ~filtered ,
+    "ssf"          , length(all_samples)        , length(match_samples) , ssf_diff  ,
+    "measurements" , length(all_abundance_cols) , length(match_samples) , meas_diff
+  )
+  processed_data$FILTERED = n_filtered
   processed_data
 }
