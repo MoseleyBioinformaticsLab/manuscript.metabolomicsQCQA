@@ -360,6 +360,7 @@ run_mwtab_checks_json = function(
   # max_min_value = 20
   # min_ssf = 1
   # use_ssf_only = "yes"
+  # remove_pools = "no"
 
   processed_mwtab = readRDS(processed_rds$file)
   processed_md5 = digest::digest(processed_mwtab, algo = "md5")
