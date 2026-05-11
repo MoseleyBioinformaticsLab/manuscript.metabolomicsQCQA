@@ -88,7 +88,7 @@ filter_matching_samples = function(processed_data) {
 }
 
 
-run_group_corelations = function(in_group) {
+run_group_correlations = function(in_group) {
   # in_group = tar_read(setup_g01)
 
   cor_data = purrr::map(in_group, run_ici_cor)
