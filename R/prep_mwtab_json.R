@@ -403,22 +403,26 @@ run_mwtab_checks_json = function(
   ssf_data = processed_mwtab$SUBJECT_SAMPLE_FACTORS
 
   unique_samples = unique(ssf_data$sample_id)
-  match_samples = purrr::map(unique_samples, \(x) {
-    tmp = grep(x, colnames(processed_mwtab$MEASUREMENTS), value = TRUE)
-    if (length(tmp) == 1) {
-      return(tibble::tibble(ssf = x, measurements = tmp))
-    } else {
-      return(NULL)
-    }
-  }) |>
-    purrr::list_rbind()
+  match_samples = base::intersect(
+    unique_samples,
+    names(processed_mwtab$MEASUREMENTS)
+  )
+  # match_samples = purrr::map(unique_samples, \(x) {
+  #   tmp = grep(x, colnames(processed_mwtab$MEASUREMENTS), value = TRUE)
+  #   if (length(tmp) == 1) {
+  #     return(tibble::tibble(ssf = x, measurements = tmp))
+  #   } else {
+  #     return(NULL)
+  #   }
+  # }) |>
+  #   purrr::list_rbind()
 
   if ((is.null(match_samples)) || (length(match_samples) == 0)) {
     check_res$ssf = "no common samples"
     return(check_res)
   }
   ssf_data2 = ssf_data |>
-    dplyr::filter(sample_id %in% match_samples$ssf)
+    dplyr::filter(sample_id %in% match_samples)
 
   if (remove_pooled %in% "yes") {
     is_pooled_qc = ssf_data2 |>

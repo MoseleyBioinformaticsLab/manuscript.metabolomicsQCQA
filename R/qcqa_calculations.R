@@ -61,12 +61,11 @@ filter_matching_samples = function(processed_data) {
   ssf_data = processed_data$SUBJECT_SAMPLE_FACTORS
   abundance_data = processed_data$MEASUREMENTS
 
-  all_samples = ssf_data$sample_id
+  all_samples = unique(ssf_data$sample_id)
   all_abundance_cols = colnames(abundance_data)
 
-  unique_samples = unique(ssf_data$sample_id)
-  match_samples = purrr::map(unique_samples, \(x) {
-    tmp = grep(x, colnames(abundance_data), value = TRUE)
+  match_samples = purrr::map(all_samples, \(x) {
+    tmp = grep(x, all_abundance_cols, value = TRUE)
     if (length(tmp) == 1) {
       return(tibble::tibble(ssf = x, measurement_id = tmp))
     } else {
