@@ -64,24 +64,11 @@ filter_matching_samples = function(processed_data) {
   all_samples = unique(ssf_data$sample_id)
   all_abundance_cols = colnames(abundance_data)
 
-  match_samples = purrr::map(all_samples, \(x) {
-    tmp = grep(x, all_abundance_cols, value = TRUE)
-    if (length(tmp) == 1) {
-      return(tibble::tibble(ssf = x, measurement_id = tmp))
-    } else {
-      return(NULL)
-    }
-  }) |>
-    purrr::list_rbind()
+  match_samples = base::intersect(all_samples, all_abundance_cols)
+  ssf_data = ssf_data |>
+    dplyr::filter(sample_id %in% match_samples)
 
-  ssf_data = dplyr::left_join(
-    match_samples,
-    ssf_data,
-    by = c("ssf" = "sample_id")
-  ) |>
-    dplyr::mutate(sample_id = measurement_id)
-
-  abundance_cols = c(match_samples$measurement_id, "feature_id")
+  abundance_cols = c(match_samples, "feature_id")
   abundance_data = abundance_data[, abundance_cols]
 
   processed_data$MEASUREMENTS = abundance_data
