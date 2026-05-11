@@ -120,7 +120,7 @@ run_ici_cor = function(setup_data) {
   norm_matrix = median_normalize_matrix(raw_matrix)
   norm_df = as.data.frame(norm_matrix)
   norm_df$feature_id = setup_data$MEASUREMENTS$feature_id
-  setup_ici = ICIKendallTau::ici_kendalltau(meas_matrix, return_matrix = FALSE)
+  setup_ici = ICIKendallTau::ici_kendalltau(raw_matrix, return_matrix = FALSE)
   ssf_wide = widen_ssf_json(setup_data$SUBJECT_SAMPLE_FACTORS) |>
     create_factor_groups_json()
 
