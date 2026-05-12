@@ -67,14 +67,19 @@ median_normalize_matrix = function(in_matrix) {
 
 count_missingness_testleftcensored = function(raw_matrix, ssf_wide) {
   perc_missing = sum(is.na(raw_matrix) | (raw_matrix == 0)) /
-    (nrow(raw_matrix) * ncol(raw_matrix))
+    (nrow(raw_matrix) * ncol(raw_matrix)) *
+    100
 
-  if (perc_missing > 0) {
-    lc_results = ICIKendallTau::test_left_censorship(
+  if (perc_missing > 1) {
+    lc_results = try(ICIKendallTau::test_left_censorship(
       raw_matrix,
       sample_classes = ssf_wide$factors
-    )
-    out_res = list(lc_test = lc_results, perc_missing = perc_missing)
+    ))
+    if (inherits(lc_results, "try-error")) {
+      out_res = list(lc_test = NULL, perc_missing = perc_missing)
+    } else {
+      out_res = list(lc_test = lc_results, perc_missing = perc_missing)
+    }
   } else {
     out_res = list(lc_test = NULL, perc_missing = perc_missing)
   }
