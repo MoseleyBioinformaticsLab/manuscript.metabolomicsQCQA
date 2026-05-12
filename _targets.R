@@ -63,7 +63,7 @@ group_sets_t = tar_target(
   filter_good_experiments_splitup(check_result, "parsed_rds/group_sets.rds")
 )
 
-setup_map = tar_map(
+sets_map = tar_map(
   group_sets,
   names = group,
   tar_target(setup, run_setup(set, tmp_sets)),
@@ -75,4 +75,4 @@ setup_map = tar_map(
 #   tar_target(setup, run_setup)
 # )
 
-list(processed_t, checked_t, check_result_t, group_sets_t, setup_map)
+list(processed_t, checked_t, check_result_t, group_sets_t, sets_map)

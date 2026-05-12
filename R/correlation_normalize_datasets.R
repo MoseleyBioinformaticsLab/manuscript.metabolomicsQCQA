@@ -1,56 +1,3 @@
-run_setup = function(in_df, tmp_sets) {
-  if (inherits(in_df, "character")) {
-    stop("Run to tmp_sets first, and then the rest!  tar_make(tmp_sets)")
-  }
-  all_files = in_df$file
-  all_md5 = in_df$md5
-  all_id = in_df$id
-  all_up = furrr::future_map2(all_files, all_md5, read_rds_setup_data)
-  names(all_up) = all_id
-  all_up
-}
-
-read_rds_setup_data = function(rds_file, md5_sum) {
-  # rds_file = "parsed_rds/AN000028.rds"
-  # md5_sum = "0e22eb16e4debdc1fc55a4c2b58767df"
-
-  # rds_file = "parsed_rds/AN000112.rds"
-
-  processed_data = readRDS(rds_file)
-  check_md5(processed_data, md5_sum)
-  processed_data = filter_matching_samples(processed_data)
-  transformed_data = transform_abundances(processed_data$MEASUREMENTS)
-  processed_data$MEASUREMENTS = transformed_data$measurements
-  processed_data$TRANSFORM = transformed_data$transform
-  processed_data
-}
-
-check_md5 = function(in_data, md5_sum) {
-  new_md5 = digest::digest(in_data, algo = "md5")
-  stopifnot(new_md5 == md5_sum)
-  return(invisible(NULL))
-}
-
-transform_abundances = function(in_abundances, max_min = 20) {
-  transform = "none"
-  abundance_matrix = as.matrix(in_abundances |> dplyr::select(-feature_id))
-  value_range = range(abundance_matrix, na.rm = TRUE)
-  if (max(value_range) < max_min) {
-    sample_cols = colnames(abundance_matrix)
-    for (icol in sample_cols) {
-      in_abundances[[icol]] = 2^in_abundances[[icol]]
-    }
-    transform_matrix = as.matrix(in_abundances |> dplyr::select(-feature_id))
-    na_org = is.na(abundance_matrix)
-    na_new = is.na(transform_matrix)
-    if (!all.equal(na_org, na_new)) {
-      stop("Transforming made different missingness patterns!")
-    }
-    transform = "2-exponentiated"
-  }
-  list(measurements = in_abundances, transform = transform)
-}
-
 #' filters measurements and ssf to matching samples
 #'
 #' Often, the analyses have sample factors for samples
@@ -88,10 +35,14 @@ filter_matching_samples = function(processed_data) {
 }
 
 
-run_group_correlations = function(in_group) {
-  # in_group = tar_read(setup_g01)
+run_group_correlations = function(in_setup) {
+  # in_setup = tar_read(setup_g01)
 
-  cor_data = purrr::map(in_group, run_ici_cor, .progress = TRUE)
+  cor_data = purrr::map(
+    in_setup,
+    do_missingness_correlation,
+    .progress = TRUE
+  )
 }
 
 get_just_values = function(in_df) {
@@ -114,22 +65,55 @@ median_normalize_matrix = function(in_matrix) {
   return(norm_matrix)
 }
 
-run_ici_cor = function(setup_data) {
+count_missingness_testleftcensored = function(raw_matrix, ssf_wide) {
+  perc_missing = sum(is.na(raw_matrix) | (raw_matrix == 0)) /
+    (nrow(raw_matrix) * ncol(raw_matrix))
+
+  if (perc_missing > 0) {
+    lc_results = ICIKendallTau::test_left_censorship(
+      raw_matrix,
+      sample_classes = ssf_wide$factors
+    )
+    out_res = list(lc_test = lc_results, perc_missing = perc_missing)
+  } else {
+    out_res = list(lc_test = NULL, perc_missing = perc_missing)
+  }
+  out_res
+}
+
+do_missingness_correlation = function(setup_data) {
   # setup_data = in_group[[1]]
   raw_matrix = get_just_values(setup_data$MEASUREMENTS)
   norm_matrix = median_normalize_matrix(raw_matrix)
   norm_df = as.data.frame(norm_matrix)
   norm_df$feature_id = setup_data$MEASUREMENTS$feature_id
   setup_ici = ICIKendallTau::ici_kendalltau(raw_matrix, return_matrix = FALSE)
-  ssf_wide = widen_ssf_json(setup_data$SUBJECT_SAMPLE_FACTORS) |>
+  ssf_wide = widen_ssf_json(
+    setup_data$SUBJECT_SAMPLE_FACTORS |>
+      dplyr::filter(type %in% "subject_sample_factor")
+  ) |>
     create_factor_groups_json()
 
+  mwtab = setup_data
+  mwtab$MEASUREMENTS = NULL
+  if ("MS_METABOLITE_DATA" %in% names(mwtab)) {
+    mwtab$MS_METABOLITE_DATA = NULL
+  }
+  if ("NMR_METABOLITE_DATA" %in% names(mwtab)) {
+    mwtab$NMR_METABOLITE_DATA = NULL
+  }
+
+  lc_data = count_missingness_testleftcensored(raw_matrix, ssf_wide)
+
   qcqa_data = list(
-    id = setup_data$ID,
+    id = mwtab$ID,
     raw = setup_data$MEASUREMENTS,
     normalized = norm_df,
-    icikt_all = setup_ici$cor,
-    ssf = ssf_wide
+    icikt_cor = setup_ici$cor,
+    icikt_runtime = setup_ici$run_time,
+    leftcensored = lc_data,
+    ssf = ssf_wide,
+    mwtab = mwtab
   )
   qcqa_data
 }
