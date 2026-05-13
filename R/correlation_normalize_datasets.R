@@ -115,7 +115,7 @@ sets_add_mwtab_do_left_censored = function(cor_set, setup_set) {
   # cor_set = tar_read(cor_g01)
   # setup_set = tar_read(setup_g01)
 
-  out_set = purrr::map2(cor_set, setup_set, add_mwtab_do_left_censored)
+  out_set = furrr::future_map2(cor_set, setup_set, add_mwtab_do_left_censored)
   out_set
 }
 
