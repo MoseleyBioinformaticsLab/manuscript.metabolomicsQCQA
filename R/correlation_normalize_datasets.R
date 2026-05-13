@@ -120,6 +120,7 @@ sets_add_mwtab_do_left_censored = function(cor_set, setup_set) {
 }
 
 add_mwtab_do_left_censored = function(cor_data, setup_data) {
+  stopifnot(cor_data$id == setup_data$ID)
   raw_matrix = cor_data$raw
   ssf_wide = cor_data$ssf
   lc_data = count_missingness_testleftcensored(raw_matrix, ssf_wide)
