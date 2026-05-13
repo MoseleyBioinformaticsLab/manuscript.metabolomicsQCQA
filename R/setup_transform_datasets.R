@@ -1,4 +1,4 @@
-run_setup = function(in_df, tmp_sets) {
+sets_run_setup = function(in_df, tmp_sets) {
   if (inherits(in_df, "character")) {
     stop("Run to tmp_sets first, and then the rest!  tar_make(tmp_sets)")
   }

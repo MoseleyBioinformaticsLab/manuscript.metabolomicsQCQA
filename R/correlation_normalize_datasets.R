@@ -35,12 +35,12 @@ filter_matching_samples = function(processed_data) {
 }
 
 
-run_group_correlations = function(in_setup) {
+sets_run_group_correlations = function(in_setup) {
   # in_setup = tar_read(setup_g01)
 
   cor_data = purrr::map(
     in_setup,
-    do_missingness_correlation,
+    do_correlation,
     .progress = TRUE
   )
 }
@@ -86,7 +86,7 @@ count_missingness_testleftcensored = function(raw_matrix, ssf_wide) {
   out_res
 }
 
-do_missingness_correlation = function(setup_data) {
+do_correlation = function(setup_data) {
   # setup_data = in_group[[1]]
   raw_matrix = get_just_values(setup_data$MEASUREMENTS)
   norm_matrix = median_normalize_matrix(raw_matrix)
@@ -99,6 +99,30 @@ do_missingness_correlation = function(setup_data) {
   ) |>
     create_factor_groups_json()
 
+  cor_data = list(
+    id = setup_data$ID,
+    raw = setup_data$MEASUREMENTS,
+    normalized = norm_df,
+    icikt_cor = setup_ici$cor,
+    icikt_runtime = setup_ici$run_time,
+    ssf = ssf_wide
+  )
+  cor_data
+}
+
+
+sets_add_mwtab_do_left_censored = function(cor_set, setup_set) {
+  cor_set = tar_read(cor_g01)
+  setup_set = tar_read(setup_g01)
+
+  out_set = purrr::map2(cor_set, setup_set, add_mwtab_do_left_censored)
+}
+
+add_mwtab_do_left_censored = function(cor_data, setup_data) {
+  raw_matrix = cor_data$raw
+  ssf_wide = cor_data$ssf
+  lc_data = count_missingness_testleftcensored(raw_matrix, ssf_wide)
+
   mwtab = setup_data
   mwtab$MEASUREMENTS = NULL
   if ("MS_METABOLITE_DATA" %in% names(mwtab)) {
@@ -107,18 +131,7 @@ do_missingness_correlation = function(setup_data) {
   if ("NMR_METABOLITE_DATA" %in% names(mwtab)) {
     mwtab$NMR_METABOLITE_DATA = NULL
   }
-
-  lc_data = count_missingness_testleftcensored(raw_matrix, ssf_wide)
-
-  qcqa_data = list(
-    id = mwtab$ID,
-    raw = setup_data$MEASUREMENTS,
-    normalized = norm_df,
-    icikt_cor = setup_ici$cor,
-    icikt_runtime = setup_ici$run_time,
-    leftcensored = lc_data,
-    ssf = ssf_wide,
-    mwtab = mwtab
-  )
-  qcqa_data
+  cor_data$mwtab = mwtab
+  cor_data$left_censorship = lc_data
+  cor_data
 }
