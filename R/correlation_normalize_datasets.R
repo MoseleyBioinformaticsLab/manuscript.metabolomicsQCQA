@@ -70,6 +70,8 @@ count_missingness_testleftcensored = function(raw_matrix, ssf_wide) {
     (nrow(raw_matrix) * ncol(raw_matrix)) *
     100
 
+  raw_matrix = raw_matrix[, ssf_wide$sample_id]
+
   if (perc_missing > 1) {
     lc_results = try(ICIKendallTau::test_left_censorship(
       raw_matrix,
@@ -112,8 +114,8 @@ do_correlation = function(setup_data) {
 
 
 sets_add_mwtab_do_left_censored = function(cor_set, setup_set) {
-  # cor_set = tar_read(cor_g01)
-  # setup_set = tar_read(setup_g01)
+  # cor_set = tar_read(cor_g07)
+  # setup_set = tar_read(setup_g07)
 
   out_set = furrr::future_map2(cor_set, setup_set, add_mwtab_do_left_censored)
   out_set
@@ -121,19 +123,18 @@ sets_add_mwtab_do_left_censored = function(cor_set, setup_set) {
 
 add_mwtab_do_left_censored = function(cor_data, setup_data) {
   stopifnot(cor_data$id == setup_data$ID)
-  raw_matrix = cor_data$raw
+  raw_matrix = get_just_values(cor_data$raw)
   ssf_wide = cor_data$ssf
   lc_data = count_missingness_testleftcensored(raw_matrix, ssf_wide)
 
-  mwtab = setup_data
-  mwtab$MEASUREMENTS = NULL
-  if ("MS_METABOLITE_DATA" %in% names(mwtab)) {
-    mwtab$MS_METABOLITE_DATA = NULL
+  setup_data$MEASUREMENTS = NULL
+  if ("MS_METABOLITE_DATA" %in% names(setup_data)) {
+    setup_data$MS_METABOLITE_DATA = NULL
   }
-  if ("NMR_METABOLITE_DATA" %in% names(mwtab)) {
-    mwtab$NMR_METABOLITE_DATA = NULL
+  if ("NMR_METABOLITE_DATA" %in% names(setup_data)) {
+    setup_data$NMR_METABOLITE_DATA = NULL
   }
-  cor_data$mwtab = mwtab
+  cor_data$mwtab = setup_data
   cor_data$left_censorship = lc_data
   cor_data
 }
