@@ -14,5 +14,6 @@ theme_set(cowplot::theme_cowplot())
 suppressMessages(library(SummarizedExperiment))
 
 tar_option_set(memory = "transient")
-options(tflow.report_dir = "docs", future.globals.maxSize = 2.0 * 1e9)
+options(tflow.report_dir = "docs")
+# options(future.globals.maxSize = 2.0 * 1e9)
 paint::mask_print()

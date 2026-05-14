@@ -9,6 +9,32 @@ extract_mwtab_ids = function(mwtab_files) {
   mwtab_df
 }
 
+check_mwtab = function(processed) {
+  check_results = furrr::future_map(
+    processed,
+    run_mwtab_checks_json,
+    min_n = 3,
+    min_metabolites = 50,
+    max_min_value = 20,
+    min_ssf = 1,
+    use_ssf_only = "yes",
+    remove_pooled = "no",
+    .progress = TRUE
+  )
+  check_results
+}
+
+process_mwtab = function(mwtab_datasets) {
+  processed_results = furrr::future_map2(
+    mwtab_datasets$file,
+    mwtab_datasets$id,
+    \(x, y) {
+      parse_json_save(x, y, ancillary_path, save_path)
+    },
+    .progress = TRUE
+  )
+  processed_results
+}
 
 parse_json_save = function(mwtab_file, id, ancillary_path, save_path) {
   #mwtab_file = "data/repaired/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000023%2Fmwtab%2Ftxt.txt"  # MS file
@@ -355,6 +381,7 @@ run_mwtab_checks_json = function(
   # processed_mwtab = tar_read(processed_AN003251)
   # processed_mwtab = tar_read(processed)[[28]]
   # processed_mwtab = tar_read(processed)[[60]]
+  # processed_rds = tar_read(processed)[[575]]
   # min_n = 3
   # min_metabolites = 50
   # max_min_value = 20

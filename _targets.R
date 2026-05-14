@@ -32,29 +32,8 @@ plan(multicore, workers = 10)
 
 
 ## tar_plan supports drake-style targets and also tar_target()
-processed_t = tar_target(processed, command = {
-  furrr::future_map2(
-    mwtab_datasets$file,
-    mwtab_datasets$id,
-    \(x, y) {
-      parse_json_save(x, y, ancillary_path, save_path)
-    },
-    .progress = TRUE
-  )
-})
-checked_t = tar_target(checked, command = {
-  furrr::future_map(
-    processed,
-    run_mwtab_checks_json,
-    min_n = 3,
-    min_metabolites = 50,
-    max_min_value = 20,
-    min_ssf = 1,
-    use_ssf_only = "yes",
-    remove_pooled = "no",
-    .progress = TRUE
-  )
-})
+processed_t = tar_target(processed, process_mwtab(mwtab_datasets))
+checked_t = tar_target(checked, check_mwtab(processed))
 
 check_result_t = tar_target(check_result, bind_check_results(checked))
 
