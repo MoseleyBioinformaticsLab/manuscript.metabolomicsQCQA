@@ -14,6 +14,9 @@ if (!fs::file_exists("parsed_rds/group_sets.rds")) {
   )
 } else {
   group_sets = readRDS("parsed_rds/group_sets.rds")
+  if (nrow(group_sets) == 0) {
+    stop("something is wrong with group_sets.rds, delete it!")
+  }
 }
 
 json_files = fs::dir_ls(
