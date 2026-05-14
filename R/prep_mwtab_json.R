@@ -391,7 +391,7 @@ run_mwtab_checks_json = function(
   processed_md5 = digest::digest(processed_mwtab, algo = "md5")
 
   check_res = list(
-    md5_match = NA,
+    md5_match = FALSE,
     features = "",
     n_features = NA,
     ssf = "",
@@ -407,6 +407,8 @@ run_mwtab_checks_json = function(
 
   if (processed_rds$md5 != processed_md5) {
     return(check_res)
+  } else {
+    check_res$md5_match = TRUE
   }
 
   if (!is.null(processed_mwtab$DATASOURCE)) {
