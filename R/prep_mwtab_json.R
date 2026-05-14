@@ -503,7 +503,9 @@ run_mwtab_checks_json = function(
 
   match_samples2 = match_samples[match_samples %in% ssf_wide_grouped$sample_id]
 
-  measurements = processed_mwtab$MEASUREMENTS[match_features, match_samples2] |>
+  measurements = processed_mwtab$MEASUREMENTS |>
+    dplyr::filter(feature_id %in% match_features) |>
+    dplyr::select(tidyselect::all_of(match_samples2)) |>
     as.matrix()
   factors = ssf_wide_grouped$factors
 
