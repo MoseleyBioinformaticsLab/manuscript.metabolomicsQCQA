@@ -417,10 +417,11 @@ run_mwtab_checks_json = function(
 
   tmp_measures = processed_mwtab$MEASUREMENTS
   match_features = base::intersect(
-    rownames(tmp_measures),
+    tmp_measures$feature_id,
     processed_mwtab$METABOLITES$feature_id
   )
-  tmp_measures = tmp_measures[match_features, ]
+  tmp_measures = tmp_measures |>
+    dplyr::filter(feature_id %in% match_features)
   n_features = nrow(tmp_measures)
   if (is.na(n_features) || is.null(n_features)) {
     check_res$features = "NA"
@@ -502,7 +503,7 @@ run_mwtab_checks_json = function(
 
   match_samples2 = match_samples[match_samples %in% ssf_wide_grouped$sample_id]
 
-  measurements = processed_mwtab$MEASUREMENTS[, match_samples2] |>
+  measurements = processed_mwtab$MEASUREMENTS[match_features, match_samples2] |>
     as.matrix()
   factors = ssf_wide_grouped$factors
 
