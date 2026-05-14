@@ -416,6 +416,10 @@ run_mwtab_checks_json = function(
   }
 
   tmp_measures = processed_mwtab$MEASUREMENTS
+  if (is.null(tmp_measures)) {
+    check_res$features = "NA"
+    return(check_res)
+  }
   match_features = base::intersect(
     tmp_measures$feature_id,
     processed_mwtab$METABOLITES$feature_id
