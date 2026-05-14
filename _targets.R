@@ -37,6 +37,8 @@ checked_t = tar_target(checked, check_mwtab(processed))
 
 check_result_t = tar_target(check_result, bind_check_results(checked))
 
+# first time running, only go to here so the right file is saved.
+# then run the other targets below.
 group_sets_t = tar_target(
   tmp_sets,
   filter_good_experiments_splitup(check_result, "parsed_rds/group_sets.rds")
