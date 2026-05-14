@@ -367,6 +367,7 @@ run_mwtab_checks_json = function(
   stopifnot(processed_rds$md5 == processed_md5)
   check_res = list(
     features = "",
+    n_features = NA,
     ssf = "",
     range = "",
     datasource = "",
@@ -382,12 +383,19 @@ run_mwtab_checks_json = function(
     check_res$datasource = processed_mwtab$DATASOURCE
   }
 
-  n_features = nrow(processed_mwtab$MEASUREMENTS)
+  tmp_measures = processed_mwtab$MEASUREMENTS
+  match_features = base::intersect(
+    rownames(tmp_measures),
+    processed_mwtab$METABOLITES$feature_id
+  )
+  tmp_measures = tmp_measures[match_features, ]
+  n_features = nrow(tmp_measures)
   if (is.na(n_features) || is.null(n_features)) {
     check_res$features = "NA"
     return(check_res)
   }
 
+  check_res$n_features = n_features
   if (n_features < min_metabolites) {
     check_res$features = "few"
     return(check_res)
