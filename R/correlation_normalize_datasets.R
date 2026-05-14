@@ -3,8 +3,7 @@ sets_run_group_correlations = function(in_setup) {
 
   cor_data = purrr::map(
     in_setup,
-    do_correlation,
-    .progress = TRUE
+    do_correlation
   )
 }
 

@@ -18,8 +18,7 @@ check_mwtab = function(processed) {
     max_min_value = 20,
     min_ssf = 1,
     use_ssf_only = "yes",
-    remove_pooled = "no",
-    .progress = TRUE
+    remove_pooled = "no"
   )
   check_results
 }
@@ -30,8 +29,7 @@ process_mwtab = function(mwtab_datasets) {
     mwtab_datasets$id,
     \(x, y) {
       parse_json_save(x, y, ancillary_path, save_path)
-    },
-    .progress = TRUE
+    }
   )
   processed_results
 }
