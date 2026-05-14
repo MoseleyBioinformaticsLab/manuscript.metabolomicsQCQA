@@ -50,3 +50,39 @@ transform_abundances = function(in_abundances, max_min = 20) {
   }
   list(measurements = in_abundances, transform = transform)
 }
+
+#' filters measurements and ssf to matching samples
+#'
+#' Often, the analyses have sample factors for samples
+#' that aren't necessarily in the measurements, or vice versa.
+#' So this code takes the analysis, and filters the subject
+#' factors and measurements to the common samples between them.
+filter_matching_samples = function(processed_data) {
+  ssf_data = processed_data$SUBJECT_SAMPLE_FACTORS
+  abundance_data = processed_data$MEASUREMENTS
+
+  all_samples = unique(ssf_data$sample_id)
+  all_abundance_cols = colnames(abundance_data)
+
+  match_samples = base::intersect(all_samples, all_abundance_cols)
+  ssf_diff = base::setdiff(all_samples, match_samples) |>
+    paste0(collapse = "; ")
+  meas_diff = base::setdiff(all_abundance_cols, match_samples) |>
+    paste0(collapse = "; ")
+  ssf_data = ssf_data |>
+    dplyr::filter(sample_id %in% match_samples)
+
+  abundance_cols = c(match_samples, "feature_id")
+  abundance_data = abundance_data[, abundance_cols]
+
+  processed_data$MEASUREMENTS = abundance_data
+  processed_data$SUBJECT_SAMPLE_FACTORS = ssf_data
+
+  n_filtered = tibble::tribble(
+    ~source        , ~original                  , ~kept                 , ~filtered ,
+    "ssf"          , length(all_samples)        , length(match_samples) , ssf_diff  ,
+    "measurements" , length(all_abundance_cols) , length(match_samples) , meas_diff
+  )
+  processed_data$FILTERED = n_filtered
+  processed_data
+}

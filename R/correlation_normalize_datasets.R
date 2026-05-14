@@ -1,40 +1,3 @@
-#' filters measurements and ssf to matching samples
-#'
-#' Often, the analyses have sample factors for samples
-#' that aren't necessarily in the measurements, or vice versa.
-#' So this code takes the analysis, and filters the subject
-#' factors and measurements to the common samples between them.
-filter_matching_samples = function(processed_data) {
-  ssf_data = processed_data$SUBJECT_SAMPLE_FACTORS
-  abundance_data = processed_data$MEASUREMENTS
-
-  all_samples = unique(ssf_data$sample_id)
-  all_abundance_cols = colnames(abundance_data)
-
-  match_samples = base::intersect(all_samples, all_abundance_cols)
-  ssf_diff = base::setdiff(all_samples, match_samples) |>
-    paste0(collapse = "; ")
-  meas_diff = base::setdiff(all_abundance_cols, match_samples) |>
-    paste0(collapse = "; ")
-  ssf_data = ssf_data |>
-    dplyr::filter(sample_id %in% match_samples)
-
-  abundance_cols = c(match_samples, "feature_id")
-  abundance_data = abundance_data[, abundance_cols]
-
-  processed_data$MEASUREMENTS = abundance_data
-  processed_data$SUBJECT_SAMPLE_FACTORS = ssf_data
-
-  n_filtered = tibble::tribble(
-    ~source        , ~original                  , ~kept                 , ~filtered ,
-    "ssf"          , length(all_samples)        , length(match_samples) , ssf_diff  ,
-    "measurements" , length(all_abundance_cols) , length(match_samples) , meas_diff
-  )
-  processed_data$FILTERED = n_filtered
-  processed_data
-}
-
-
 sets_run_group_correlations = function(in_setup) {
   # in_setup = tar_read(setup_g01)
 
@@ -122,19 +85,62 @@ sets_add_mwtab_do_left_censored = function(cor_set, setup_set) {
 }
 
 add_mwtab_do_left_censored = function(cor_data, setup_data) {
+  # cor_data = cor_set[[4]]; setup_data = setup_set[[4]]
   stopifnot(cor_data$id == setup_data$ID)
   raw_matrix = get_just_values(cor_data$raw)
   ssf_wide = cor_data$ssf
+
+  feature_data = setup_data$METABOLITES
+
+  matching_features = base::intersect(
+    feature_data$feature_id,
+    rownames(raw_matrix)
+  )
+
+  feature_data = feature_data |>
+    dplyr::filter(feature_id %in% matching_features)
+
+  raw_matrix = raw_matrix[feature_data$feature_id, ssf_wide$sample_id]
+  norm_matrix = get_just_values(cor_data$normalized)[
+    feature_data$feature_id,
+    ssf_wide$sample_id
+  ]
+
+  qc_samples = determine_qc_samples(setup_data$SUBJECT_SAMPLE_FACTORS)
+  ssf_wide = ssf_wide |>
+    dplyr::mutate(
+      experiment_or_qc = dplyr::case_when(
+        sample_id %in% qc_samples ~ "qc",
+        TRUE ~ "experiment"
+      )
+    )
+  se_data = SummarizedExperiment(
+    assays = SimpleList(raw = raw_matrix, normalized = norm_matrix),
+    rowData = feature_data,
+    colData = ssf_wide
+  )
+
   lc_data = count_missingness_testleftcensored(raw_matrix, ssf_wide)
 
-  setup_data$MEASUREMENTS = NULL
-  if ("MS_METABOLITE_DATA" %in% names(setup_data)) {
-    setup_data$MS_METABOLITE_DATA = NULL
-  }
-  if ("NMR_METABOLITE_DATA" %in% names(setup_data)) {
-    setup_data$NMR_METABOLITE_DATA = NULL
-  }
+  cor_data$raw = NULL
+  cor_data$normalized = NULL
+  cor_data$ssf = NULL
+  cor_data$abundance = se_data
   cor_data$mwtab = setup_data
   cor_data$left_censorship = lc_data
   cor_data
+}
+
+determine_qc_samples = function(ssf_long) {
+  # ssf_long = in_lc$mwtab$SUBJECT_SAMPLE_FACTORS
+  is_pooled_qc = ssf_long |>
+    dplyr::filter(
+      grepl(
+        ".*pool.*|.*qc.*|.*blank.*",
+        sample_id,
+        ignore.case = TRUE
+      ) |
+        grepl(".*pool.*|.*qc.*|.*blank.*", item, ignore.case = TRUE)
+    ) |>
+    dplyr::pull(sample_id)
 }

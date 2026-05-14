@@ -1,14 +1,13 @@
-determine_experimental_design = function(in_dataset) {
+determine_experimental_design = function(in_ssf) {
   # in_dataset = tar_read(cor_g06)[[1]]
-  factor_info = count_possible_factors(in_dataset$ssf)
+  factor_info = count_possible_factors(in_ssf)
 
   n_rows = nrow(factor_info)
   summary_df = tibble::tibble(
     n_factors = n_rows - 1,
     n_groups = factor_info$n_group[n_rows]
   )
-  in_dataset$design = list(summary = summary_df, factor_counts = factor_info)
-  in_dataset
+  list(summary = summary_df, factor_counts = factor_info)
 }
 
 count_possible_factors = function(ssf) {
