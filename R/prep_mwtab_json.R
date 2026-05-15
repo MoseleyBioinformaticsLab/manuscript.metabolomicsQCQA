@@ -539,7 +539,7 @@ check_dynamic_range_single_sample = function(
   n_na = sum(is.na(in_values))
   frac_na = n_na / n_val
   if (frac_na > 0.95) {
-    return(list(range = "too many na", n = NA))
+    return(list(range = "too many na", n = 0))
   }
 
   value_range = range(in_values, na.rm = TRUE)
@@ -567,7 +567,7 @@ check_dynamic_range_single_sample = function(
   } else if (dynamic_range >= min_range) {
     return(list(range = "good", n = nrow(in_values)))
   } else {
-    return(list(range = "unknown", n = nrow(in_values)))
+    return(list(range = "unknown", n = 0))
   }
 }
 
