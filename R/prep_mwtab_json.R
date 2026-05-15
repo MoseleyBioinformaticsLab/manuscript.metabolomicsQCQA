@@ -513,36 +513,58 @@ run_mwtab_checks_json = function(
     as.matrix()
   factors = ssf_wide_grouped$factors
 
-  check_res$range = check_dynamic_range(
+  # we check the number of features kept after checking for non-missing
+  # in at least a single sample
+  range_check_result = check_dynamic_range_single_sample(
     measurements,
     value_cutoff = max_min_value
   )
+  check_res$range = range_check_result$range
+  check_res$n_features = range_check_result$n_features
+  if (range_check_result$n_features < min_metabolites) {
+    check_res$features = "few"
+  } else {
+    check_res$features = "good"
+  }
 
   check_res
 }
 
-check_dynamic_range = function(in_values, value_cutoff = 20, min_range = 10) {
+check_dynamic_range_single_sample = function(
+  in_values,
+  value_cutoff = 20,
+  min_range = 10
+) {
   n_val = nrow(in_values) * ncol(in_values)
   n_na = sum(is.na(in_values))
   frac_na = n_na / n_val
   if (frac_na > 0.95) {
     return("too many na")
   }
+
   value_range = range(in_values, na.rm = TRUE)
   if (max(value_range) < value_cutoff) {
-    value_range = 2^value_range
+    in_values = 2^in_values
   }
+
+  keep_values = visualizationQualityControl::keep_non_missing_percentage(
+    in_values,
+    keep_num = 1,
+    missing_value = c(0, NA)
+  )
+  in_values = in_values[keep_values, ]
+  value_range = range(in_values, na.rm = TRUE)
 
   dynamic_range = try(value_range[2] / value_range[1])
   if (inherits(dynamic_range, "try-error")) {
-    return("error")
+    return(list(range = "error", n = NA))
   }
   if (dynamic_range < min_range) {
-    return("low")
+    return(list(range = "low", n = nrow(in_values)))
   } else if (dynamic_range >= min_range) {
-    return("good")
+    return(list(range = "good", n = nrow(in_values)))
   } else {
-    return("unknown")
+    return(list(range = "unknown", n = nrow(in_values)))
   }
 }
 
