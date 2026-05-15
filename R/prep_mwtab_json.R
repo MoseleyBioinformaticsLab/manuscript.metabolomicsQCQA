@@ -1381,7 +1381,7 @@ filter_good_experiments_splitup = function(check_result, save_file) {
 
   good_result = check_result |>
     dplyr::filter(
-      (features %in% "good") &
+      (md5_match & features %in% "good") &
         (ssf %in% "good") &
         (range %in% "good")
     ) |>
