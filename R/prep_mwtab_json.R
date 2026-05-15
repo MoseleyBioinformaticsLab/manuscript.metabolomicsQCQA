@@ -547,11 +547,14 @@ check_dynamic_range_single_sample = function(
     in_values = 2^in_values
   }
 
-  keep_values = visualizationQualityControl::keep_non_missing_percentage(
+  keep_values = try(visualizationQualityControl::keep_non_missing_percentage(
     in_values,
     keep_num = 1,
     missing_value = c(0, NA)
-  )
+  ))
+  if (inherits(keep_values, "try-error")) {
+    return(list(range = "keep-error", n = NA))
+  }
   in_values = in_values[keep_values, ]
   value_range = range(in_values, na.rm = TRUE)
 
