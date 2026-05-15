@@ -520,8 +520,8 @@ run_mwtab_checks_json = function(
     value_cutoff = max_min_value
   )
   check_res$range = range_check_result$range
-  check_res$n_features = range_check_result$n_features
-  if (range_check_result$n_features < min_metabolites) {
+  check_res$n_features = range_check_result$n
+  if (range_check_result$n < min_metabolites) {
     check_res$features = "few"
   } else {
     check_res$features = "good"
@@ -539,7 +539,7 @@ check_dynamic_range_single_sample = function(
   n_na = sum(is.na(in_values))
   frac_na = n_na / n_val
   if (frac_na > 0.95) {
-    return("too many na")
+    return(list(range = "too many na", n = NA))
   }
 
   value_range = range(in_values, na.rm = TRUE)
