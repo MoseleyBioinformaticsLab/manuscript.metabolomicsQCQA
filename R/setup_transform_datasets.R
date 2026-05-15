@@ -121,7 +121,7 @@ filter_matching_samples_features = function(processed_data) {
 }
 
 sets_check_features = function(in_setup) {
-  purrr::map2(in_setup, id, \(setup, id) {
+  purrr::imap(in_setup, \(setup, id) {
     tibble::tibble(id = id, n_features = nrow(setup$MEASUREMENTS))
   }) |>
     purrr::list_rbind()

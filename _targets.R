@@ -57,9 +57,22 @@ sets_map = tar_map(
   tar_target(pca, sets_run_pca_experimental_design(lc))
 )
 
+check_features_all_t = tar_combine(
+  check_features_all,
+  sets_map[[2]],
+  command = dplyr::bind_rows(!!!.x)
+)
+
 # setup_map = tar_map(
 #   json_all_map[[4]],
 #   tar_target(setup, run_setup)
 # )
 
-list(processed_t, checked_t, check_result_t, group_sets_t, sets_map)
+list(
+  processed_t,
+  checked_t,
+  check_result_t,
+  group_sets_t,
+  sets_map,
+  check_features_all_t
+)
