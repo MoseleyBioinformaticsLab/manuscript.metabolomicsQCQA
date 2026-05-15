@@ -553,14 +553,14 @@ check_dynamic_range_single_sample = function(
     missing_value = c(0, NA)
   ))
   if (inherits(keep_values, "try-error")) {
-    return(list(range = "keep-error", n = NA))
+    return(list(range = "keep-error", n = 0))
   }
   in_values = in_values[keep_values, ]
   value_range = range(in_values, na.rm = TRUE)
 
   dynamic_range = try(value_range[2] / value_range[1])
   if (inherits(dynamic_range, "try-error")) {
-    return(list(range = "error", n = NA))
+    return(list(range = "error", n = 0))
   }
   if (dynamic_range < min_range) {
     return(list(range = "low", n = nrow(in_values)))
