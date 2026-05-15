@@ -51,6 +51,7 @@ sets_map = tar_map(
   group_sets,
   names = group,
   tar_target(setup, sets_run_setup(set, tmp_sets)),
+  tar_target(check_features, sets_check_features(setup)),
   tar_target(cor, sets_run_group_correlations(setup)),
   tar_target(lc, sets_add_mwtab_do_left_censored(cor, setup)),
   tar_target(pca, sets_run_pca_experimental_design(lc))
