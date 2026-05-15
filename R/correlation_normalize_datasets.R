@@ -53,6 +53,7 @@ count_missingness_testleftcensored = function(raw_matrix, ssf_wide) {
 do_correlation = function(setup_data) {
   # setup_data = in_group[[1]]
   raw_matrix = get_just_values(setup_data$MEASUREMENTS)
+
   norm_matrix = median_normalize_matrix(raw_matrix)
   norm_df = as.data.frame(norm_matrix)
   norm_df$feature_id = setup_data$MEASUREMENTS$feature_id
@@ -100,6 +101,7 @@ add_mwtab_do_left_censored = function(cor_data, setup_data) {
     dplyr::filter(feature_id %in% matching_features)
 
   raw_matrix = raw_matrix[feature_data$feature_id, ssf_wide$sample_id]
+
   norm_matrix = get_just_values(cor_data$normalized)[
     feature_data$feature_id,
     ssf_wide$sample_id

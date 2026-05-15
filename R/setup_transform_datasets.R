@@ -18,10 +18,8 @@ read_rds_setup_data = function(rds_file, md5_sum) {
 
   processed_data = readRDS(rds_file)
   check_md5(processed_data, md5_sum)
-  processed_data = filter_matching_samples(processed_data)
-  transformed_data = transform_abundances(processed_data$MEASUREMENTS)
-  processed_data$MEASUREMENTS = transformed_data$measurements
-  processed_data$TRANSFORM = transformed_data$transform
+
+  processed_data = filter_matching_samples_features(processed_data)
   processed_data
 }
 
@@ -57,10 +55,13 @@ transform_abundances = function(in_abundances, max_min = 20) {
 #' that aren't necessarily in the measurements, or vice versa.
 #' So this code takes the analysis, and filters the subject
 #' factors and measurements to the common samples between them.
-filter_matching_samples = function(processed_data) {
+filter_matching_samples_features = function(processed_data) {
   ssf_data = processed_data$SUBJECT_SAMPLE_FACTORS
   abundance_data = processed_data$MEASUREMENTS
+  metabolite_data = processed_data$METABOLITES
 
+  n_feature_abund = nrow(abundance_data)
+  n_feature_metabolite = nrow(metabolite_data)
   all_samples = unique(ssf_data$sample_id)
   all_abundance_cols = colnames(abundance_data)
 
@@ -75,14 +76,46 @@ filter_matching_samples = function(processed_data) {
   abundance_cols = c(match_samples, "feature_id")
   abundance_data = abundance_data[, abundance_cols]
 
-  processed_data$MEASUREMENTS = abundance_data
-  processed_data$SUBJECT_SAMPLE_FACTORS = ssf_data
+  match_features = base::intersect(
+    abundance_data$feature_id,
+    metabolite_data$feature_id
+  )
+  abundance_data = abundance_data |>
+    dplyr::filter(feature_id %in% match_features)
+  metabolite_data = metabolite_data |>
+    dplyr::filter(feature_id %in% match_features)
 
-  n_filtered = tibble::tribble(
+  abundance_transformed = transform_abundances(abundance_data)
+  abundance_data = abundance_transformed$measurements
+
+  raw_matrix = get_just_values(abundance_data)
+  keep_things = visualizationQualityControl::keep_non_missing_percentage(
+    raw_matrix,
+    keep_num = 1,
+    missing_value = c(0, NA)
+  )
+  keep_features = rownames(raw_matrix)[keep_things]
+  abundance_data = abundance_data |>
+    dplyr::filter(feature_id %in% keep_features)
+  metabolite_data = metabolite_data |>
+    dplyr::filter(feature_id %in% keep_features)
+
+  processed_data$MEASUREMENTS = abundance_data
+  processed_data$METABOLITES = metabolite_data
+  processed_data$SUBJECT_SAMPLE_FACTORS = ssf_data
+  processed_data$TRANSFORM = abundance_transformed$transform
+
+  n_filtered_samples = tibble::tribble(
     ~source        , ~original                  , ~kept                 , ~filtered ,
     "ssf"          , length(all_samples)        , length(match_samples) , ssf_diff  ,
     "measurements" , length(all_abundance_cols) , length(match_samples) , meas_diff
   )
-  processed_data$FILTERED = n_filtered
+  n_filtered_features = tibble::tribble(
+    ~source       , ~original            , ~kept                 ,
+    "abundance"   , n_feature_abund      , nrow(abundance_data)  ,
+    "metabolites" , n_feature_metabolite , nrow(metabolite_data)
+  )
+  processed_data$FILTERED_SAMPLES = n_filtered_samples
+  processed_data$FILTERED_FEATURES = n_filtered_features
   processed_data
 }
