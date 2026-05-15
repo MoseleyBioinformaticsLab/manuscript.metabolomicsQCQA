@@ -11,7 +11,7 @@ library(quarto)
 library(ggplot2)
 theme_set(cowplot::theme_cowplot())
 
-# suppressMessages(library(SummarizedExperiment))
+suppressWarnings(suppressMessages(library(SummarizedExperiment)))
 
 tar_option_set(memory = "transient")
 options(tflow.report_dir = "docs")
