@@ -54,6 +54,14 @@ do_correlation = function(setup_data) {
   # setup_data = in_group[[1]]
   raw_matrix = get_just_values(setup_data$MEASUREMENTS)
 
+  n_cores = future::nbrOfWorkers()
+
+  n_item = ncol(raw_matrix) * nrow(raw_matrix)
+  # try halving number of workers to get around memory issues
+  if (n_item > 1e6) {
+    plan(multicore, workers = ceiling(n_cores / 2))
+  }
+
   norm_matrix = median_normalize_matrix(raw_matrix)
   norm_df = as.data.frame(norm_matrix)
   norm_df$feature_id = setup_data$MEASUREMENTS$feature_id
@@ -63,6 +71,8 @@ do_correlation = function(setup_data) {
       dplyr::filter(type %in% "subject_sample_factor")
   ) |>
     create_factor_groups_json()
+  # make sure to put them back
+  plan(multicore, workers = n_cores)
 
   cor_data = list(
     id = setup_data$ID,
@@ -77,11 +87,10 @@ do_correlation = function(setup_data) {
 
 
 sets_add_mwtab_do_left_censored = function(cor_set, setup_set) {
-  # cor_set = tar_read(cor_g07)
-  # setup_set = tar_read(setup_g07)
+  # cor_set = tar_read(cor_g01); setup_set = tar_read(setup_g01)
 
-  out_set = purrr::map2(cor_set, setup_set, add_mwtab_do_left_censored)
-  out_set
+  lc_set = purrr::map2(cor_set, setup_set, add_mwtab_do_left_censored)
+  lc_set
 }
 
 add_mwtab_do_left_censored = function(cor_data, setup_data) {

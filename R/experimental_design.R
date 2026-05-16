@@ -12,7 +12,7 @@ determine_experimental_design = function(in_ssf) {
 
 count_possible_factors = function(ssf) {
   left_over = ssf |>
-    dplyr::select(c(-subject, -sample_id, -factors))
+    dplyr::select(c(-subject, -sample_id, -factors, -experiment_or_qc))
   n_left_over = ncol(left_over)
   n_each = purrr::imap(left_over, \(in_col, id) {
     tibble::tibble(factor = id, n_group = length(unique(in_col)))

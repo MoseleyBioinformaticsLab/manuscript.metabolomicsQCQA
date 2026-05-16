@@ -10,6 +10,7 @@ library(purrr)
 library(quarto)
 library(ggplot2)
 theme_set(cowplot::theme_cowplot())
+library(ggforce)
 
 suppressWarnings(suppressMessages(library(SummarizedExperiment)))
 
