@@ -12,6 +12,7 @@ sets_run_pca_experimental_design = function(lc_sets) {
     lc_sets,
     run_pca_experimental_design
   )
+  pca_sets
 }
 
 run_pca_experimental_design = function(in_lc) {
