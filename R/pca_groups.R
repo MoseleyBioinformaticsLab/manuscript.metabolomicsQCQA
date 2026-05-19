@@ -105,6 +105,21 @@ determine_neigbors_ordering = function(ici_values, group_data) {
     between_classes = TRUE
   )
 
+  ici_within = med_ici |>
+    dplyr::filter(group %in% "within") |>
+    dplyr::mutate(within = med_cor)
+
+  ici_between = med_ici |>
+    dplyr::filter(group %in% "between") |>
+    dplyr::summarise(between = max(med_cor), .by = sample_id)
+
+  ici_compare = dplyr::left_join(
+    ici_within[, c("sample_id", "within", "sample_class")],
+    ici_between,
+    by = "sample_id"
+  ) |>
+    dplyr::mutate(w_b_better = (within >= between), factors = sample_class)
+
   ici_dendrogram = visualizationQualityControl::similarity_reorder(
     ici_square,
     transform = "sub_1"
@@ -129,7 +144,12 @@ determine_neigbors_ordering = function(ici_values, group_data) {
   )
   join_rles = join_rles |> dplyr::mutate(diff = length.ideal - length.ici)
 
-  list(ici = ici_square, dendrogram = ici_dendrogram, diffs = join_rles)
+  list(
+    ici = ici_square,
+    dendrogram = ici_dendrogram,
+    diff_rle = join_rles,
+    diff_median_ici = ici_compare
+  )
   #return(NULL)
 }
 
