@@ -23,7 +23,6 @@ run_pca_experimental_design = function(in_lc) {
       any(is.infinite(tmp_abundance)) ||
       any(tmp_abundance < 0)
   ) {
-    in_lc$pca_groups = NULL
     return(in_lc)
   }
   all_abundance = in_lc$abundance
