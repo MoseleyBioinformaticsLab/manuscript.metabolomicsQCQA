@@ -17,6 +17,15 @@ sets_run_pca_experimental_design = function(lc_sets) {
 
 run_pca_experimental_design = function(in_lc) {
   # in_lc = lc_sets[[1]]
+  tmp_abundance = assays(in_lc$abundance)$normalized
+  if (
+    any(is.na(in_lc$icikt_cor$cor)) ||
+      any(is.infinite(tmp_abundance)) ||
+      any(tmp_abundance < 0)
+  ) {
+    in_lc$pca_groups = NULL
+    return(in_lc)
+  }
   all_abundance = in_lc$abundance
   all_res = list(
     pca = do_pca(all_abundance),
@@ -181,7 +190,9 @@ do_pca = function(abundance_se) {
   # abundance_se = in_lc$abundance
   norm_matrix = assays(abundance_se)$normalized
   ssf = get_vardata(abundance_se, "cols")
-  norm_matrix[is.na(norm_matrix)] = 0
+  norm_matrix[
+    is.na(norm_matrix)
+  ] = 0
   log_matrix = log1p(norm_matrix)
   pca_res = prcomp(t(log_matrix), center = TRUE, scale. = FALSE)
 
