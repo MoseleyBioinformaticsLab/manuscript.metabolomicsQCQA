@@ -17,11 +17,11 @@ sets_run_pca_experimental_design = function(lc_sets) {
 
 run_pca_experimental_design = function(in_lc) {
   # in_lc = lc_sets[[1]]
-  tmp_abundance = assays(in_lc$abundance)$normalized
+  tmp_norm = assays(in_lc$abundance)$normalized
   if (
     any(is.na(in_lc$icikt_cor$cor)) ||
-      any(is.infinite(tmp_abundance)) ||
-      any(tmp_abundance < 0)
+      any(is.infinite(tmp_norm)) ||
+      min(tmp_norm, na.rm = TRUE) < 0
   ) {
     return(in_lc)
   }
