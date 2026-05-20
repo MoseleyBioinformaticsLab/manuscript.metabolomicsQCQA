@@ -573,6 +573,7 @@ check_dynamic_range_single_sample = function(
 
 widen_ssf_json = function(ssf_data2) {
   ssf_data2 |>
+    dplyr::distinct() |>
     tidyr::pivot_wider(
       id_cols = c(subject, sample_id),
       names_from = factor,
@@ -604,6 +605,10 @@ create_factor_groups_json = function(ssf_wide) {
 }
 
 check_ssf_json = function(ssf_data2, min_ssf = 2, min_n = 5) {
+  ssf_classes = purrr::map_chr(ssf_data2, class)
+  if (any(ssf_classes %in% "list")) {
+    return("list factor")
+  }
   ssf_n = ssf_data2 |>
     dplyr::summarise(n = dplyr::n(), .by = factors)
 
