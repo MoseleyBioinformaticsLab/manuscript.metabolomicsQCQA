@@ -7,7 +7,8 @@ get_vardata = function(abundance_se, which = "cols") {
 }
 
 sets_run_pca_experimental_design = function(lc_sets) {
-  # lc_sets = tar_read(lc_g07)
+  # lc_sets = tar_read(lc_g01); tar_source("R")
+  # pca_sets = purrr::map(lc_sets[1:10], run_pca_experimental_design)
   pca_sets = furrr::future_map(
     lc_sets,
     run_pca_experimental_design
@@ -25,7 +26,30 @@ run_pca_experimental_design = function(in_lc) {
   ) {
     return(in_lc)
   }
+
   all_abundance = in_lc$abundance
+  possible_outliers = determine_outliers(
+    in_lc$icikt_cor,
+    get_vardata(all_abundance)
+  )
+  just_outlier_info = possible_outliers |>
+    dplyr::transmute(
+      sample_id = sample_id,
+      median_ici_correlation = med_cor,
+      outlier_fraction = frac,
+      score = score,
+      outlier = outlier
+    )
+  just_outlier_info = dplyr::left_join(
+    data.frame(sample_id = all_abundance$sample_id),
+    just_outlier_info,
+    by = "sample_id"
+  )
+
+  colData(all_abundance) = cbind(
+    colData(all_abundance),
+    just_outlier_info |> dplyr::select(-sample_id)
+  )
   all_res = list(
     pca = do_pca(all_abundance),
     design = all_abundance |>
@@ -35,11 +59,6 @@ run_pca_experimental_design = function(in_lc) {
       in_lc$icikt_cor,
       get_vardata(all_abundance)
     )
-  )
-
-  possible_outliers = determine_outliers(
-    in_lc$icikt_cor,
-    get_vardata(all_abundance)
   )
 
   no_qc = all_abundance[, all_abundance$experiment_or_qc %in% "experiment"]
@@ -86,12 +105,6 @@ run_pca_experimental_design = function(in_lc) {
     )
   )
 
-  rownames(possible_outliers) = possible_outliers$sample_id
-  possible_outliers = possible_outliers[all_abundance$sample_id, ]
-
-  all_abundance$med_cor = possible_outliers$med_cor
-  all_abundance$score = possible_outliers$score
-  all_abundance$outlier = possible_outliers$outlier
   in_lc$abundance = all_abundance
   in_lc$pca_groups = list(
     all = all_res,
@@ -128,12 +141,13 @@ determine_neigbors_ordering = function(ici_values, group_data) {
   ) |>
     dplyr::mutate(w_b_better = (within >= between), factors = sample_class)
 
-  ici_dendrogram = visualizationQualityControl::similarity_reorder(
+  ici_dendrogram = visualizationQualityControl::similarity_reorderbyclass(
     ici_square,
+    sample_classes = NULL,
     transform = "sub_1"
   )
-  ici_dendrogram$samples = rownames(ici_square)[ici_dendrogram$indices]
-  sample_order = rownames(ici_square)[ici_dendrogram$indices]
+
+  sample_order = ici_dendrogram$names
 
   actual_rles = rle(sort(group_data$factors)) |> rle_2_df()
 
@@ -216,7 +230,7 @@ do_pca = function(abundance_se) {
 }
 
 create_qcqa_plots = function(in_pca_set) {
-  # in_pca_set = pca_sets[[3]]
+  # in_pca_set = pca_sets[[1]]
 
   all_factors = unique(in_pca_set$abundance$factors)
   factor_colors = scales::hue_pal()(length(all_factors))
@@ -234,14 +248,131 @@ create_qcqa_plots = function(in_pca_set) {
 
   raw_boxplot = create_boxplot(raw_abundance, sample_metadata, factor_colors)
   norm_boxplot = create_boxplot(norm_abundance, sample_metadata, factor_colors)
+
+  pca_heatmap_median_ici_each = purrr::map(
+    in_pca_set$pca_groups,
+    create_pca_median_ici_heatmap,
+    factor_colors,
+    cor_colors
+  )
+
+  ordering_scores_each = purrr::map(
+    in_pca_set$pca_groups,
+    \(in_group) {
+      dplyr::bind_rows(
+        score_rle(in_group$order$diff_rle),
+        score_median_ici(in_group$order$diff_median_ici)
+      )
+    }
+  )
+
+  list(
+    raw = raw_boxplot,
+    normalized = norm_boxplot,
+    iterative_plots = pca_heatmap_median_ici_each,
+    scores = ordering_scores_each
+  )
 }
 
-create_pca_heatmap = function(pca_group, factor_colors) {
+score_rle = function(rle_df) {
+  # rle_df = pca_group$order$diff_rle
+  rle_summary_all = rle_df |>
+    dplyr::summarise(
+      grp_diff = sum(diff),
+      grp_ideal = sum(length.ideal),
+      fraction_diff = grp_diff / grp_ideal,
+      factors = "all"
+    )
+  rle_summary_group = rle_df |>
+    dplyr::summarise(
+      grp_diff = sum(diff),
+      grp_ideal = sum(length.ideal),
+      fraction_diff = grp_diff / grp_ideal,
+      .by = value
+    ) |>
+    dplyr::mutate(factors = value) |>
+    dplyr::select(-value)
+  dplyr::bind_rows(rle_summary_all, rle_summary_group) |>
+    dplyr::mutate(method = "rle")
+}
+
+score_median_ici = function(ici_df) {
+  # ici_df = pca_group$order$diff_median_ici
+  ici_summary_all = ici_df |>
+    dplyr::summarise(
+      grp_diff = sum(w_b_better) - dplyr::n(),
+      grp_ideal = dplyr::n(),
+      fraction_diff = grp_diff / grp_ideal,
+      factors = "all"
+    )
+  ici_summary_group = ici_df |>
+    dplyr::summarise(
+      grp_diff = sum(w_b_better) - dplyr::n(),
+      grp_ideal = dplyr::n(),
+      fraction_diff = grp_diff / grp_ideal,
+      .by = factors
+    )
+  dplyr::bind_rows(ici_summary_all, ici_summary_group) |>
+    dplyr::mutate(method = "median-ici")
+}
+
+create_pca_median_ici_heatmap = function(pca_group, factor_colors, cor_colors) {
   # pca_group = in_pca_set$pca_groups$all
   pca_plot = pca_group$pca$pca |>
-    ggplot(aes(x = PC1, y = PC2, color = factors)) +
+    ggplot(aes(x = PC1, y = PC2, color = factors, shape = outlier)) +
     geom_point(size = 3) +
     scale_color_manual(values = factor_colors)
+
+  heatmap_data = pca_group$order
+
+  sample_info = pca_group$pca$pca
+
+  sample_info = dplyr::left_join(
+    data.frame(sample_id = rownames(heatmap_data$ici)),
+    sample_info,
+    by = "sample_id"
+  )
+
+  heatmap_colors = list(
+    factors = factor_colors,
+    outlier = c("FALSE" = "#000000", "TRUE" = "#FFFFFF")
+  )
+
+  left_var = ComplexHeatmap::HeatmapAnnotation(
+    df = sample_info[, c("factors", "outlier")],
+    col = heatmap_colors,
+    which = "row",
+    show_annotation_name = FALSE
+  )
+  bottom_var = ComplexHeatmap::HeatmapAnnotation(
+    df = sample_info[, c("factors", "outlier")],
+    col = heatmap_colors,
+    which = "column",
+    show_legend = FALSE
+  )
+
+  out_heatmap = ComplexHeatmap::Heatmap(
+    matrix = heatmap_data$ici,
+    col = cor_colors,
+    name = "ICI-Kt",
+    right_annotation = left_var,
+    bottom_annotation = bottom_var,
+    show_column_names = FALSE,
+    cluster_columns = pca_group$order$dendrogram$dendrogram,
+    cluster_rows = pca_group$order$dendrogram$dendrogram
+  )
+
+  out_sina = pca_group$pca$pca |>
+    ggplot(aes(
+      x = score,
+      y = factors,
+      color = factors,
+      shape = outlier,
+      group = factors
+    )) +
+    geom_sina(size = 3) +
+    scale_color_manual(values = factor_colors)
+  return(list(pca = pca_plot, heatmap = out_heatmap, median_ici = out_sina))
 }
 
 create_boxplot = function(
@@ -274,9 +405,9 @@ create_boxplot = function(
     levels = levels(sample_metadata$sample_id)
   )
   out_boxplot = abundance_df |>
-    ggplot(aes(x = value, y = sample_id, color = factors, group = sample_id)) +
-    geom_sina() +
-    geom_boxplot(alpha = 0.2) +
+    ggplot(aes(x = value, y = sample_id, group = sample_id)) +
+    geom_sina(aes(color = factors)) +
+    geom_boxplot(alpha = 0) +
     scale_color_manual(values = point_colors_fill) +
     labs(x = "log2(Abundance)")
   out_boxplot

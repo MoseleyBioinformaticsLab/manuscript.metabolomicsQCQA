@@ -132,6 +132,17 @@ add_mwtab_do_left_censored = function(cor_data, setup_data) {
 
   lc_data = count_missingness_testleftcensored(raw_matrix, ssf_wide)
 
+  # removing pieces we don't need because we have
+  # the SE data object now.
+  if (!is.null(setup_data$MS_METABOLITE_DATA)) {
+    setup_data$MS_METABOLITE_DATA = NULL
+  }
+  if (!is.null(setup_data$NMR_METABOLITE_DATA)) {
+    setup_data$NMR_METABOLITE_DATA = NULL
+  }
+  if (!is.null(setup_data$NMR_BINNED_DATA)) {
+    setup_data$NMR_BINNED_DATA = NULL
+  }
   cor_data$raw = NULL
   cor_data$normalized = NULL
   cor_data$ssf = NULL
