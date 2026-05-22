@@ -238,6 +238,11 @@ do_pca = function(abundance_se) {
   list(pca = pca_df, variance = pca_var, anova = pca_anova)
 }
 
+sets_create_qcqa_plots = function(pca_sets) {
+  out_plots = furrr::future_map(pca_sets, create_qcqa_plots)
+  out_plots
+}
+
 create_qcqa_plots = function(in_pca_set) {
   # in_pca_set = pca_sets[[1]]
 

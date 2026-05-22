@@ -54,7 +54,8 @@ sets_map = tar_map(
   tar_target(check_features, sets_check_features(setup)),
   tar_target(cor, sets_run_group_correlations(setup)),
   tar_target(lc, sets_add_mwtab_do_left_censored(cor, setup)),
-  tar_target(pca, sets_run_pca_experimental_design(lc))
+  tar_target(pca, sets_run_pca_experimental_design(lc)),
+  tar_target(qcqa_plots = sets_create_qcqa_graphs(pca))
 )
 
 check_features_all_t = tar_combine(
