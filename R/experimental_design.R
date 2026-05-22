@@ -1,5 +1,14 @@
 determine_experimental_design = function(in_ssf) {
   # in_dataset = tar_read(cor_g06)[[1]]
+  extra_vars = c(
+    "experiment_or_qc",
+    "median_ici_correlation",
+    "outlier_fraction",
+    "score",
+    "outlier"
+  )
+  in_ssf = in_ssf |>
+    dplyr::select(!(tidyselect::all_of(extra_vars)))
   factor_info = count_possible_factors(in_ssf)
 
   n_rows = nrow(factor_info)
@@ -12,7 +21,7 @@ determine_experimental_design = function(in_ssf) {
 
 count_possible_factors = function(ssf) {
   left_over = ssf |>
-    dplyr::select(c(-subject, -sample_id, -factors, -experiment_or_qc))
+    dplyr::select(c(-subject, -sample_id, -factors))
   n_left_over = ncol(left_over)
   n_each = purrr::imap(left_over, \(in_col, id) {
     tibble::tibble(factor = id, n_group = length(unique(in_col)))

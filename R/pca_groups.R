@@ -8,7 +8,7 @@ get_vardata = function(abundance_se, which = "cols") {
 
 sets_run_pca_experimental_design = function(lc_sets) {
   # lc_sets = tar_read(lc_g01); tar_source("R")
-  # pca_sets = purrr::map(lc_sets[1:10], run_pca_experimental_design)
+  # pca_sets = purrr::map(lc_sets, run_pca_experimental_design, .progress = TRUE)
   pca_sets = furrr::future_map(
     lc_sets,
     run_pca_experimental_design
@@ -18,6 +18,7 @@ sets_run_pca_experimental_design = function(lc_sets) {
 
 run_pca_experimental_design = function(in_lc) {
   # in_lc = lc_sets[[1]]
+  # in_lc = lc_sets$AN002911
   tmp_norm = assays(in_lc$abundance)$normalized
   if (
     any(is.na(in_lc$icikt_cor$cor)) ||
@@ -209,10 +210,18 @@ do_pca = function(abundance_se) {
   log_matrix = log1p(norm_matrix)
   pca_res = prcomp(t(log_matrix), center = TRUE, scale. = FALSE)
 
+  extra_vars = c(
+    "experiment_or_qc",
+    "median_ici_correlation",
+    "outlier_fraction",
+    "score",
+    "outlier"
+  )
   pca_var = visualizationQualityControl::visqc_score_contributions(pca_res$x)
   pca_anova = visualizationQualityControl::visqc_test_pca_scores(
     pca_res$x,
-    ssf
+    ssf |>
+      dplyr::select(!(tidyselect::all_of(extra_vars)))
   )
   pca_x = pca_res$x
   pca_df = cbind(as.data.frame(pca_x), ssf)
