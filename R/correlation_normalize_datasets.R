@@ -143,6 +143,8 @@ add_mwtab_do_left_censored = function(cor_data, setup_data) {
   if (!is.null(setup_data$NMR_BINNED_DATA)) {
     setup_data$NMR_BINNED_DATA = NULL
   }
+  setup_data$MEASUREMENTS = NULL
+  setup_data$METABOLITES = NULL
   cor_data$raw = NULL
   cor_data$normalized = NULL
   cor_data$ssf = NULL
