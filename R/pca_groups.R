@@ -8,7 +8,7 @@ get_vardata = function(abundance_se, which = "cols") {
 
 sets_run_pca_experimental_design = function(lc_sets) {
   # lc_sets = tar_read(lc_g01); tar_source("R")
-  # pca_sets = purrr::map(lc_sets, run_pca_experimental_design, .progress = TRUE)
+  # pca_sets = purrr::map(lc_sets[1:10], run_pca_experimental_design, .progress = TRUE)
   pca_sets = furrr::future_map(
     lc_sets,
     run_pca_experimental_design
@@ -385,7 +385,8 @@ create_pca_median_ici_heatmap = function(pca_group, factor_colors, cor_colors) {
       group = factors
     )) +
     geom_sina(size = 3) +
-    scale_color_manual(values = factor_colors)
+    scale_color_manual(values = factor_colors) +
+    theme(legend.position = "top")
   return(list(pca = pca_plot, heatmap = out_heatmap, median_ici = out_sina))
 }
 
@@ -423,6 +424,7 @@ create_boxplot = function(
     geom_sina(aes(color = factors)) +
     geom_boxplot(alpha = 0) +
     scale_color_manual(values = point_colors_fill) +
-    labs(x = "log2(Abundance)")
+    labs(x = "log2(Abundance)") +
+    theme(legend.position = "top")
   out_boxplot
 }

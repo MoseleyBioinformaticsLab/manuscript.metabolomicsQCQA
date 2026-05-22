@@ -12,11 +12,24 @@ determine_experimental_design = function(in_ssf) {
   factor_info = count_possible_factors(in_ssf)
 
   n_rows = nrow(factor_info)
+
+  use_factors = factor_info$factor[seq_len(n_rows - 1)]
+
+  n_by_factor = in_ssf |>
+    dplyr::summarise(
+      `N-Samples` = dplyr::n(),
+      .by = tidyselect::all_of(use_factors)
+    )
+
   summary_df = tibble::tibble(
     n_factors = n_rows - 1,
     n_groups = factor_info$n_group[n_rows]
   )
-  list(summary = summary_df, factor_counts = factor_info)
+  list(
+    summary = summary_df,
+    factor_counts = factor_info,
+    n_by_factor = n_by_factor
+  )
 }
 
 count_possible_factors = function(ssf) {

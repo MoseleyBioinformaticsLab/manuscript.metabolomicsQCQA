@@ -14,6 +14,7 @@ library(ggforce)
 
 suppressWarnings(suppressMessages(library(SummarizedExperiment)))
 
+conflicts_prefer(base::setdiff)
 tar_option_set(memory = "transient")
 options(tflow.report_dir = "docs")
 options(future.globals.maxSize = 2.0 * 1e9)
