@@ -239,7 +239,7 @@ do_pca = function(abundance_se) {
 }
 
 sets_create_qcqa_plots = function(pca_sets) {
-  out_plots = furrr::future_map(pca_sets, create_qcqa_plots)
+  out_plots = purrr::map(pca_sets, create_qcqa_plots)
   out_plots
 }
 
