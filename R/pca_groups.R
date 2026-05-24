@@ -9,10 +9,9 @@ get_vardata = function(abundance_se, which = "cols") {
 sets_run_pca_experimental_design = function(lc_sets) {
   # lc_sets = tar_read(lc_g01); tar_source("R")
   # pca_sets = purrr::map(lc_sets[1:10], run_pca_experimental_design, .progress = TRUE)
-  pca_sets = purrr::map(
+  pca_sets = furrr::future_map(
     lc_sets,
-    run_pca_experimental_design,
-    .progress = TRUE
+    run_pca_experimental_design
   )
   pca_sets
 }
