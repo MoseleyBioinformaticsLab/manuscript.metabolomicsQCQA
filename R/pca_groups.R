@@ -9,9 +9,10 @@ get_vardata = function(abundance_se, which = "cols") {
 sets_run_pca_experimental_design = function(lc_sets) {
   # lc_sets = tar_read(lc_g01); tar_source("R")
   # pca_sets = purrr::map(lc_sets[1:10], run_pca_experimental_design, .progress = TRUE)
-  pca_sets = furrr::future_map(
+  pca_sets = purrr::map(
     lc_sets,
-    run_pca_experimental_design
+    run_pca_experimental_design,
+    .progress = TRUE
   )
   pca_sets
 }
@@ -61,6 +62,10 @@ run_pca_experimental_design = function(in_lc) {
       get_vardata(all_abundance)
     )
   )
+  all_res$scores = dplyr::bind_rows(
+    score_rle(all_res$order$diff_rle),
+    score_median_ici(all_res$order$diff_median_ici)
+  )
 
   no_qc = all_abundance[, all_abundance$experiment_or_qc %in% "experiment"]
   not_outlier = possible_outliers |>
@@ -84,6 +89,12 @@ run_pca_experimental_design = function(in_lc) {
       get_vardata(no_outlier)
     )
   )
+
+  not_outlier_res$scores = dplyr::bind_rows(
+    score_rle(not_outlier_res$order$diff_rle),
+    score_median_ici(not_outlier_res$order$diff_median_ici)
+  )
+
   noqc_res = list(
     pca = do_pca(no_qc),
     design = no_qc |> get_vardata() |> determine_experimental_design(),
@@ -91,6 +102,10 @@ run_pca_experimental_design = function(in_lc) {
       in_lc$icikt_cor,
       get_vardata(no_qc)
     )
+  )
+  noqc_res$scores = dplyr::bind_rows(
+    score_rle(noqc_res$order$diff_rle),
+    score_median_ici(noqc_res$order$diff_median_ici)
   )
 
   noqc_nooutlier = all_abundance[,
@@ -104,6 +119,10 @@ run_pca_experimental_design = function(in_lc) {
       in_lc$icikt_cor,
       get_vardata(noqc_nooutlier)
     )
+  )
+  noqc_nooutlier_res$scores = dplyr::bind_rows(
+    score_rle(noqc_nooutlier_res$order$diff_rle),
+    score_median_ici(noqc_nooutlier_res$order$diff_median_ici)
   )
 
   in_lc$abundance = all_abundance
@@ -268,16 +287,6 @@ create_qcqa_plots = function(in_pca_set) {
     create_pca_median_ici_heatmap,
     factor_colors,
     cor_colors
-  )
-
-  ordering_scores_each = purrr::map(
-    in_pca_set$pca_groups,
-    \(in_group) {
-      dplyr::bind_rows(
-        score_rle(in_group$order$diff_rle),
-        score_median_ici(in_group$order$diff_median_ici)
-      )
-    }
   )
 
   list(
