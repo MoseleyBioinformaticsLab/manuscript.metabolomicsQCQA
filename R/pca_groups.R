@@ -19,6 +19,7 @@ sets_run_pca_experimental_design = function(lc_sets) {
 run_pca_experimental_design = function(in_lc) {
   # in_lc = lc_sets[[1]]
   # in_lc = lc_sets$AN002911
+  # in_lc = lc_sets$AN001749
   tmp_norm = assays(in_lc$abundance)$normalized
   if (
     any(is.na(in_lc$icikt_cor$cor)) ||
@@ -51,20 +52,28 @@ run_pca_experimental_design = function(in_lc) {
     colData(all_abundance),
     just_outlier_info |> dplyr::select(-sample_id)
   )
-  all_res = list(
-    pca = do_pca(all_abundance),
-    design = all_abundance |>
-      get_vardata() |>
-      determine_experimental_design(),
-    order = determine_neigbors_ordering(
-      in_lc$icikt_cor,
-      get_vardata(all_abundance)
+
+  all_res = NULL
+  not_outlier_res = NULL
+  noqc_res = NULL
+  noqc_nooutlier_res = NULL
+
+  if (ncol(all_abundance) > 0) {
+    all_res = list(
+      pca = do_pca(all_abundance),
+      design = all_abundance |>
+        get_vardata() |>
+        determine_experimental_design(),
+      order = determine_neigbors_ordering(
+        in_lc$icikt_cor,
+        get_vardata(all_abundance)
+      )
     )
-  )
-  all_res$scores = dplyr::bind_rows(
-    score_rle(all_res$order$diff_rle),
-    score_median_ici(all_res$order$diff_median_ici)
-  )
+    all_res$scores = dplyr::bind_rows(
+      score_rle(all_res$order$diff_rle),
+      score_median_ici(all_res$order$diff_median_ici)
+    )
+  }
 
   no_qc = all_abundance[, all_abundance$experiment_or_qc %in% "experiment"]
   not_outlier = possible_outliers |>
@@ -80,49 +89,56 @@ run_pca_experimental_design = function(in_lc) {
     not_outlier
   )
 
-  not_outlier_res = list(
-    pca = do_pca(no_outlier),
-    design = no_outlier |> get_vardata() |> determine_experimental_design(),
-    order = determine_neigbors_ordering(
-      in_lc$icikt_cor,
-      get_vardata(no_outlier)
+  if (ncol(no_outlier) > 0) {
+    not_outlier_res = list(
+      pca = do_pca(no_outlier),
+      design = no_outlier |> get_vardata() |> determine_experimental_design(),
+      order = determine_neigbors_ordering(
+        in_lc$icikt_cor,
+        get_vardata(no_outlier)
+      )
     )
-  )
-
-  not_outlier_res$scores = dplyr::bind_rows(
-    score_rle(not_outlier_res$order$diff_rle),
-    score_median_ici(not_outlier_res$order$diff_median_ici)
-  )
-
-  noqc_res = list(
-    pca = do_pca(no_qc),
-    design = no_qc |> get_vardata() |> determine_experimental_design(),
-    order = determine_neigbors_ordering(
-      in_lc$icikt_cor,
-      get_vardata(no_qc)
+    not_outlier_res$scores = dplyr::bind_rows(
+      score_rle(not_outlier_res$order$diff_rle),
+      score_median_ici(not_outlier_res$order$diff_median_ici)
     )
-  )
-  noqc_res$scores = dplyr::bind_rows(
-    score_rle(noqc_res$order$diff_rle),
-    score_median_ici(noqc_res$order$diff_median_ici)
-  )
+  }
+
+  if (ncol(no_qc) > 0) {
+    noqc_res = list(
+      pca = do_pca(no_qc),
+      design = no_qc |> get_vardata() |> determine_experimental_design(),
+      order = determine_neigbors_ordering(
+        in_lc$icikt_cor,
+        get_vardata(no_qc)
+      )
+    )
+    noqc_res$scores = dplyr::bind_rows(
+      score_rle(noqc_res$order$diff_rle),
+      score_median_ici(noqc_res$order$diff_median_ici)
+    )
+  }
 
   noqc_nooutlier = all_abundance[,
     all_abundance$sample_id %in% not_outlier_qc
   ]
 
-  noqc_nooutlier_res = list(
-    pca = do_pca(noqc_nooutlier),
-    design = noqc_nooutlier |> get_vardata() |> determine_experimental_design(),
-    order = determine_neigbors_ordering(
-      in_lc$icikt_cor,
-      get_vardata(noqc_nooutlier)
+  if (ncol(noqc_nooutlier) > 0) {
+    noqc_nooutlier_res = list(
+      pca = do_pca(noqc_nooutlier),
+      design = noqc_nooutlier |>
+        get_vardata() |>
+        determine_experimental_design(),
+      order = determine_neigbors_ordering(
+        in_lc$icikt_cor,
+        get_vardata(noqc_nooutlier)
+      )
     )
-  )
-  noqc_nooutlier_res$scores = dplyr::bind_rows(
-    score_rle(noqc_nooutlier_res$order$diff_rle),
-    score_median_ici(noqc_nooutlier_res$order$diff_median_ici)
-  )
+    noqc_nooutlier_res$scores = dplyr::bind_rows(
+      score_rle(noqc_nooutlier_res$order$diff_rle),
+      score_median_ici(noqc_nooutlier_res$order$diff_median_ici)
+    )
+  }
 
   in_lc$abundance = all_abundance
   in_lc$pca_groups = list(
