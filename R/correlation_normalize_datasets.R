@@ -86,6 +86,20 @@ do_correlation = function(setup_data) {
 }
 
 
+count_features_samples_factors = function(lc_sets) {
+  # lc_sets = tar_read(lc_g04)
+  out_n = purrr::map(lc_sets, \(in_set) {
+    # in_set = lc_sets[[1]]
+    tibble::tibble(
+      id = in_set$id,
+      n_features = nrow(in_set$abundance),
+      n_samples = ncol(in_set$abundance),
+      n_factors = ncol(colData(in_set$abundance)) - 3
+    )
+  }) |>
+    purrr::list_rbind()
+}
+
 sets_add_mwtab_do_left_censored = function(cor_set, setup_set) {
   # cor_set = tar_read(cor_g01); setup_set = tar_read(setup_g01)
 

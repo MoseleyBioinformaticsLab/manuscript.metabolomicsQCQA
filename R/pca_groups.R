@@ -20,6 +20,9 @@ run_pca_experimental_design = function(in_lc) {
   # in_lc = lc_sets[[1]]
   # in_lc = lc_sets$AN002911
   # in_lc = lc_sets$AN001749
+  # in_lc = lc_sets$AN004304
+  # check lc_g04; AN000777; AN001296
+  start_time = Sys.time()
   tmp_norm = assays(in_lc$abundance)$normalized
   if (
     any(is.na(in_lc$icikt_cor$cor)) ||
@@ -140,12 +143,15 @@ run_pca_experimental_design = function(in_lc) {
     )
   }
 
+  end_time = Sys.time()
+  wall_time = difftime(end_time, start_time, units = "secs") |> as.numeric()
   in_lc$abundance = all_abundance
   in_lc$pca_groups = list(
     all = all_res,
     not_outlier = not_outlier_res,
     not_qc = noqc_res,
-    not_outlier_qc = noqc_nooutlier_res
+    not_outlier_qc = noqc_nooutlier_res,
+    wall_time = wall_time
   )
   in_lc
 }
@@ -252,8 +258,14 @@ do_pca = function(abundance_se) {
     "outlier"
   )
   pca_var = visualizationQualityControl::visqc_score_contributions(pca_res$x)
+  pca_90 = which(pca_var$cumulative > 0.9) |> min()
+  if ((length(pca_90) == 0) || is.infinite(pca_90) || is.na(pca_90)) {
+    use_test = seq_len(ncol(pca_res$x))
+  } else {
+    use_test = seq_len(pca_90)
+  }
   pca_anova = visualizationQualityControl::visqc_test_pca_scores(
-    pca_res$x,
+    pca_res$x[, use_test, drop = FALSE],
     ssf |>
       dplyr::select(!(tidyselect::all_of(extra_vars)))
   )
@@ -284,6 +296,15 @@ create_qcqa_plots = function(in_pca_set) {
   factor_colors = scales::hue_pal()(length(all_factors))
   names(factor_colors) = all_factors
 
+  n_factors = length(all_factors)
+  if (n_factors <= 3) {
+    guide_nrow = 1
+    guide_ncol = 3
+  } else {
+    guide_ncol = 3
+    guide_nrow = ceiling(n_factors / guide_ncol)
+  }
+
   n_value = 40
   cor_colors = circlize::colorRamp2(
     seq(-1, 1, length.out = n_value),
@@ -294,21 +315,34 @@ create_qcqa_plots = function(in_pca_set) {
 
   sample_metadata = get_vardata(in_pca_set$abundance)
 
-  raw_boxplot = create_boxplot(raw_abundance, sample_metadata, factor_colors)
-  norm_boxplot = create_boxplot(norm_abundance, sample_metadata, factor_colors)
+  raw_boxplot = create_boxplot(
+    raw_abundance,
+    sample_metadata,
+    factor_colors,
+    guide_nrow,
+    guide_ncol
+  )
+  norm_boxplot = create_boxplot(
+    norm_abundance,
+    sample_metadata,
+    factor_colors,
+    guide_nrow,
+    guide_ncol
+  )
 
   pca_heatmap_median_ici_each = purrr::map(
     in_pca_set$pca_groups,
     create_pca_median_ici_heatmap,
     factor_colors,
-    cor_colors
+    cor_colors,
+    guide_nrow,
+    guide_ncol
   )
 
   list(
     raw = raw_boxplot,
     normalized = norm_boxplot,
-    iterative_plots = pca_heatmap_median_ici_each,
-    scores = ordering_scores_each
+    iterative_plots = pca_heatmap_median_ici_each
   )
 }
 
@@ -338,14 +372,14 @@ score_median_ici = function(ici_df) {
   # ici_df = pca_group$order$diff_median_ici
   ici_summary_all = ici_df |>
     dplyr::summarise(
-      grp_diff = sum(w_b_better) - dplyr::n(),
+      grp_diff = sum(!w_b_better),
       grp_ideal = dplyr::n(),
       fraction_diff = grp_diff / grp_ideal,
       factors = "all"
     )
   ici_summary_group = ici_df |>
     dplyr::summarise(
-      grp_diff = sum(w_b_better) - dplyr::n(),
+      grp_diff = sum(!w_b_better),
       grp_ideal = dplyr::n(),
       fraction_diff = grp_diff / grp_ideal,
       .by = factors
@@ -354,12 +388,28 @@ score_median_ici = function(ici_df) {
     dplyr::mutate(method = "median-ici")
 }
 
-create_pca_median_ici_heatmap = function(pca_group, factor_colors, cor_colors) {
+create_pca_median_ici_heatmap = function(
+  pca_group,
+  factor_colors,
+  cor_colors,
+  guide_nrow,
+  guide_ncol
+) {
   # pca_group = in_pca_set$pca_groups$all
   pca_plot = pca_group$pca$pca |>
     ggplot(aes(x = PC1, y = PC2, color = factors, shape = outlier)) +
     geom_point(size = 3) +
-    scale_color_manual(values = factor_colors)
+    scale_color_manual(values = factor_colors) +
+    theme(
+      legend.position = "top",
+      legend.location = "plot",
+      legend.justification.top = "left",
+      plot.title.position = "plot"
+    ) +
+    guides(
+      color = guide_legend(ncol = guide_ncol, nrow = guide_nrow),
+      shape = guide_legend(ncol = 1)
+    )
 
   heatmap_data = pca_group$order
 
@@ -396,13 +446,14 @@ create_pca_median_ici_heatmap = function(pca_group, factor_colors, cor_colors) {
     right_annotation = left_var,
     bottom_annotation = bottom_var,
     show_column_names = FALSE,
+    show_row_names = FALSE,
     cluster_columns = pca_group$order$dendrogram$dendrogram,
     cluster_rows = pca_group$order$dendrogram$dendrogram
   )
 
   out_sina = pca_group$pca$pca |>
     ggplot(aes(
-      x = score,
+      x = median_ici_correlation,
       y = factors,
       color = factors,
       shape = outlier,
@@ -410,14 +461,25 @@ create_pca_median_ici_heatmap = function(pca_group, factor_colors, cor_colors) {
     )) +
     geom_sina(size = 3) +
     scale_color_manual(values = factor_colors) +
-    theme(legend.position = "top")
+    theme(
+      legend.position = "top",
+      legend.location = "plot",
+      legend.justification.top = "left",
+      plot.title.position = "plot"
+    ) +
+    guides(
+      color = guide_legend(nrow = guide_nrow, ncol = guide_ncol),
+      shape = guide_legend(ncol = 1)
+    )
   return(list(pca = pca_plot, heatmap = out_heatmap, median_ici = out_sina))
 }
 
 create_boxplot = function(
   abundance_matrix,
   sample_metadata,
-  point_colors_fill
+  point_colors_fill,
+  guide_nrow,
+  guide_ncol
 ) {
   # abundance_matrix = raw_abundance; point_colors_fill = factor_colors
   sample_metadata = sample_metadata |>
@@ -449,6 +511,12 @@ create_boxplot = function(
     geom_boxplot(alpha = 0) +
     scale_color_manual(values = point_colors_fill) +
     labs(x = "log2(Abundance)") +
-    theme(legend.position = "top")
+    theme(
+      legend.position = "top",
+      legend.location = "plot",
+      legend.justification.top = "left",
+      plot.title.position = "plot"
+    ) +
+    guides(color = guide_legend(nrow = guide_nrow, ncol = guide_ncol))
   out_boxplot
 }
