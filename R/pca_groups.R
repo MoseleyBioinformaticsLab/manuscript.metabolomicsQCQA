@@ -22,6 +22,7 @@ run_pca_experimental_design = function(in_lc) {
   # in_lc = lc_sets$AN001749
   # in_lc = lc_sets$AN004304
   # check lc_g04; AN000777; AN001296
+  # lc_sets = tar_read(lc_g10); in_lc = lc_sets$AN003604; tar_source("R")
   start_time = Sys.time()
   tmp_norm = assays(in_lc$abundance)$normalized
   if (
@@ -331,7 +332,7 @@ create_qcqa_plots = function(in_pca_set) {
   )
 
   pca_heatmap_median_ici_each = purrr::map(
-    in_pca_set$pca_groups,
+    in_pca_set$pca_groups[c("all", "not_outlier", "not_qc", "not_outlier_qc")],
     create_pca_median_ici_heatmap,
     factor_colors,
     cor_colors,
@@ -520,3 +521,32 @@ create_boxplot = function(
     guides(color = guide_legend(nrow = guide_nrow, ncol = guide_ncol))
   out_boxplot
 }
+
+sets_extract_grouping_scores = function(pca_sets) {
+  # pca_sets = tar_read(pca_g06); tar_source("R")
+  out_scores = purrr::map(pca_sets, extract_grouping_scores) |>
+    purrr::list_rbind()
+  out_scores
+}
+
+extract_grouping_scores = function(in_pca) {
+  analysis_id = in_pca$id
+  if (is.null(in_pca[["pca_groups"]])) {
+    return(NULL)
+  }
+  out_df = purrr::imap(
+    in_pca$pca_groups[c("all", "not_outlier", "not_qc", "not_outlier_qc")],
+    \(pca_group, id) {
+      # id = "all"
+      # pca_group = in_pca$pca_groups[[id]]
+      tmp_score = pca_group$scores
+      tmp_score$sample_set = id
+      tmp_score$analysis_id = analysis_id
+      tmp_score
+    }
+  ) |>
+    purrr::list_rbind()
+  out_df
+}
+
+create_pca_anova_table = function() {}

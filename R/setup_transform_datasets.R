@@ -15,6 +15,7 @@ read_rds_setup_data = function(rds_file, md5_sum) {
   # md5_sum = "0e22eb16e4debdc1fc55a4c2b58767df"
 
   # rds_file = "parsed_rds/AN000112.rds"
+  # rds_file = "parsed_rds/AN003604.rds"
 
   processed_data = readRDS(rds_file)
   check_md5(processed_data, md5_sum)

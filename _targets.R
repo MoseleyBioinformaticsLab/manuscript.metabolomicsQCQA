@@ -47,6 +47,8 @@ group_sets_t = tar_target(
   filter_good_experiments_splitup(check_result, "parsed_rds/group_sets.rds")
 )
 
+report_file_t = tar_file(report_file, "resources/example_report.qmd")
+
 sets_map = tar_map(
   group_sets,
   names = group,
@@ -54,13 +56,29 @@ sets_map = tar_map(
   tar_target(check_features, sets_check_features(setup)),
   tar_target(cor, sets_run_group_correlations(setup)),
   tar_target(lc, sets_add_mwtab_do_left_censored(cor, setup)),
-  tar_target(pca, sets_run_pca_experimental_design(lc))
+  tar_target(pca, sets_run_pca_experimental_design(lc)),
+  tar_target(group_scores, sets_extract_grouping_scores(pca)),
+  tar_target(
+    reports,
+    sets_create_qcqa_reports(pca, "qcqa_reports", report_file)
+  )
 )
 
 check_features_all_t = tar_combine(
   check_features_all,
   sets_map[[2]],
   command = dplyr::bind_rows(!!!.x)
+)
+
+group_scores_all_t = tar_combine(
+  group_scores_all,
+  sets_map[[6]],
+  command = dplyr::bind_rows(!!!.x)
+)
+
+group_scores_plot_t = tar_target(
+  group_scores_plots,
+  plot_group_scores(group_scores_all)
 )
 
 # setup_map = tar_map(
@@ -74,5 +92,8 @@ list(
   check_result_t,
   group_sets_t,
   sets_map,
-  check_features_all_t
+  check_features_all_t,
+  group_scores_all_t,
+  group_scores_plot_t,
+  report_file_t
 )
