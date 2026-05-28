@@ -293,7 +293,8 @@ sets_create_qcqa_plots = function(pca_sets) {
 create_qcqa_plots = function(in_pca_set) {
   # in_pca_set = pca_sets[[1]]
 
-  all_factors = unique(in_pca_set$abundance$factors)
+  sample_metadata = get_vardata(in_pca_set$abundance)
+  all_factors = unique(sample_metadata$factors)
   factor_colors = scales::hue_pal()(length(all_factors))
   names(factor_colors) = all_factors
 
@@ -313,8 +314,6 @@ create_qcqa_plots = function(in_pca_set) {
   )
   raw_abundance = log2(assays(in_pca_set$abundance)$raw)
   norm_abundance = log2(assays(in_pca_set$abundance)$normalized)
-
-  sample_metadata = get_vardata(in_pca_set$abundance)
 
   raw_boxplot = create_boxplot(
     raw_abundance,
@@ -351,16 +350,16 @@ score_rle = function(rle_df) {
   # rle_df = pca_group$order$diff_rle
   rle_summary_all = rle_df |>
     dplyr::summarise(
-      grp_diff = sum(diff),
-      grp_ideal = sum(length.ideal),
-      fraction_diff = grp_diff / grp_ideal,
+      n_differences = sum(diff),
+      group_size = sum(length.ideal),
+      differences_fraction = n_differences / group_size,
       factors = "all"
     )
   rle_summary_group = rle_df |>
     dplyr::summarise(
-      grp_diff = sum(diff),
-      grp_ideal = sum(length.ideal),
-      fraction_diff = grp_diff / grp_ideal,
+      n_differences = sum(diff),
+      group_size = sum(length.ideal),
+      differences_fraction = n_differences / group_size,
       .by = value
     ) |>
     dplyr::mutate(factors = value) |>
@@ -373,16 +372,16 @@ score_median_ici = function(ici_df) {
   # ici_df = pca_group$order$diff_median_ici
   ici_summary_all = ici_df |>
     dplyr::summarise(
-      grp_diff = sum(!w_b_better),
-      grp_ideal = dplyr::n(),
-      fraction_diff = grp_diff / grp_ideal,
+      n_differences = sum(!w_b_better),
+      group_size = dplyr::n(),
+      differences_fraction = n_differences / group_size,
       factors = "all"
     )
   ici_summary_group = ici_df |>
     dplyr::summarise(
-      grp_diff = sum(!w_b_better),
-      grp_ideal = dplyr::n(),
-      fraction_diff = grp_diff / grp_ideal,
+      n_differences = sum(!w_b_better),
+      group_size = dplyr::n(),
+      differences_fraction = n_differences / group_size,
       .by = factors
     )
   dplyr::bind_rows(ici_summary_all, ici_summary_group) |>
