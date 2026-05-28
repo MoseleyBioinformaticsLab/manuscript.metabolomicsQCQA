@@ -454,8 +454,8 @@ run_mwtab_checks_json = function(
     names(processed_mwtab$MEASUREMENTS)
   )
 
-  measurement_diff_samples = base::setdiff(
-    names(processed_mwtab$MEASUREMENTS),
+  has_different_samples = check_for_different_samples(
+    processed_mwtab$MEASUREMENTS,
     unique_samples
   )
 
@@ -476,7 +476,7 @@ run_mwtab_checks_json = function(
     check_res$ssf = "no common samples"
     return(check_res)
   }
-  if (length(measurement_diff_samples) > 0) {
+  if (length(has_different_samples) > 0) {
     check_res$ssf = "measurements have different samples"
     return(check_res)
   }
@@ -542,6 +542,18 @@ run_mwtab_checks_json = function(
   }
 
   check_res
+}
+
+check_for_different_samples = function(
+  measurement_df,
+  unique_samples
+) {
+  # measurement_df = processed_mwtab$MEASUREMENTS
+  numeric_cols = purrr::map_lgl(measurement_df, is.numeric)
+  compare_names = names(measurement_df)[numeric_cols]
+
+  diff_samples = base::setdiff(compare_names, unique_samples)
+  diff_samples
 }
 
 check_dynamic_range_single_sample = function(
