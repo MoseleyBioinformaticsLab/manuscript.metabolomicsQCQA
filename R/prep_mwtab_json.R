@@ -380,6 +380,7 @@ run_mwtab_checks_json = function(
   # processed_mwtab = tar_read(processed)[[28]]
   # processed_mwtab = tar_read(processed)[[60]]
   # processed_rds = tar_read(processed)[[575]]
+  # processed_rds = tar_read(processed)[[3182]]
   # min_n = 3
   # min_metabolites = 50
   # max_min_value = 20
@@ -452,6 +453,12 @@ run_mwtab_checks_json = function(
     unique_samples,
     names(processed_mwtab$MEASUREMENTS)
   )
+
+  measurement_diff_samples = base::setdiff(
+    names(processed_mwtab$MEASUREMENTS),
+    unique_samples
+  )
+
   # match_samples = purrr::map(unique_samples, \(x) {
   #   tmp = grep(x, colnames(processed_mwtab$MEASUREMENTS), value = TRUE)
   #   if (length(tmp) == 1) {
@@ -462,8 +469,15 @@ run_mwtab_checks_json = function(
   # }) |>
   #   purrr::list_rbind()
 
-  if ((is.null(match_samples)) || (length(match_samples) == 0)) {
+  if (
+    (is.null(match_samples)) ||
+      (length(match_samples) == 0)
+  ) {
     check_res$ssf = "no common samples"
+    return(check_res)
+  }
+  if (length(measurement_diff_samples) > 0) {
+    check_res$ssf = "measurements have different samples"
     return(check_res)
   }
   ssf_data2 = ssf_data |>
