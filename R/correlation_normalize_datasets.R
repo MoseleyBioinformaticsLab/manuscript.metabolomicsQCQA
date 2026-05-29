@@ -53,6 +53,8 @@ count_missingness_testleftcensored = function(raw_matrix, ssf_wide) {
 do_correlation = function(setup_data) {
   # setup_data = in_group[[1]]
   raw_matrix = get_just_values(setup_data$MEASUREMENTS)
+  missing_matrix = setup_missing_matrix(raw_matrix, c(0, NA, Inf))
+  raw_matrix[missing_matrix] = NA
 
   n_cores = future::nbrOfWorkers()
 

@@ -71,7 +71,8 @@ run_pca_experimental_design = function(in_lc) {
       order = determine_neigbors_ordering(
         in_lc$icikt_cor,
         get_vardata(all_abundance)
-      )
+      ),
+      rsd = calculate_variance_stuff(all_abundance)
     )
     all_res$scores = dplyr::bind_rows(
       score_rle(all_res$order$diff_rle),
