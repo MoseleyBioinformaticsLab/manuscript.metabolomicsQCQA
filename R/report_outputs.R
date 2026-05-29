@@ -1,7 +1,7 @@
 sets_create_qcqa_reports = function(
   pca_sets,
   save_loc = "qcqa_reports",
-  report_file = "R/example_report.qmd"
+  report_file = "resources/example_report.qmd"
 ) {
   # qcqa_plots_sets = tar_read(qcqa_plots_g01); pca_sets = tar_read(pca_g01)
   out_reports = purrr::map(
@@ -17,7 +17,7 @@ create_report_from_example = function(in_pca, save_loc, report_file) {
   if (is.null(in_pca[["pca_groups"]])) {
     return(list(id = analysis_id, file = NULL, md5 = NULL))
   }
-  rds_line = 53
+  rds_line = 59
   study_link_line = 17
 
   report_text = suppressWarnings(readLines(report_file))
@@ -42,7 +42,7 @@ create_report_from_example = function(in_pca, save_loc, report_file) {
   q_res = quarto::quarto_render(
     tmp_files[2],
     execute_dir = here::here(),
-    quiet = TRUE
+    quiet = FALSE
   )
   tmp_qmd = tmp_files[2]
   tmp_html = tmp_qmd
@@ -75,4 +75,117 @@ get_study_id_link = function(mwtab_data) {
     analysis_link = analysis_link,
     study_link = study_link
   ))
+}
+
+create_pca_anova_table = function(anova_results) {
+  tmp_anova = anova_results |>
+    dplyr::filter(!is.na(df))
+  use_pcs = c("PC1", "PC2", "PC3", "PC4", "PC5")
+  tmp_anova |>
+    dplyr::select(PC, variable, p.value, df, sumsq, meansq, statistic) |>
+    dplyr::filter(PC %in% use_pcs, p.value <= 0.05) |>
+    dplyr::arrange(PC, p.value) |>
+    gt::gt() |>
+    gt::fmt_integer(columns = df) |>
+    gt::fmt_number(columns = c(sumsq, meansq, statistic), decimals = 1) |>
+    gt::fmt_engineering(columns = p.value, decimals = 2)
+}
+
+calculate_variance_stuff = function(in_abundance) {
+  sample_metadata = get_vardata(in_abundance)
+  all_factors = unique(sample_metadata$factors)
+
+  raw_abundance = assays(in_abundance)$raw
+  norm_abundance = assays(in_abundance)$normalized
+
+  raw_rsd = calculate_rsd_matrix(raw_abundance, sample_metadata, all_factors) |>
+    dplyr::filter(n >= 3) |>
+    dplyr::mutate(data = "r")
+  norm_rsd = calculate_rsd_matrix(
+    norm_abundance,
+    sample_metadata,
+    all_factors
+  ) |>
+    dplyr::filter(n >= 3) |>
+    dplyr::mutate(data = "n")
+
+  all_rsd = dplyr::bind_rows(raw_rsd, norm_rsd) |>
+    dplyr::mutate(factors_data = paste0(factors, "-", data))
+  all_rsd_median = all_rsd |>
+    dplyr::summarise(median = median(rsd, na.rm = TRUE), .by = c(factors, data))
+  raw_medians = matrixStats::colMedians(raw_abundance, na.rm = TRUE)
+  raw_medians_rsd = sd(raw_medians) / mean(raw_medians)
+  norm_medians = matrixStats::colMedians(norm_abundance, na.rm = TRUE)
+  norm_medians_rsd = sd(norm_medians) / mean(norm_medians)
+
+  list(
+    all_rsd = all_rsd,
+    all_rsd_median = all_rsd_median,
+    raw_medians_rsd = raw_median_rsd,
+    norm_medians_rsd = norm_medians_rsd
+  )
+}
+
+setup_missing_matrix = function(data_matrix, global_na) {
+  exclude_loc = matrix(
+    FALSE,
+    nrow = nrow(data_matrix),
+    ncol = ncol(data_matrix)
+  )
+  rownames(exclude_loc) = rownames(data_matrix)
+  colnames(exclude_loc) = colnames(data_matrix)
+  if (length(global_na) > 0) {
+    if (any(is.na(global_na))) {
+      exclude_loc[is.na(data_matrix)] = TRUE
+      global_na = global_na[!is.na(global_na)]
+    }
+    if (any(is.infinite(global_na))) {
+      exclude_loc[is.infinite(data_matrix)] = TRUE
+      global_na = global_na[!is.infinite(global_na)]
+    }
+  }
+  if (length(global_na) > 0) {
+    for (ival in global_na) {
+      exclude_loc[data_matrix == ival] = TRUE
+    }
+  }
+
+  return(exclude_loc)
+}
+
+
+calculate_rsd_matrix = function(
+  abundance_matrix,
+  sample_metadata,
+  all_factors
+) {
+  sample_metadata = sample_metadata |>
+    dplyr::arrange(factors, sample_id)
+  abundance_matrix = abundance_matrix[, sample_metadata$sample_id]
+
+  sample_metadata$factors = factor(
+    sample_metadata$factors,
+    levels = all_factors
+  )
+
+  abundance_df = abundance_matrix |>
+    as.data.frame() |>
+    tibble::rownames_to_column(var = "feature_id") |>
+    tidyr::pivot_longer(cols = -feature_id, names_to = "sample_id")
+  abundance_df = dplyr::left_join(
+    abundance_df,
+    sample_metadata[, c("sample_id", "factors")],
+    by = "sample_id"
+  )
+
+  abundance_summary = abundance_df |>
+    dplyr::filter(!is.na(value)) |>
+    dplyr::summarise(
+      n = dplyr::n(),
+      mean = mean(value),
+      sd = sd(value),
+      rsd = sd / mean,
+      .by = c(feature_id, factors)
+    )
+  abundance_summary
 }
