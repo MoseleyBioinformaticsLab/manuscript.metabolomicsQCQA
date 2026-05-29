@@ -101,7 +101,8 @@ run_pca_experimental_design = function(in_lc) {
       order = determine_neigbors_ordering(
         in_lc$icikt_cor,
         get_vardata(no_outlier)
-      )
+      ),
+      rsd = calculate_variance_stuff(all_abundance)
     )
     not_outlier_res$scores = dplyr::bind_rows(
       score_rle(not_outlier_res$order$diff_rle),
@@ -116,7 +117,8 @@ run_pca_experimental_design = function(in_lc) {
       order = determine_neigbors_ordering(
         in_lc$icikt_cor,
         get_vardata(no_qc)
-      )
+      ),
+      rsd = calculate_variance_stuff(all_abundance)
     )
     noqc_res$scores = dplyr::bind_rows(
       score_rle(noqc_res$order$diff_rle),
@@ -137,7 +139,8 @@ run_pca_experimental_design = function(in_lc) {
       order = determine_neigbors_ordering(
         in_lc$icikt_cor,
         get_vardata(noqc_nooutlier)
-      )
+      ),
+      rsd = calculate_variance_stuff(all_abundance)
     )
     noqc_nooutlier_res$scores = dplyr::bind_rows(
       score_rle(noqc_nooutlier_res$order$diff_rle),
