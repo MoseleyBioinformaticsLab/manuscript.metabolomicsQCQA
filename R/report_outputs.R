@@ -121,7 +121,7 @@ calculate_variance_stuff = function(in_abundance) {
   list(
     all_rsd = all_rsd,
     all_rsd_median = all_rsd_median,
-    raw_medians_rsd = raw_median_rsd,
+    raw_medians_rsd = raw_medians_rsd,
     norm_medians_rsd = norm_medians_rsd
   )
 }
