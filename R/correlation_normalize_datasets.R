@@ -175,11 +175,11 @@ determine_qc_samples = function(ssf_long) {
   is_pooled_qc = ssf_long |>
     dplyr::filter(
       grepl(
-        ".*pool.*|.*qc.*|.*blank.*",
+        ".*pool.*|.*qc.*|.*blank.*|.*quality.*",
         sample_id,
         ignore.case = TRUE
       ) |
-        grepl(".*pool.*|.*qc.*|.*blank.*", item, ignore.case = TRUE)
+        grepl(".*pool.*|.*qc.*|.*blank.*|.*quality.*", item, ignore.case = TRUE)
     ) |>
     dplyr::pull(sample_id)
 }
