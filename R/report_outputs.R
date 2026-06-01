@@ -4,10 +4,12 @@ sets_create_qcqa_reports = function(
   report_file = "resources/example_report.qmd"
 ) {
   # pca_sets = tar_read(pca_g01); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"
+  # pca_sets = tar_read(pca_g13); tar_source("R"); save_loc = "qcqa_reports";   report_file = "resources/example_report.qmd"
 
   sets_tmp_files = purrr::map(names(pca_sets), \(in_id) {
     paste0(tempfile(paste0(in_id, "_")), c(".rds", ".qmd"))
   })
+  names(sets_tmp_files) = names(pca_sets)
   out_reports = furrr::future_map2(
     pca_sets,
     sets_tmp_files,
@@ -281,4 +283,14 @@ create_variance_values = function(variance_table, ind = "PC2", group = "PC5") {
   names(group_value) = group
 
   list(plot = plot_result, table = group_result)
+}
+
+add_total_samples_by_factor = function(n_by_factor_factors) {
+  # n_by_factor = use_pca$pca_groups$all$design$n_by_factor
+  tot = n_by_factor_factors |>
+    dplyr::summarise(
+      factors = "All",
+      `N-Samples` = sum(`N-Samples`)
+    )
+  dplyr::bind_rows(n_by_factor_factors, tot)
 }

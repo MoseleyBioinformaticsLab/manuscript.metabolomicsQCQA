@@ -111,6 +111,7 @@ sets_add_mwtab_do_left_censored = function(cor_set, setup_set) {
 
 add_mwtab_do_left_censored = function(cor_data, setup_data) {
   # cor_data = cor_set[[11]]; setup_data = setup_set[[11]]
+  # cor_data = cor_set$AN000123; setup_data = setup_set$AN000123
   stopifnot(cor_data$id == setup_data$ID)
   raw_matrix = get_just_values(cor_data$raw)
   ssf_wide = cor_data$ssf

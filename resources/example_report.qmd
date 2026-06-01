@@ -101,13 +101,25 @@ use_pca$mwtab$SUBJECT |>
   gt::tab_options(column_labels.hidden = TRUE)
 ```
 
+```{r}
+#| label: tbl-mw-analysis-info
+#| tbl-cap: Metabolomics workbench analysis information.
+use_pca$mwtab$ANALYSIS |>
+  gt::gt() |>
+  gt::tab_options(column_labels.hidden = TRUE)
+```
+
+## N-Samples by Factors and Features
 
 ```{r}
 #| label: tbl-experimental-factors
 #| tbl-cap: Number of samples in each group of factors.
-use_pca$pca_groups$all$design$n_by_factor |>
+use_pca$pca_groups$all$design$n_by_factor_factors |>
+  add_total_samples_n_by_factors() |>
   gt::gt()
 ```
+
+Number of features with a non-missing value in at least one sample: `{r} nrow(use_pca$abundance)`.
 
 ## Quality Control / Quality Assurance
 
@@ -124,6 +136,7 @@ Left censorship test results:
 if (!is.null(use_pca$left_censorship[["lc_test"]])) {
   use_pca$left_censorship$lc_test$values |>
     dplyr::select(class, trials, success) |>
+    dplyr::transmute(factors = class, trials = trials, success = success) |>
     gt::gt()
 } else {
   message("No left-censorship test results.")

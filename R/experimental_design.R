@@ -20,6 +20,12 @@ determine_experimental_design = function(in_ssf) {
       `N-Samples` = dplyr::n(),
       .by = tidyselect::all_of(use_factors)
     )
+  n_by_factor_factors = in_ssf |>
+    dplyr::select(factors, sample_id) |>
+    dplyr::summarise(
+      `N-Samples` = dplyr::n(),
+      .by = factors
+    )
 
   summary_df = tibble::tibble(
     n_factors = n_rows - 1,
@@ -28,7 +34,8 @@ determine_experimental_design = function(in_ssf) {
   list(
     summary = summary_df,
     factor_counts = factor_info,
-    n_by_factor = n_by_factor
+    n_by_factor = n_by_factor,
+    n_by_factor_factors = n_by_factor_factors
   )
 }
 
