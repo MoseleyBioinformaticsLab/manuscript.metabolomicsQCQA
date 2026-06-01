@@ -81,6 +81,11 @@ group_scores_plot_t = tar_target(
   plot_group_scores(group_scores_all)
 )
 
+manuscript_t = tar_quarto(
+  manuscript,
+  "docs/manuscript.qmd",
+  output_file = "docs/qcqa_manuscript.docx"
+)
 # setup_map = tar_map(
 #   json_all_map[[4]],
 #   tar_target(setup, run_setup)
