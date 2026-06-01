@@ -3,21 +3,31 @@ sets_create_qcqa_reports = function(
   save_loc = "qcqa_reports",
   report_file = "resources/example_report.qmd"
 ) {
-  # qcqa_plots_sets = tar_read(qcqa_plots_g01); pca_sets = tar_read(pca_g01)
-  out_reports = purrr::map(
+  # pca_sets = tar_read(pca_g01); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"
+
+  sets_tmp_files = purrr::map(names(pca_sets), \(in_id) {
+    paste0(tempfile(paste0(in_id, "_")), c(".rds", ".qmd"))
+  })
+  out_reports = furrr::future_map2(
     pca_sets,
+    sets_tmp_files,
     create_report_from_example,
     save_loc,
     report_file
   )
   out_reports
 }
-create_report_from_example = function(in_pca, save_loc, report_file) {
+create_report_from_example = function(
+  in_pca,
+  in_tmp_files,
+  save_loc = "qcqa_reports",
+  report_file = "resources/example_report.qmd"
+) {
   analysis_id = in_pca$id
   if (is.null(in_pca[["pca_groups"]])) {
     return(list(id = analysis_id, file = NULL, md5 = NULL))
   }
-  rds_line = 59
+  rds_line = 63
   study_link_line = 17
 
   report_text = suppressWarnings(readLines(report_file))
@@ -31,22 +41,23 @@ create_report_from_example = function(in_pca, save_loc, report_file) {
   analysis_link = study_info$analysis_link
 
   study_template_out = glue::glue(study_template_text)
+  if (length(study_template_out) == 0) {
+    study_template_out = "No study information found."
+  }
   report_text[study_link_line] = study_template_out
 
-  tmp_files = paste0(tempfile(pattern = in_pca$id), c(".rds", ".qmd"))
-  saveRDS(in_pca, file = tmp_files[1])
-  read_files = glue::glue('use_pca = readRDS("{tmp_files[1]}")')
+  saveRDS(in_pca, file = in_tmp_files[1])
+  read_files = glue::glue('use_pca = readRDS("{in_tmp_files[1]}")')
   report_text[rds_line] = read_files
-  cat(report_text, file = tmp_files[2], sep = "\n")
+  cat(report_text, file = in_tmp_files[2], sep = "\n")
   final_html = fs::path(save_loc, glue::glue("{in_pca$id}.html"))
   q_res = quarto::quarto_render(
-    tmp_files[2],
+    in_tmp_files[2],
     execute_dir = here::here(),
-    quiet = FALSE
+    quiet = TRUE
   )
-  tmp_qmd = tmp_files[2]
-  tmp_html = tmp_qmd
-  fs::path_ext(tmp_html) = "html"
+  tmp_qmd = in_tmp_files[2]
+  tmp_html = fs::path_ext_set(tmp_qmd, "html")
 
   fs::file_copy(tmp_html, final_html, overwrite = TRUE)
   return(list(
@@ -188,4 +199,86 @@ calculate_rsd_matrix = function(
       .by = c(feature_id, factors)
     )
   abundance_summary
+}
+
+create_rsd_plot = function(all_rsd) {
+  # all_rsd = use_pca$pca_groups$all$rsd$all_rsd
+
+  rsd_plot = all_rsd |>
+    ggplot(aes(x = rsd, y = factors_data, color = data, group = factors_data)) +
+    geom_sina() +
+    geom_boxplot(alpha = 0, color = "black") +
+    theme(
+      legend.position = "top",
+      legend.location = "plot",
+      legend.justification.top = "left",
+      plot.title.position = "plot"
+    )
+  rsd_plot
+}
+
+create_rsd_comparison_table = function(all_rsd_median) {
+  # all_rsd_median = use_pca$pca_groups$all$rsd$all_rsd_median
+  rsd_compare_table = all_rsd_median |>
+    tidyr::pivot_wider(
+      id_cols = factors,
+      names_from = data,
+      values_from = median
+    ) |>
+    dplyr::transmute(
+      factors = factors,
+      raw = r,
+      normalized = n,
+      `normalized - raw` = normalized - raw
+    ) |>
+    gt::gt() |>
+    gt::fmt_number(decimals = 2)
+  rsd_compare_table
+}
+
+create_grouping_scores_table = function(
+  score_table,
+  score_method = "median-ici"
+) {
+  score_table |>
+    dplyr::filter(method %in% score_method) |>
+    dplyr::select(-method) |>
+    dplyr::select(factors, differences_fraction, n_differences, group_size) |>
+    gt::gt() |>
+    gt::fmt_number(columns = differences_fraction, decimals = 2)
+}
+
+create_variance_values = function(variance_table, ind = "PC2", group = "PC5") {
+  # variance_table = use_pca$pca_groups$all$pca$variance; ind = "PC2"; group = "PC5"
+  ind_indices = seq_len(which(variance_table$pc %in% ind))
+  ind_values = variance_table$percent[ind_indices]
+  names(ind_values) = variance_table$pc[ind_indices]
+
+  ind_values = c(
+    ind_values,
+    "cumulative" = variance_table$cumulative[ind_indices[length(ind_indices)]]
+  )
+
+  ind_print = paste0(format(ind_values * 100, digits = 2), "%")
+
+  plot_result = glue::glue(
+    "PCA sample scores plot, with samples colored by combination of factors. Variance explained by PC1: {ind_print[1]}; PC2: {ind_print[2]}; combined: {ind_print[3]}."
+  )
+
+  if (!(group %in% variance_table$pc)) {
+    group = variance_table$pc[nrow(variance_table)]
+  }
+  group_value = c(
+    group = variance_table |>
+      dplyr::filter(pc %in% group) |>
+      dplyr::pull(cumulative)
+  )
+  n_group = which(variance_table$pc %in% group)
+  group_print = paste0(format(group_value * 100, digits = 2), "%")
+  group_result = glue::glue(
+    "PC-variable ANOVA results for PCs 1 - {n_group}, and p-value <= 0.05, arranged by PC and p-value. Cumulative variance accounted for is {group_print}."
+  )
+  names(group_value) = group
+
+  list(plot = plot_result, table = group_result)
 }

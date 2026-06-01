@@ -16,6 +16,18 @@ sets_run_pca_experimental_design = function(lc_sets) {
   pca_sets
 }
 
+get_pca_run_times = function(pca_sets) {
+  out_time = purrr::imap(pca_sets, \(x, id) {
+    if (!is.null(x[["pca_groups"]])) {
+      tibble::tibble(id = id, time = x$pca_groups$wall_time)
+    } else {
+      NULL
+    }
+  }) |>
+    purrr::list_rbind()
+  out_time
+}
+
 run_pca_experimental_design = function(in_lc) {
   # in_lc = lc_sets[[1]]
   # in_lc = lc_sets$AN002911
@@ -399,6 +411,14 @@ create_pca_median_ici_heatmap = function(
   guide_nrow,
   guide_ncol
 ) {
+  if (is.null(pca_group)) {
+    return(list(
+      eval = FALSE,
+      pca = NULL,
+      heatmap = NULL,
+      median_ici = NULL
+    ))
+  }
   # pca_group = in_pca_set$pca_groups$all
   pca_plot = pca_group$pca$pca |>
     ggplot(aes(x = PC1, y = PC2, color = factors, shape = outlier)) +
@@ -475,7 +495,12 @@ create_pca_median_ici_heatmap = function(
       color = guide_legend(nrow = guide_nrow, ncol = guide_ncol),
       shape = guide_legend(ncol = 1)
     )
-  return(list(pca = pca_plot, heatmap = out_heatmap, median_ici = out_sina))
+  return(list(
+    eval = TRUE,
+    pca = pca_plot,
+    heatmap = out_heatmap,
+    median_ici = out_sina
+  ))
 }
 
 create_boxplot = function(
