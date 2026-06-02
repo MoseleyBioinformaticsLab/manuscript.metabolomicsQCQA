@@ -3,7 +3,7 @@ sets_create_qcqa_reports = function(
   save_loc = "qcqa_reports",
   report_file = "resources/example_report.qmd"
 ) {
-  # pca_sets = tar_read(pca_g01); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"
+  # pca_sets = tar_read(pca_g01); tar_source("R"); save_loc = "qcqa_reports"; report_file = tar_read(report_file)
   # pca_sets = tar_read(pca_g13); tar_source("R"); save_loc = "qcqa_reports";   report_file = "resources/example_report.qmd"
 
   sets_tmp_files = purrr::map(names(pca_sets), \(in_id) {
@@ -23,7 +23,8 @@ create_report_from_example = function(
   in_pca,
   in_tmp_files,
   save_loc = "qcqa_reports",
-  report_file = "resources/example_report.qmd"
+  report_file = "resources/example_report.qmd",
+  quiet = TRUE
 ) {
   analysis_id = in_pca$id
   if (is.null(in_pca[["pca_groups"]])) {
@@ -61,7 +62,7 @@ create_report_from_example = function(
   q_res = try(quarto::quarto_render(
     in_tmp_files[2],
     execute_dir = here::here(),
-    quiet = TRUE
+    quiet = quiet
   ))
 
   if (inherits(q_res, "try-error")) {
@@ -310,4 +311,16 @@ add_total_samples_by_factor = function(n_by_factor_factors) {
       `N-Samples` = sum(`N-Samples`)
     )
   dplyr::bind_rows(n_by_factor_factors, tot)
+}
+
+check_for_outliers_qc = function(in_abundance) {
+  # use_pca = pca_sets[[1]]; in_abundance = use_pca$abundance; tar_source("R")
+  sample_info = in_abundance |> get_vardata()
+
+  out_todo = list(
+    outliers = any(sample_info$outlier),
+    qc = any(sample_info$experiment_or_qc %in% "qc")
+  )
+  out_todo$both = out_todo$outliers && out_todo$qc
+  out_todo
 }
