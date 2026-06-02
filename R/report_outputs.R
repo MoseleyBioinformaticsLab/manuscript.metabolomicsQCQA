@@ -61,7 +61,7 @@ create_report_from_example = function(
   ))
 
   if (inherits(q_res, "try-error")) {
-    return(list(
+    return(tibble::tibble(
       id = analysis_id,
       file = "NA",
       md5 = NA
@@ -75,7 +75,7 @@ create_report_from_example = function(
   unlink(in_tmp_files[1])
   unlink(in_tmp_files[2])
   unlink(tmp_html)
-  return(list(
+  return(tibble::tibble(
     id = analysis_id,
     file = final_html,
     md5 = digest::digest(final_html, algo = "md5")
