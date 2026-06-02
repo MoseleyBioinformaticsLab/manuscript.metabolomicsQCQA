@@ -27,7 +27,7 @@ create_report_from_example = function(
 ) {
   analysis_id = in_pca$id
   if (is.null(in_pca[["pca_groups"]])) {
-    return(list(id = analysis_id, file = NULL, md5 = NULL))
+    return(tibble::tibble(id = analysis_id, file = NULL, md5 = NULL))
   }
 
   report_text = suppressWarnings(readLines(report_file))
