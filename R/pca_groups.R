@@ -28,6 +28,22 @@ get_pca_run_times = function(pca_sets) {
   out_time
 }
 
+check_na_normalized = function(cor_sets) {
+  has_problem = purrr::map_lgl(cor_sets, \(x) {
+    tmp_norm = x$normalized |> get_just_values()
+    if (
+      any(is.na(x$icikt_cor$cor)) ||
+        any(is.infinite(tmp_norm)) ||
+        min(tmp_norm, na.rm = TRUE) < 0
+    ) {
+      return(TRUE)
+    } else {
+      return(FALSE)
+    }
+  })
+  has_problem
+}
+
 run_pca_experimental_design = function(in_lc) {
   # in_lc = lc_sets[[1]]
   # in_lc = lc_sets$AN002911
@@ -551,7 +567,7 @@ create_boxplot = function(
 }
 
 sets_extract_grouping_scores = function(pca_sets) {
-  # pca_sets = tar_read(pca_g06); tar_source("R")
+  # pca_sets = tar_read(pca_g03); tar_source("R")
   out_scores = purrr::map(pca_sets, extract_grouping_scores) |>
     purrr::list_rbind()
   out_scores
@@ -567,14 +583,24 @@ extract_grouping_scores = function(in_pca) {
     \(pca_group, id) {
       # id = "all"
       # pca_group = in_pca$pca_groups[[id]]
-      tmp_score = pca_group$scores
-      tmp_score$sample_set = id
-      tmp_score$analysis_id = analysis_id
-      tmp_score
+      if (!is.null(pca_group)) {
+        tmp_score = pca_group$scores
+        tmp_score$sample_set = id
+        tmp_score$analysis_id = analysis_id
+      } else {
+        tmp_score = tibble::tibble(
+          n_differences = NA,
+          group_size = NA,
+          differences_fraction = NA,
+          factors = NA,
+          method = NA,
+          sample_set = id,
+          analysis_id = analysis_id
+        )
+      }
+      return(tmp_score)
     }
   ) |>
     purrr::list_rbind()
   out_df
 }
-
-create_pca_anova_table = function() {}
