@@ -72,6 +72,9 @@ create_report_from_example = function(
   tmp_html = fs::path_ext_set(tmp_qmd, "html")
 
   fs::file_copy(tmp_html, final_html, overwrite = TRUE)
+  unlink(in_tmp_files[1])
+  unlink(in_tmp_files[2])
+  unlink(tmp_html)
   return(list(
     id = analysis_id,
     file = final_html,
