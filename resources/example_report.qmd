@@ -40,6 +40,15 @@ However, this is an automated analysis and report, so they are all presented, re
 
 If a section is blank, that likely means there were no samples left to use to create graphs or tables, and the code cell was not evaluated.
 
+## Important terms
+
+* Metabolomics Workbench: the data repository where the data came from.
+* Project: an overarching question or line of investigation.
+* Study: one particular set of analyses. There may be multiple studies in a project.
+* Analysis: one run of analysis, such as one type of chromatography, or instrumentation (NMR, MS, specific polarity, LC vs GC, etc). There are one or more analyses per study.
+* Sample: one biological unit in an analysis.
+* Feature: a measured entity within the instrumentation, within one analysis. This may be a named metabolite, a binned range in NMR, a set of M/Z locations, or a combination of chromatography peak range and M/Z for chromatographic MS.
+
 ```{r}
 #| label: knitr-chunks
 #| echo: false
@@ -115,11 +124,11 @@ use_pca$mwtab$ANALYSIS |>
 #| label: tbl-experimental-factors
 #| tbl-cap: Number of samples in each group of factors.
 use_pca$pca_groups$all$design$n_by_factor_factors |>
-  add_total_samples_n_by_factors() |>
+  add_total_samples_by_factor() |>
   gt::gt()
 ```
 
-Number of features with a non-missing value in at least one sample: `{r} nrow(use_pca$abundance)`.
+Number of features with a non-missing value in at least one sample: **`{r} nrow(use_pca$abundance)`**.
 
 ## Quality Control / Quality Assurance
 

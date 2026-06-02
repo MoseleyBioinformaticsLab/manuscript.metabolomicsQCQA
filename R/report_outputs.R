@@ -29,12 +29,13 @@ create_report_from_example = function(
   if (is.null(in_pca[["pca_groups"]])) {
     return(list(id = analysis_id, file = NULL, md5 = NULL))
   }
-  rds_line = 63
-  study_link_line = 17
 
   report_text = suppressWarnings(readLines(report_file))
   title_text = glue::glue("title: QC/QA Report for MW {analysis_id}")
   report_text[2] = title_text
+
+  study_link_line = grep("This is a quality-control", report_text)[1]
+  rds_line = grep("use_pca = readRDS", report_text)[1]
 
   study_template_text = report_text[study_link_line]
   study_info = get_study_id_link(in_pca$mwtab[["METABOLOMICS WORKBENCH"]])
@@ -53,11 +54,20 @@ create_report_from_example = function(
   report_text[rds_line] = read_files
   cat(report_text, file = in_tmp_files[2], sep = "\n")
   final_html = fs::path(save_loc, glue::glue("{in_pca$id}.html"))
-  q_res = quarto::quarto_render(
+  q_res = try(quarto::quarto_render(
     in_tmp_files[2],
     execute_dir = here::here(),
     quiet = TRUE
-  )
+  ))
+
+  if (inherits(q_res, "try-error")) {
+    return(list(
+      id = analysis_id,
+      file = "NA",
+      md5 = NA
+    ))
+  }
+
   tmp_qmd = in_tmp_files[2]
   tmp_html = fs::path_ext_set(tmp_qmd, "html")
 
