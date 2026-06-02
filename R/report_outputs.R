@@ -27,7 +27,11 @@ create_report_from_example = function(
 ) {
   analysis_id = in_pca$id
   if (is.null(in_pca[["pca_groups"]])) {
-    return(tibble::tibble(id = analysis_id, file = NULL, md5 = NULL))
+    return(tibble::tibble(
+      id = analysis_id,
+      file = "none",
+      md5 = "no pca groups"
+    ))
   }
 
   report_text = suppressWarnings(readLines(report_file))
@@ -63,8 +67,8 @@ create_report_from_example = function(
   if (inherits(q_res, "try-error")) {
     return(tibble::tibble(
       id = analysis_id,
-      file = "NA",
-      md5 = NA
+      file = "none",
+      md5 = "quarto failure"
     ))
   }
 
