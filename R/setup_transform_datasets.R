@@ -21,6 +21,7 @@ read_rds_setup_data = function(rds_file, md5_sum) {
 
   # id = "AN000072"; rds_file = "parsed_rds/AN000072.rds"; md5_sum = "781a19811ab6cf3ca6524224ab2e3507"; tar_source("R")
   # rds_file = "parsed_rds/AN000163.rds"; id = "AN000163"; md5_sum = "92913d26c46f3e0f07a3dab936267e6c"; tar_source("R")
+  # rds_file = "parsed_rds/AN001953.rds"; tar_source("R")
 
   processed_data = readRDS(rds_file)
   check_md5(processed_data, md5_sum)
@@ -101,12 +102,16 @@ filter_matching_samples_features = function(processed_data) {
     abundance_data = abundance_transformed$measurements
 
     raw_matrix = get_just_values(abundance_data)
-    keep_things = visualizationQualityControl::keep_non_missing_percentage(
+    keep_things = try(visualizationQualityControl::keep_non_missing_percentage(
       raw_matrix,
       keep_num = 1,
       missing_value = c(0, NA)
-    )
-    keep_features = rownames(raw_matrix)[keep_things]
+    ))
+    if (!inherits(keep_things, "try-error")) {
+      keep_features = rownames(raw_matrix)[keep_things]
+    } else {
+      keep_features = abundance_data$feature_id
+    }
   } else {
     keep_features = abundance_data$feature_id
   }
