@@ -5,17 +5,21 @@ sets_run_setup = function(in_df, tmp_sets) {
   all_files = in_df$file
   all_md5 = in_df$md5
   all_id = in_df$id
-  all_up = furrr::future_map2(all_files, all_md5, read_rds_setup_data)
+  all_up = furrr::future_map2(all_files, all_md5, all_id, read_rds_setup_data)
   names(all_up) = all_id
   all_up
 }
 
-read_rds_setup_data = function(rds_file, md5_sum) {
+read_rds_setup_data = function(rds_file, md5_sum, id) {
   # rds_file = "parsed_rds/AN000028.rds"
   # md5_sum = "0e22eb16e4debdc1fc55a4c2b58767df"
 
   # rds_file = "parsed_rds/AN000112.rds"
   # rds_file = "parsed_rds/AN003604.rds"
+
+  # id = "AN000076"; rds_file = "parsed_rds/AN000076.rds"; md5_sum = "13e4670918e908f47145b80e0669421c"; tar_source("R")
+
+  # id = "AN000072"; rds_file = "parsed_rds/AN000072.rds"; md5 = "781a19811ab6cf3ca6524224ab2e3507"; tar_source("R")
 
   processed_data = readRDS(rds_file)
   check_md5(processed_data, md5_sum)
@@ -45,6 +49,7 @@ transform_abundances = function(in_abundances, max_min = 20) {
     if (!all.equal(na_org, na_new)) {
       stop("Transforming made different missingness patterns!")
     }
+
     transform = "2-exponentiated"
   }
   list(measurements = in_abundances, transform = transform)
@@ -86,16 +91,21 @@ filter_matching_samples_features = function(processed_data) {
   metabolite_data = metabolite_data |>
     dplyr::filter(feature_id %in% match_features)
 
-  abundance_transformed = transform_abundances(abundance_data)
-  abundance_data = abundance_transformed$measurements
+  if ((nrow(abundance_data) > 0) && (ncol(abundance_data) > 1)) {
+    abundance_transformed = transform_abundances(abundance_data)
+    abundance_data = abundance_transformed$measurements
 
-  raw_matrix = get_just_values(abundance_data)
-  keep_things = visualizationQualityControl::keep_non_missing_percentage(
-    raw_matrix,
-    keep_num = 1,
-    missing_value = c(0, NA)
-  )
-  keep_features = rownames(raw_matrix)[keep_things]
+    raw_matrix = get_just_values(abundance_data)
+    keep_things = visualizationQualityControl::keep_non_missing_percentage(
+      raw_matrix,
+      keep_num = 1,
+      missing_value = c(0, NA)
+    )
+    keep_features = rownames(raw_matrix)[keep_things]
+  } else {
+    keep_features = abundance_data$feature_id
+  }
+
   abundance_data = abundance_data |>
     dplyr::filter(feature_id %in% keep_features)
   metabolite_data = metabolite_data |>

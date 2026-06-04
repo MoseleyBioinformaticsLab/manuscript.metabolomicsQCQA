@@ -1,10 +1,11 @@
 ## Load your packages and source files e.g. library(targets).
 targets::tar_source(c("./packages.R", "R"))
 
+group_sets_file = "resources/group_sets.rds"
 # todo:
-#  - in check_dynamic_range, it should check for 99% or more missing values
+#  - in check_features, it should check for 95% or more missing values instead of just no data.
 
-if (!fs::file_exists("parsed_rds/group_sets.rds")) {
+if (!fs::file_exists(group_sets_file)) {
   group_sets = tibble::tibble(
     group = paste0(
       "g",
@@ -13,7 +14,7 @@ if (!fs::file_exists("parsed_rds/group_sets.rds")) {
     set = ""
   )
 } else {
-  group_sets = readRDS("parsed_rds/group_sets.rds")
+  group_sets = readRDS(group_sets_file)
   if (nrow(group_sets) == 0) {
     stop("something is wrong with group_sets.rds, delete it!")
   }
@@ -34,17 +35,12 @@ library(furrr)
 plan(multicore, workers = 10)
 
 
-## tar_plan supports drake-style targets and also tar_target()
+# first time running, go to **processed_group** so the group file
+# gets created properly.
 processed_t = tar_target(processed, process_mwtab(mwtab_datasets))
-checked_t = tar_target(checked, check_mwtab(processed))
-
-check_result_t = tar_target(check_result, bind_check_results(checked))
-
-# first time running, only go to here so the right file is saved.
-# then run the other targets below.
-group_sets_t = tar_target(
-  tmp_sets,
-  filter_good_experiments_splitup(check_result, "parsed_rds/group_sets.rds")
+processed_group_t = tar_target(
+  processed_group,
+  bind_group_processed(processed)
 )
 
 report_file_t = tar_file(report_file, "resources/example_report.qmd")
@@ -52,7 +48,7 @@ report_file_t = tar_file(report_file, "resources/example_report.qmd")
 sets_map = tar_map(
   group_sets,
   names = group,
-  tar_target(setup, sets_run_setup(set, tmp_sets)),
+  tar_target(setup, sets_run_setup(set, processed_group)),
   tar_target(check_features, sets_check_features(setup)),
   tar_target(cor, sets_run_group_correlations(setup)),
   tar_target(lc, sets_add_mwtab_do_left_censored(cor, setup)),
@@ -86,6 +82,11 @@ manuscript_t = tar_quarto(
   "docs/manuscript.qmd",
   output_file = "docs/qcqa_manuscript.docx"
 )
+
+reproducibility_t = tar_quarto(
+  reproducibility_report,
+  "docs/reproducibility.qmd"
+)
 # setup_map = tar_map(
 #   json_all_map[[4]],
 #   tar_target(setup, run_setup)
@@ -93,12 +94,5 @@ manuscript_t = tar_quarto(
 
 list(
   processed_t,
-  checked_t,
-  check_result_t,
-  group_sets_t,
-  sets_map,
-  check_features_all_t,
-  group_scores_all_t,
-  group_scores_plot_t,
-  report_file_t
+  processed_group_t
 )

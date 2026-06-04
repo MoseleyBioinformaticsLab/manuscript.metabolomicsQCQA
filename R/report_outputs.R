@@ -3,7 +3,7 @@ sets_create_qcqa_reports = function(
   save_loc = "qcqa_reports",
   report_file = "resources/example_report.qmd"
 ) {
-  # pca_sets = tar_read(pca_g01); tar_source("R"); save_loc = "qcqa_reports"; report_file = tar_read(report_file)
+  # pca_sets = tar_read(pca_g01); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"
   # pca_sets = tar_read(pca_g13); tar_source("R"); save_loc = "qcqa_reports";   report_file = "resources/example_report.qmd"
 
   sets_tmp_files = purrr::map(names(pca_sets), \(in_id) {

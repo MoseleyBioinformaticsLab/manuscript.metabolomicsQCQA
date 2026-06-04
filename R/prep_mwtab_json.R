@@ -34,6 +34,46 @@ process_mwtab = function(mwtab_datasets) {
   processed_results
 }
 
+
+bind_group_processed = function(
+  processed,
+  n_group = 30,
+  save_file = "resources/group_sets.rds"
+) {
+  # processed = tar_read(processed); n_group = 30; save_file = "resources/group_sets.rds"
+
+  if (fs::file_exists(save_file)) {
+    fs::file_delete(save_file)
+  }
+
+  analysis_ids = extract_mwtab_ids(names(processed))
+  names(processed) = analysis_ids$id
+  processed_df = purrr::imap(processed, \(in_p, id) {
+    tibble::tibble(id = id, file = in_p$file, md5 = in_p$md5)
+  }) |>
+    purrr::list_rbind()
+  processed_group = processed_df |>
+    dplyr::mutate(
+      group = paste0(
+        "g",
+        stringr::str_pad(
+          sample(seq(1, n_group), dplyr::n(), replace = TRUE),
+          width = 2,
+          side = "left",
+          pad = "0"
+        )
+      )
+    )
+
+  split_sets = split(processed_group, processed_group$group)
+  nested_sets = purrr::map(split_sets, \(in_set) {
+    tibble::tibble(group = in_set$group[1], set = list(in_set))
+  }) |>
+    purrr::list_rbind()
+  saveRDS(nested_sets, save_file)
+  nested_sets
+}
+
 parse_json_save = function(mwtab_file, id, ancillary_path, save_path) {
   #mwtab_file = "data/repaired/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000023%2Fmwtab%2Ftxt.txt"  # MS file
   # mwtab_file = "data/repaired/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000693%2Fmwtab%2Ftxt.txt"  # NMR file
