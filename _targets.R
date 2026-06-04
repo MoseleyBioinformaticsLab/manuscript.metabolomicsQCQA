@@ -48,16 +48,7 @@ report_file_t = tar_file(report_file, "resources/example_report.qmd")
 sets_map = tar_map(
   group_sets,
   names = group,
-  tar_target(setup, sets_run_setup(set, processed_group)),
-  tar_target(check_features, sets_check_features(setup)),
-  tar_target(cor, sets_run_group_correlations(setup)),
-  tar_target(lc, sets_add_mwtab_do_left_censored(cor, setup)),
-  tar_target(pca, sets_run_pca_experimental_design(lc)),
-  tar_target(group_scores, sets_extract_grouping_scores(pca)),
-  tar_target(
-    reports,
-    sets_create_qcqa_reports(pca, "qcqa_reports", report_file)
-  )
+  tar_target(setup, sets_run_setup(set, processed_group))
 )
 
 check_features_all_t = tar_combine(
@@ -94,5 +85,6 @@ reproducibility_t = tar_quarto(
 
 list(
   processed_t,
-  processed_group_t
+  processed_group_t,
+  sets_map
 )

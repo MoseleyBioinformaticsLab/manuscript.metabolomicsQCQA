@@ -19,7 +19,7 @@ read_rds_setup_data = function(rds_file, md5_sum, id) {
 
   # id = "AN000076"; rds_file = "parsed_rds/AN000076.rds"; md5_sum = "13e4670918e908f47145b80e0669421c"; tar_source("R")
 
-  # id = "AN000072"; rds_file = "parsed_rds/AN000072.rds"; md5 = "781a19811ab6cf3ca6524224ab2e3507"; tar_source("R")
+  # id = "AN000072"; rds_file = "parsed_rds/AN000072.rds"; md5_sum = "781a19811ab6cf3ca6524224ab2e3507"; tar_source("R")
 
   processed_data = readRDS(rds_file)
   check_md5(processed_data, md5_sum)
