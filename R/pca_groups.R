@@ -208,12 +208,18 @@ determine_neigbors_ordering = function(ici_values, group_data) {
     dplyr::filter(group %in% "between") |>
     dplyr::summarise(between = max(med_cor), .by = sample_id)
 
-  ici_compare = dplyr::left_join(
-    ici_within[, c("sample_id", "within", "sample_class")],
-    ici_between,
-    by = "sample_id"
-  ) |>
-    dplyr::mutate(w_b_better = (within >= between), factors = sample_class)
+  if (nrow(ici_between) == 0) {
+    ici_compare = ici_within |>
+      dplyr::mutate(between = 0) |>
+      dplyr::mutate(w_b_better = (within >= between), factors = sample_class)
+  } else {
+    ici_compare = dplyr::left_join(
+      ici_within[, c("sample_id", "within", "sample_class")],
+      ici_between,
+      by = "sample_id"
+    ) |>
+      dplyr::mutate(w_b_better = (within >= between), factors = sample_class)
+  }
 
   ici_dendrogram = visualizationQualityControl::similarity_reorderbyclass(
     ici_square,
