@@ -51,23 +51,6 @@ sets_map = tar_map(
   tar_target(setup, sets_run_setup(set, processed_group))
 )
 
-check_features_all_t = tar_combine(
-  check_features_all,
-  sets_map[[2]],
-  command = dplyr::bind_rows(!!!.x)
-)
-
-group_scores_all_t = tar_combine(
-  group_scores_all,
-  sets_map[[6]],
-  command = dplyr::bind_rows(!!!.x)
-)
-
-group_scores_plot_t = tar_target(
-  group_scores_plots,
-  plot_group_scores(group_scores_all)
-)
-
 manuscript_t = tar_quarto(
   manuscript,
   "docs/manuscript.qmd",
