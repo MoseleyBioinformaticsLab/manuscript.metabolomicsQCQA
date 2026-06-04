@@ -1,4 +1,6 @@
 sets_run_setup = function(in_df, tmp_sets) {
+  # group_sets = tar_read(processed_group); in_df = group_sets$set[[1]]; tar_source("R")
+  # group_sets = tar_read(processed_group); in_df = group_sets$set[[29]]; tar_source("R")
   if (inherits(in_df, "character")) {
     stop("Run to tmp_sets first, and then the rest!  tar_make(tmp_sets)")
   }

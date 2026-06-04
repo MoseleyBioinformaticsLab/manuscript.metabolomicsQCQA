@@ -143,6 +143,8 @@ parse_json_save = function(mwtab_file, id, ancillary_path, save_path) {
   # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN005285%2Fmwtab%2Ftxt.txt.json"
   # id = "AN005285"
 
+  # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN004699%2Fmwtab%2Ftxt.txt.json"; id = "AN004699"; tar_source("R")
+
   mwtab_list = jsonlite::fromJSON(mwtab_file, simplifyVector = FALSE)
 
   parsed_data = purrr::imap(mwtab_list, \(block, block_id) {
@@ -805,11 +807,12 @@ parse_nmr_data_json = function(nmr_data) {
         return(NULL)
       }
     )
-    metabolite_df$feature_id = janitor::make_clean_names(
-      metabolite_df[[1]],
-      unique_sep = "..."
-    )
-    if (is.null(metabolite_df)) {
+    if (!is.null(metabolite_df)) {
+      metabolite_df$feature_id = janitor::make_clean_names(
+        metabolite_df[[1]],
+        unique_sep = "..."
+      )
+    } else {
       metabolite_df = tibble::tibble(feature_id = nmr_data_df$feature_id)
     }
   } else {
@@ -856,8 +859,6 @@ custom_convert_numeric = function(in_df) {
 }
 
 parse_ms_data_json = function(ms_data) {
-  # ms_data = block_data[["MS_METABOLITE_DATA"]]
-  # message("ms data!")
   # ms_data = mwtab_list$MS_METABOLITE_DATA
 
   ms_df_1 = try(
@@ -892,11 +893,12 @@ parse_ms_data_json = function(ms_data) {
         return(NULL)
       }
     )
-    metabolite_df$feature_id = janitor::make_clean_names(
-      metabolite_df[[1]],
-      unique_sep = "..."
-    )
-    if (is.null(metabolite_df)) {
+    if (!is.null(metabolite_df)) {
+      metabolite_df$feature_id = janitor::make_clean_names(
+        metabolite_df[[1]],
+        unique_sep = "..."
+      )
+    } else {
       metabolite_df = tibble::tibble(feature_id = ms_data_df$feature_id)
     }
   } else {

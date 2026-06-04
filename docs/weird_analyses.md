@@ -29,3 +29,5 @@
   * Pretty sure this has a sample with all NA in it. Check if it's real!
 * AN003701
   * Might be the same deal with a sample with all NA.
+* AN000163:
+  * Has no measurements in the mwtab, and no ancillary data.
