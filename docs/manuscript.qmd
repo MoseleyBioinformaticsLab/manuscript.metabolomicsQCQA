@@ -1,6 +1,6 @@
 ---
-title: "Evaluation of the reuse of deposited datasets in metabolomics data repositories."
-author: "Robert M Flight, Hunter NB Moseley"
+title: "Evaluation of the quality of deposited datasets in a metabolomics data repository."
+author: "Robert M Flight, P Travis Thompson and Hunter NB Moseley"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 format: html
 ---
@@ -18,7 +18,8 @@ knitr::opts_chunk$set(echo = FALSE)
 ```{r}
 #| label: load-targets
 #| include: false
-# tar_load(c(target_1, target_2, target_3))
+targets::tar_source(c("./packages.R", "R"))
+tar_load(c(reproducibility))
 
 # # If your chunk output is shown in-line, then you'll need to wrap tar_load()
 # # like so:
@@ -32,28 +33,21 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ## Introduction
 
+Data repositories are good.
+They theoretically encourage the reuse of data.
+Some groups have found very, very cool ways to reuse and reanalyze transcriptomics data, for examples.
+However, as with all data, and most especially -omics level data, there are issues with data quality.
+As such, we have attempted to assess the quality of a large number of datasets in an open data repository where we are very familiar with the underlying data format, the Metabolomics Workbench.
 
+Previous related publications include
 
-## Reproducibility
+The measures we have used to assess the quality include:
+  * Higher correlation with samples between subject-sample-factors;
+  * P-values of subject-sample-factors and sample principal component scores;
+  * The number of outlier samples detected within each subject-sample-factor;
+  * The correlations of any quality-control samples, if present.
 
-<details><summary>Reproducibility receipt</summary>
+We also provide quality-control reports for a large number of analyses.
 
-```{r}
-## datetime
-Sys.time()
+In addition, for those analyses with a small number of subject-sample-factors, we attempt to recapture the experimental design, and then examine the MW analyses for cases where there is only a single factor present that perhaps is incorrect.
 
-## repository
-if (requireNamespace('git2r', quietly = TRUE)) {
-  git2r::repository()
-} else {
-  c(
-    system2("git", args = c("log", "--name-status", "-1"), stdout = TRUE),
-    system2("git", args = c("remote", "-v"), stdout = TRUE)
-  )
-}
-
-## session info
-sessionInfo()
-```
-
-</details>
