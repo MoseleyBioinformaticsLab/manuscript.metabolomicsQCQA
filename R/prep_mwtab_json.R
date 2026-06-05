@@ -650,22 +650,17 @@ widen_ssf_json = function(ssf_data2) {
     janitor::clean_names(unique_sep = "...")
 }
 
-create_factor_groups_json = function(ssf_wide) {
+create_ssf_groups_json = function(ssf_wide) {
   other_cols = names(ssf_wide)[
     !(names(ssf_wide) %in% c("sample_id", "subject"))
   ]
 
-  concat_factors = ssf_wide |>
-    tidyr::unite("factors", tidyselect::all_of(other_cols), sep = "|")
+  concat_ssf = ssf_wide |>
+    tidyr::unite("ssf", tidyselect::all_of(other_cols), sep = "|")
 
-  if (!is.null(ssf_wide[["factors"]])) {
-    ssf_nofact = ssf_wide |> dplyr::select(-factors)
-  } else {
-    ssf_nofact = ssf_wide
-  }
   concat_output = dplyr::left_join(
-    ssf_nofact,
-    concat_factors,
+    ssf_wide,
+    concat_ssf,
     by = c("subject", "sample_id")
   )
 

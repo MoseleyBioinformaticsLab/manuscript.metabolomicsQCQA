@@ -72,7 +72,7 @@ do_correlation = function(setup_data) {
     setup_data$SUBJECT_SAMPLE_FACTORS |>
       dplyr::filter(type %in% "subject_sample_factor")
   ) |>
-    create_factor_groups_json()
+    create_ssf_groups_json()
   # make sure to put them back
   plan(multicore, workers = n_cores)
 
@@ -182,5 +182,6 @@ determine_qc_samples = function(ssf_long) {
       ) |
         grepl(".*pool.*|.*qc.*|.*blank.*|.*quality.*", item, ignore.case = TRUE)
     ) |>
-    dplyr::pull(sample_id)
+    dplyr::pull(sample_id) |>
+    unique()
 }
