@@ -5,6 +5,8 @@
   * No common sample IDs between SSF and measurements due to the extra stuff tacked onto the measurements sample IDs.
 * AN003604;
   * Something goes wrong with the cleaning sample_ids, I think. Yeah, there are "-" and "+" that get converted to just a single "_"
+* AN004188:
+  * has a "+" at the end, which doesn't get converted properly.
 * AN000144:
   * One sample, S00011727, has duplicated measurements.
 * AN000139:
