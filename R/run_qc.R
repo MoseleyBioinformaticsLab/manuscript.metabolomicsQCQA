@@ -93,9 +93,24 @@ convert_to_se = function(setup_data) {
   }
 
   if (is.character(raw_matrix[1, 1])) {
-    safe_matrix = apply(raw_matrix, 2, \(x) {
-      stringr::str_replace(x, "\\<|\\>", "-")
-    })
+    safe_matrix = apply(
+      raw_matrix,
+      2,
+      \(x) {
+        stringr::str_replace(x, "\\<|\\>", "-")
+      },
+      simplify = FALSE
+    )
+    if (is.null(dim(safe_matrix))) {
+      safe_matrix = matrix(
+        safe_matrix,
+        nrow = nrow(raw_matrix),
+        ncol = ncol(raw_matrix),
+        byrow = FALSE
+      )
+      rownames(safe_matrix) = rownames(raw_matrix)
+      colnames(safe_matrix) = colnames(raw_matrix)
+    }
     mode(safe_matrix) = "numeric"
     na_vals = is.na(safe_matrix)
     if (all(na_vals)) {
