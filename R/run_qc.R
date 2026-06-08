@@ -1,23 +1,64 @@
-sets_run_qc = function(setup_set) {
-  # setup_set = tar_read(setup_g01); tar_source("R")
-
-  se_set = sets_convert_to_se(setup_set)
-}
-
 sets_convert_to_se = function(setup_set) {
-  se_set = furrr::future_map(setup_set, convert_to_se)
-  se_set
+  se_set = purrr::map(setup_set, convert_to_se)
 }
 
+sets_run_dyn_neg = function(se_set) {
+  # setup_set = tar_read(setup_g01); tar_source("R")
+  # setup_set = tar_read(setup_g02); tar_source("R")
 
-get_qc_info = function(se_data) {
+  # then we do dynamic range calculations for those that can.
+  dyn_range_set = purrr::map(se_set, calculate_dynamic_range_check_neg)
+}
+
+sets_run_qc_neg = function(se_set) {
+  # setup_set = tar_read(setup_g01); tar_source("R")
+  # setup_set = tar_read(setup_g02); tar_source("R")
+
+  # then we do dynamic range calculations for those that can.
+  dyn_range_set = purrr::map(se_set, calculate_dynamic_range)
+}
+
+get_qc = function(se_data) {
   metadata(se_data)$qc
 }
+
+
+get_qc_outputs = function(run_set) {
+  # run_set = tar_read(run_g01); tar_source("R")
+  all_qc = purrr::map(run_set, \(x) {
+    as.data.frame(get_qc(x))
+  }) |>
+    dplyr::bind_rows()
+  all_qc
+}
+
+check_qc_se_1_3 = function() {
+  qc_run1 = tar_read(run_g01) |> get_qc_outputs()
+  qc_run2 = tar_read(run_g02) |> get_qc_outputs()
+  qc_run3 = tar_read(run_g03) |> get_qc_outputs()
+  all_qc = dplyr::bind_rows(qc_run1, qc_run2, qc_run3)
+  n_id = length(unique(all_qc$id))
+  all_qc |>
+    dplyr::summarise(N = dplyr::n(), .by = why) |>
+    dplyr::mutate(perc = N / n_id * 100) |>
+    paint::unpaint()
+}
+
 convert_to_se = function(setup_data) {
-  # setup_set = tar_read(setup_g01); setup_data = setup_set[[1]]; tar_source("R")
+  # setup_set = tar_read(setup_g01); tar_source("R")
+  # using setup_g01
   # setup_data = setup_set[[4]]
   # setup_data = setup_set[[55]]
+  # setup_data = setup_set[["AN000731"]]
+  # setup_data = setup_set[["AN003244"]]
+
+  # using setup_g02
   # setup_data = setup_set[["AN004188"]]
+  # setup_data = setup_set[["AN001560"]]
+  # setup_data = setup_set[["AN002381"]]
+  # setup_data = setup_set[["AN002935"]]
+  # setup_data = setup_set[["AN003604"]]
+  # setup_data = setup_set[["AN003915"]]
 
   if (!is.null(setup_data$MEASUREMENTS)) {
     raw_matrix = get_just_values(setup_data$MEASUREMENTS)
@@ -25,23 +66,42 @@ convert_to_se = function(setup_data) {
     n_feature = nrow(raw_matrix)
     n_sample = ncol(raw_matrix)
   } else {
-    n_feature = 0
-    n_sample = 0
+    se_data = create_empty_se(setup_data, why = "no feature data")
+    return(se_data)
   }
 
-  if ((n_feature == 0) || (n_sample == 0)) {
-    se_data = SummarizedExperiment()
-    metadata(se_data) = list(
-      mwtab = setup_data,
-      qc = list(
-        id = setup_data$ID,
-        failed = "create_se",
-        why = "no features OR no samples",
-        succeeded = "none",
-        do_next = "stop"
-      )
-    )
+  if (n_feature == 0) {
+    filtered_features = setup_data$FILTERED_FEATURES
+    if (filtered_features$kept[1] == 0) {
+      why = "no features; didn't match metabolites"
+    } else {
+      why = "no features; unknown"
+    }
+    se_data = create_empty_se(setup_data, why = why)
     return(se_data)
+  }
+
+  if (n_sample == 0) {
+    filtered_samples = setup_data$FILTERED_SAMPLES
+    if (filtered_samples$kept[2] == 0) {
+      why = "no samples; didn't match ssf"
+    } else {
+      why = "no samples; unknown"
+    }
+    se_data = create_empty_se(setup_data, why = why)
+    return(se_data)
+  }
+
+  if (is.character(raw_matrix[1, 1])) {
+    mode(raw_matrix) = "numeric"
+    na_vals = is.na(raw_matrix)
+    if (all(na_vals)) {
+      se_data = create_empty_se(
+        setup_data,
+        why = "all character values when converting to matrix"
+      )
+      return(se_data)
+    }
   }
 
   feature_data = setup_data$METABOLITES |> DataFrame()
@@ -49,6 +109,11 @@ convert_to_se = function(setup_data) {
   feature_data = feature_data[rownames(raw_matrix), ]
 
   ssf = setup_data$SUBJECT_SAMPLE_FACTORS
+  if (is.null(ssf)) {
+    se_data = create_empty_se(setup_data, why = "no subject sample factors")
+    return(se_data)
+  }
+  ssf = clean_ssf_factors(ssf)
 
   factor_type = ssf |>
     dplyr::select(factor, type) |>
@@ -56,6 +121,11 @@ convert_to_se = function(setup_data) {
     dplyr::mutate(factor = janitor::make_clean_names(factor))
 
   ssf_wide = widen_ssf_json(ssf)
+
+  if (nrow(ssf_wide) > length(unique(ssf$sample_id))) {
+    se_data = create_empty_se(setup_data, why = "duplicate samples somewhere")
+    return(se_data)
+  }
   is_list = purrr::map_lgl(ssf_wide, is.list)
   has_p_n = grepl("\\+$|\\-$", ssf$item)
   if (any(is_list) && any(has_p_n)) {
@@ -67,18 +137,13 @@ convert_to_se = function(setup_data) {
     ssf2_wide = widen_ssf_json(ssf2)
     is_list2 = purrr::map_lgl(ssf2_wide, is.list)
     if (any(is_list2)) {
-      se_data = SummarizedExperiment()
-      metadata(se_data) = list(
-        mwtab = setup_data,
-        qc = list(
-          failed = "create_se",
-          why = "duplicate sample attributes",
-          succeeded = "none",
-          do_next = "stop"
-        )
-      )
+      se_data = create_empty_se(setup_data, why = "duplicate sample attributes")
       return(se_data)
     }
+  }
+  if (any(is_list) && !any(has_p_n)) {
+    se_data = create_empty_se(setup_data, why = "duplicate sample attributes")
+    return(se_data)
   }
   ssf_wide = ssf_wide |>
     dplyr::filter(sample_id %in% colnames(raw_matrix))
@@ -136,10 +201,30 @@ convert_to_se = function(setup_data) {
     metadata = list(
       mwtab = setup_data,
       factor_types = factor_type,
-      qc = list(failed = "", succeeded = "create_se", do_next = "go")
+      qc = list(
+        id = setup_data$ID,
+        failed = "",
+        succeeded = "create_se",
+        do_next = "go"
+      )
     )
   )
   se_out
+}
+
+create_empty_se = function(setup_data, why = "") {
+  se_data = SummarizedExperiment()
+  metadata(se_data) = list(
+    mwtab = setup_data,
+    qc = list(
+      id = setup_data$ID,
+      failed = "create_se",
+      why = why,
+      succeeded = "none",
+      do_next = "stop"
+    )
+  )
+  se_data
 }
 
 grab_factor_types = function(
@@ -150,6 +235,40 @@ grab_factor_types = function(
     dplyr::filter(type %in% use_type) |>
     dplyr::pull(factor)
   keep_types
+}
+
+#' does two things:
+#' 1 - checks for other factors that match the special
+#'   "sample_id", and adds numbers to them to make them
+#'   different.
+#' 2 - checks for factors that become duplicates of each
+#'   other after janitor::make_clean_names, for example
+#'   "Raw file name" and "RAW_FILE_NAME", and makes them
+#'   not duplicated.
+clean_ssf_factors = function(ssf) {
+  sample_factor = tibble::tibble(factor = "sample_id", type = "weird")
+  distinct_ssf_factor = dplyr::bind_rows(sample_factor, ssf) |>
+    dplyr::select(factor, type) |>
+    dplyr::distinct() |>
+    dplyr::arrange(dplyr::desc(type)) |>
+    dplyr::mutate(
+      clean_factor = janitor::make_clean_names(factor, allow_dupes = TRUE),
+      clean_numbered = janitor::make_clean_names(factor, allow_dupes = FALSE)
+    )
+
+  replace_now = distinct_ssf_factor |>
+    dplyr::filter(clean_factor != clean_numbered)
+  if (nrow(replace_now) > 0) {
+    for (iid in seq_len(nrow(replace_now))) {
+      ssf$factor = gsub(
+        replace_now$factor[iid],
+        replace_now$clean_numbered[iid],
+        ssf$factor,
+        fixed = TRUE
+      )
+    }
+  }
+  ssf
 }
 
 run_qc = function(in_data) {

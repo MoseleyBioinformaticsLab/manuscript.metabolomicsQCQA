@@ -180,7 +180,16 @@ determine_qc_samples = function(ssf_long) {
         sample_id,
         ignore.case = TRUE
       ) |
-        grepl(".*pool.*|.*qc.*|.*blank.*|.*quality.*", item, ignore.case = TRUE)
+        grepl(
+          ".*pool.*|.*qc.*|.*blank.*|.*quality.*",
+          item,
+          ignore.case = TRUE
+        ) |
+        grepl(
+          ".*pool.*|.*qc.*|.*blank.*|.*quality.*",
+          subject,
+          ignore.case = TRUE
+        )
     ) |>
     dplyr::pull(sample_id) |>
     unique()

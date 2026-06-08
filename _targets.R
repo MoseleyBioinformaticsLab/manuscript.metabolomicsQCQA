@@ -49,7 +49,9 @@ sets_map = tar_map(
   group_sets,
   names = group,
   tar_target(setup, sets_run_setup(set, processed_group)),
-  tar_target(run, sets_run_qc(setup))
+  tar_target(se, sets_convert_to_se(setup)),
+  tar_target(neg, sets_run_qc_neg(se)),
+  tar_target(run, sets_run_qc(se))
 )
 
 manuscript_t = tar_quarto(
