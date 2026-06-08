@@ -79,5 +79,5 @@ list(
   processed_t,
   processed_group_t,
   sets_map,
-  sets_neg
+  sets_neg_t
 )
