@@ -99,7 +99,7 @@ convert_to_se = function(setup_data) {
       \(x) {
         stringr::str_replace(x, "\\<|\\>", "-")
       },
-      simplify = FALSE
+      simplify = TRUE
     )
     if (is.null(dim(safe_matrix))) {
       safe_matrix = matrix(
