@@ -639,29 +639,32 @@ check_dynamic_range_single_sample = function(
   }
 }
 
-widen_ssf_json = function(ssf_data2) {
+widen_ssf_json = function(ssf_data2, id_cols = NULL) {
+  if (is.null(id_cols)) {
+    id_cols = c("subject", "sample_id")
+  }
   ssf_data2 |>
     dplyr::distinct() |>
     tidyr::pivot_wider(
-      id_cols = c(subject, sample_id),
+      id_cols = tidyselect::all_of(id_cols),
       names_from = factor,
       values_from = item
     ) |>
     janitor::clean_names(unique_sep = "...")
 }
 
-create_ssf_groups_json = function(ssf_wide) {
-  other_cols = names(ssf_wide)[
-    !(names(ssf_wide) %in% c("sample_id", "subject"))
-  ]
+create_ssf_groups_json = function(ssf_wide, id_cols = NULL) {
+  if (is.null(id_cols)) {
+    id_cols = c("sample_id", "subject")
+  }
 
   concat_ssf = ssf_wide |>
-    tidyr::unite("ssf", tidyselect::all_of(other_cols), sep = "|")
+    tidyr::unite("ssf", !tidyselect::all_of(id_cols), sep = "|")
 
   concat_output = dplyr::left_join(
     ssf_wide,
     concat_ssf,
-    by = c("subject", "sample_id")
+    by = id_cols
   )
 
   concat_output

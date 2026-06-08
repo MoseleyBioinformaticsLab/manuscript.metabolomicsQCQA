@@ -120,12 +120,18 @@ convert_to_se = function(setup_data) {
   }
   ssf = clean_ssf_factors(ssf)
 
+  if (length(unique(ssf$subject)) == 1) {
+    ssf$subject = NULL
+    id_cols = "sample_id"
+  } else {
+    id_cols = c("subject", "sample_id")
+  }
   factor_type = ssf |>
     dplyr::select(factor, type) |>
     dplyr::distinct() |>
     dplyr::mutate(factor = janitor::make_clean_names(factor))
 
-  ssf_wide = widen_ssf_json(ssf)
+  ssf_wide = widen_ssf_json(ssf, id_cols)
 
   if (nrow(ssf_wide) > length(unique(ssf$sample_id))) {
     se_data = create_empty_se(setup_data, why = "duplicate samples somewhere")
@@ -139,7 +145,7 @@ convert_to_se = function(setup_data) {
     tmp_item = gsub("\\-$", "_n", tmp_item)
     ssf2 = ssf
     ssf2$item = tmp_item
-    ssf2_wide = widen_ssf_json(ssf2)
+    ssf2_wide = widen_ssf_json(ssf2, id_cols)
     is_list2 = purrr::map_lgl(ssf2_wide, is.list)
     if (any(is_list2)) {
       se_data = create_empty_se(setup_data, why = "duplicate sample attributes")
@@ -154,9 +160,10 @@ convert_to_se = function(setup_data) {
     dplyr::filter(sample_id %in% colnames(safe_matrix))
   safe_matrix = safe_matrix[, ssf_wide$sample_id, drop = FALSE]
 
-  use_for_factors = c("subject", "sample_id", grab_factor_types(factor_type))
+  use_for_factors = c(id_cols, grab_factor_types(factor_type))
   ssf_concat = create_ssf_groups_json(
-    ssf_wide |> dplyr::select(tidyselect::all_of(use_for_factors))
+    ssf_wide |> dplyr::select(tidyselect::all_of(use_for_factors)),
+    id_cols
   )
 
   other_factors = c(

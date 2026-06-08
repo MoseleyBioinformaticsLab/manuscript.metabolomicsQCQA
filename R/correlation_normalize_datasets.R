@@ -172,25 +172,33 @@ add_mwtab_do_left_censored = function(cor_data, setup_data) {
 }
 
 determine_qc_samples = function(ssf_long) {
-  # ssf_long = in_lc$mwtab$SUBJECT_SAMPLE_FACTORS
-  is_pooled_qc = ssf_long |>
-    dplyr::filter(
-      grepl(
-        ".*pool.*|.*qc.*|.*blank.*|.*quality.*",
-        sample_id,
-        ignore.case = TRUE
-      ) |
-        grepl(
-          ".*pool.*|.*qc.*|.*blank.*|.*quality.*",
-          item,
-          ignore.case = TRUE
-        ) |
-        grepl(
-          ".*pool.*|.*qc.*|.*blank.*|.*quality.*",
-          subject,
-          ignore.case = TRUE
-        )
-    ) |>
-    dplyr::pull(sample_id) |>
-    unique()
+  if (!is.null(ssf_long[["sample_id"]])) {
+    sample_qc = grepl(
+      ".*pool.*|.*qc.*|.*blank.*|.*quality.*",
+      ssf_long$sample_id
+    )
+  } else {
+    sample_qc = rep(FALSE, nrow(ssf_long))
+  }
+
+  if (!is.null(ssf_long[["subject"]])) {
+    subject_qc = grepl(
+      ".*pool.*|.*qc.*|.*blank.*|.*quality.*",
+      ssf_long$subject
+    )
+  } else {
+    subject_qc = rep(FALSE, nrow(ssf_long))
+  }
+
+  if (!is.null(ssf_long[["item"]])) {
+    item_qc = grepl(
+      ".*pool.*|.*qc.*|.*blank.*|.*quality.*",
+      ssf_long$item
+    )
+  } else {
+    item_qc = rep(FALSE, nrow(ssf_long))
+  }
+
+  all_locs = sample_qc | subject_qc | item_qc
+  unique(ssf_long$sample_id[all_locs])
 }
