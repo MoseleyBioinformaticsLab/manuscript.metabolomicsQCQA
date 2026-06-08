@@ -93,8 +93,11 @@ convert_to_se = function(setup_data) {
   }
 
   if (is.character(raw_matrix[1, 1])) {
-    mode(raw_matrix) = "numeric"
-    na_vals = is.na(raw_matrix)
+    safe_matrix = apply(raw_matrix, 2, \(x) {
+      stringr::str_replace(x, "\\<|\\>", "-")
+    })
+    mode(safe_matrix) = "numeric"
+    na_vals = is.na(safe_matrix)
     if (all(na_vals)) {
       se_data = create_empty_se(
         setup_data,
@@ -102,11 +105,13 @@ convert_to_se = function(setup_data) {
       )
       return(se_data)
     }
+  } else {
+    safe_matrix = raw_matrix
   }
 
   feature_data = setup_data$METABOLITES |> DataFrame()
   rownames(feature_data) = feature_data$feature_id
-  feature_data = feature_data[rownames(raw_matrix), ]
+  feature_data = feature_data[rownames(safe_matrix), ]
 
   ssf = setup_data$SUBJECT_SAMPLE_FACTORS
   if (is.null(ssf)) {
@@ -146,8 +151,8 @@ convert_to_se = function(setup_data) {
     return(se_data)
   }
   ssf_wide = ssf_wide |>
-    dplyr::filter(sample_id %in% colnames(raw_matrix))
-  raw_matrix = raw_matrix[, ssf_wide$sample_id, drop = FALSE]
+    dplyr::filter(sample_id %in% colnames(safe_matrix))
+  safe_matrix = safe_matrix[, ssf_wide$sample_id, drop = FALSE]
 
   use_for_factors = c("subject", "sample_id", grab_factor_types(factor_type))
   ssf_concat = create_ssf_groups_json(
@@ -195,7 +200,7 @@ convert_to_se = function(setup_data) {
   setup_data$METABOLITES = NULL
 
   se_out = SummarizedExperiment(
-    assays = SimpleList(raw = raw_matrix),
+    assays = SimpleList(raw = safe_matrix),
     rowData = feature_data,
     colData = ssf_use,
     metadata = list(
