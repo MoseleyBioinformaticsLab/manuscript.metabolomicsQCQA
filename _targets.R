@@ -54,6 +54,12 @@ sets_map = tar_map(
   tar_target(run, sets_run_qc(se))
 )
 
+sets_neg_t = tar_combine(
+  sets_neg,
+  sets_map[[3]],
+  command = purrr::list_c(!!!.x)
+)
+
 manuscript_t = tar_quarto(
   manuscript,
   "docs/manuscript.qmd",
@@ -72,5 +78,6 @@ reproducibility_t = tar_quarto(
 list(
   processed_t,
   processed_group_t,
-  sets_map
+  sets_map,
+  sets_neg
 )
