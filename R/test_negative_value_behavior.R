@@ -1,20 +1,25 @@
-test_negative_value_behavior = function() {
+test_negative_value_behavior = function(sets_neg) {
   # tar_source("R")
-  # qc_run1 = tar_read(run_g01)
-  # qc_run2 = tar_read(run_g02)
-  # qc_run3 = tar_read(run_g03)
+  # tar_load(c(neg_g01, neg_g02, neg_g03))
+  # sets_neg = c(neg_g01, neg_g02, neg_g03)
 
-  all_runs = c(qc_run1, qc_run2, qc_run3)
-  qc_info = get_qc_outputs(all_runs)
+  qc_info = get_qc_outputs(sets_neg)
 
   neg_qc = qc_info |>
     dplyr::filter(why %in% "negative values present") |>
     dplyr::pull(id) |>
     unique()
 
-  neg_list = all_runs[neg_qc]
+  neg_list = sets_neg[neg_qc]
   out_res = purrr::map(neg_list, get_negative_test) |>
     purrr::list_rbind()
+  out_res_all = out_res |>
+    dplyr::filter(subset %in% "all") |>
+    dplyr::mutate(padjust = p.adjust(p.value, method = "BH"))
+  out_res_subset = out_res |>
+    dplyr::filter(subset %in% "ssf") |>
+    dplyr::mutate(padjust = p.adjust(p.value, method = "BH"))
+  dplyr::bind_rows(out_res_all, out_res_subset)
 }
 
 get_negative_test = function(in_se) {

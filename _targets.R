@@ -90,6 +90,11 @@ sets_neg_t = tar_target(
   )
 )
 
+sets_neg_test_t = tar_target(
+  sets_neg_test,
+  test_negative_value_behavior(sets_neg)
+)
+
 manuscript_t = tar_quarto(
   manuscript,
   "docs/manuscript.qmd",
