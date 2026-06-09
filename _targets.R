@@ -54,9 +54,9 @@ sets_map = tar_map(
   tar_target(run, sets_run_qc(se))
 )
 
-sets_neg_t = tar_combine(
+sets_neg_t = tar_target(
   sets_neg,
-  sets_map[[3]]
+  command = purrr::list_c(list(sets_map[[3]]))
 )
 
 manuscript_t = tar_quarto(
