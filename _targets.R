@@ -95,6 +95,11 @@ sets_neg_test_t = tar_target(
   test_negative_value_behavior(sets_neg)
 )
 
+sets_neg_test_result_t = tar_target(
+  sets_neg_test_result,
+  summarize_neg_tests(sets_neg_test)
+)
+
 manuscript_t = tar_quarto(
   manuscript,
   "docs/manuscript.qmd",
@@ -116,4 +121,5 @@ list(
   sets_map,
   sets_neg_t,
   sets_neg_test_t
+  sets_neg_test_result_t
 )

@@ -47,3 +47,14 @@ get_negative_test = function(in_se) {
   }
   binom_res
 }
+
+
+summarize_neg_tests = function(sets_neg_test) {
+  sets_neg_test |>
+    dplyr::summarise(
+      n = dplyr::n(),
+      sig = sum(padjust <= 0.05),
+      perc = sig / n,
+      .by = subset
+    )
+}
