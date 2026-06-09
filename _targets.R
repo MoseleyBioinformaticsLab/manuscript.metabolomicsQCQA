@@ -114,5 +114,6 @@ list(
   processed_t,
   processed_group_t,
   sets_map,
-  sets_neg_t
+  sets_neg_t,
+  sets_neg_test_t
 )
