@@ -56,7 +56,38 @@ sets_map = tar_map(
 
 sets_neg_t = tar_target(
   sets_neg,
-  command = purrr::list_c(list(sets_map[3]))
+  c(
+    neg_g01,
+    neg_g02,
+    neg_g03,
+    neg_g04,
+    neg_g05,
+    neg_g06,
+    neg_g07,
+    neg_g08,
+    neg_g09,
+    neg_g10,
+    neg_g11,
+    neg_g12,
+    neg_g13,
+    neg_g14,
+    neg_g15,
+    neg_g16,
+    neg_g17,
+    neg_g18,
+    neg_g19,
+    neg_g20,
+    neg_g21,
+    neg_g22,
+    neg_g23,
+    neg_g24,
+    neg_g25,
+    neg_g26,
+    neg_g27,
+    neg_g28,
+    neg_g29,
+    neg_g30
+  )
 )
 
 manuscript_t = tar_quarto(
