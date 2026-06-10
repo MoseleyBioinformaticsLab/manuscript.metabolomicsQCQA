@@ -39,7 +39,7 @@ plan(multicore, workers = 10)
 # gets created properly.
 processed_t = tar_target(
   processed,
-  process_mwtab(mwtab_datasets[1:1000, ], ancillary_path, save_path)
+  process_mwtab(mwtab_datasets, ancillary_path, save_path)
 )
 processed_group_t = tar_target(
   processed_group,
