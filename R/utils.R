@@ -221,9 +221,9 @@ fix_sample_ids = function(raw_ids) {
         match_locs$value
       )
     })
-  } else if (any(has_plus) && !any(has_neg)) {
+  } else if (any(has_plus) && !any(has_minus)) {
     new_ids = gsub("\\+", "_p_", raw_ids)
-  } else if (!any(has_plus) && any(has_neg)) {
+  } else if (!any(has_plus) && any(has_minus)) {
     new_ids = gsub("\\-$", "_m_", raw_ids)
   } else {
     new_ids = raw_ids
@@ -269,4 +269,27 @@ replace_match_pm = function(in_string, in_plus, in_minus, loc_values) {
     }
   }
   out_string
+}
+
+create_new_sample_ids = function(in_sample_ids) {
+  # in_sample_ids = factor_df$sample_id
+
+  mapping_df = tibble::tibble(original = in_sample_ids)
+
+  unique_df = unique(mapping_df)
+  unique_df = unique_df |>
+    dplyr::mutate(
+      fix1 = fix_sample_ids(original),
+      new_id = janitor::make_clean_names(fix1)
+    )
+  if (length(unique(unique_df$new_id)) != nrow(unique_df)) {
+    stop("Something went wrong trying to fix the sample IDs!")
+  }
+  mapping_df = dplyr::left_join(
+    mapping_df,
+    unique_df[, c("original", "new_id")],
+    by = "original",
+    relationship = "many-to-one"
+  )
+  return(mapping_df$new_id)
 }

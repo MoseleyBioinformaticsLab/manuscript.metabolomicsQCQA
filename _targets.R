@@ -37,7 +37,10 @@ plan(multicore, workers = 10)
 
 # first time running, go to **processed_group** so the group file
 # gets created properly.
-processed_t = tar_target(processed, process_mwtab(mwtab_datasets))
+processed_t = tar_target(
+  processed,
+  process_mwtab(mwtab_datasets, ancillary_path, save_path)
+)
 processed_group_t = tar_target(
   processed_group,
   bind_group_processed(processed)

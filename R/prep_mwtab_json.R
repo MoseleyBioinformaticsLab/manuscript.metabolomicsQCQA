@@ -23,12 +23,17 @@ check_mwtab = function(processed) {
   check_results
 }
 
-process_mwtab = function(mwtab_datasets) {
+process_mwtab = function(mwtab_datasets, ancillary_path, save_path) {
   processed_results = furrr::future_map2(
     mwtab_datasets$file,
     mwtab_datasets$id,
     \(x, y) {
-      parse_json_save(x, y, ancillary_path, save_path)
+      parse_json_save(
+        x,
+        y,
+        ancillary_path = ancillary_path,
+        save_path = save_path
+      )
     }
   )
   processed_results
@@ -75,7 +80,7 @@ bind_group_processed = function(
 }
 
 parse_json_save = function(mwtab_file, id, ancillary_path, save_path) {
-  #mwtab_file = "data/repaired/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000023%2Fmwtab%2Ftxt.txt"  # MS file
+  #mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000032%2Fmwtab%2Ftxt.txt.json"  # MS file
   # mwtab_file = "data/repaired/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000693%2Fmwtab%2Ftxt.txt"  # NMR file
 
   # mwtab_file = "data/repaired/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000001%2Fmwtab%2Ftxt.txt"
@@ -145,6 +150,10 @@ parse_json_save = function(mwtab_file, id, ancillary_path, save_path) {
 
   # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN004699%2Fmwtab%2Ftxt.txt.json"; id = "AN004699"; tar_source("R")
 
+  # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN003604%2Fmwtab%2Ftxt.txt.json"
+
+  # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN004188%2Fmwtab%2Ftxt.txt.json"
+  # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000112%2Fmwtab%2Ftxt.txt.json"; ancillary_path = "mwtab/ancillary/"
   mwtab_list = jsonlite::fromJSON(mwtab_file, simplifyVector = FALSE)
 
   parsed_data = purrr::imap(mwtab_list, \(block, block_id) {
@@ -264,9 +273,8 @@ check_and_parse_ancillary_json = function(
     match_file,
     delim = "\t",
     show_col_types = FALSE,
-    name_repair = "universal_quiet"
-  ) |>
-    janitor::clean_names(unique_sep = "...")
+    name_repair = create_new_sample_ids
+  )
 
   check_character = function(data_df) {
     col_types = readr::spec(data_df)
@@ -837,9 +845,10 @@ ms_create_tibble = function(ms_data_json) {
     }
   }
 
-  tmp_tibble |>
-    custom_convert_numeric() |>
-    janitor::clean_names(unique_sep = "...")
+  tmp_tibble = tmp_tibble |>
+    custom_convert_numeric()
+  names(tmp_tibble) = create_new_sample_ids(names(tmp_tibble))
+  tmp_tibble
 }
 
 custom_convert_numeric = function(in_df) {
@@ -915,10 +924,7 @@ parse_factors_json = function(factor_data) {
     # in_sample = factor_data[[1]]
     sub_sample = tibble::tibble(
       subject = in_sample[["Subject ID"]],
-      sample_id = janitor::make_clean_names(
-        in_sample[["Sample ID"]],
-        unique_sep = "..."
-      )
+      sample_id = in_sample[["Sample ID"]]
     )
     factors = tibble::tibble(
       factor = names(in_sample$Factors),
@@ -940,7 +946,7 @@ parse_factors_json = function(factor_data) {
     out_df
   }) |>
     purrr::list_rbind()
-
+  # need code here to handle using fix_sample_ids first, and then make_clean_names
   if (nrow(factor_df) == 0) {
     return(NULL)
   }
@@ -948,6 +954,9 @@ parse_factors_json = function(factor_data) {
   if (any(factor_df$factor %in% "sample_id")) {
     return(NULL)
   }
+
+  factor_df = factor_df |>
+    dplyr::mutate(sample_id = create_new_sample_ids(sample_id))
 
   # these basically can't be empty, if they are, bad things happen.
   empty_factors = factor_df |>
