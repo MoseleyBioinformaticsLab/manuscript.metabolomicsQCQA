@@ -76,12 +76,97 @@ do_lc_tests = function(raw_data, ssf, suffix = ".org") {
 }
 
 
-summarize_neg_tests = function(sets_neg_test) {
-  sets_neg_test |>
-    dplyr::summarise(
-      n = dplyr::n(),
-      sig = sum(padjust <= 0.05),
-      perc = sig / n,
-      .by = subset
+plot_neg_tests = function(sets_neg_test) {
+  # tar_source("R"); tar_load(sets_neg_test)
+  # we identify and remove those that had an NA statistic so we aren't
+  # overinflating anything.
+  na_org = sets_neg_test |>
+    dplyr::filter(is.na(statistic.org) | is.na(statistic.neg)) |>
+    dplyr::pull(id) |>
+    unique()
+
+  sets_neg_test_present = sets_neg_test |>
+    dplyr::filter(!(id %in% na_org)) |>
+    dplyr::mutate(
+      p.value.org = dplyr::case_when(
+        p.value.org == 0 ~ 1e-300,
+        TRUE ~ p.value.org
+      ),
+      p.value.neg = dplyr::case_when(
+        p.value.neg == 0 ~ 1e-300,
+        TRUE ~ p.value.neg
+      )
+    ) |>
+    dplyr::mutate(
+      p.value_neg_vs_org = -1 * log10(p.value.neg / p.value.org),
+      estimate_neg_vs_org = log2(estimate.neg / estimate.org)
     )
+  p_value_plot = sets_neg_test_present |>
+    ggplot(aes(x = p.value_neg_vs_org)) +
+    geom_histogram(bins = 30) +
+    geom_vline(xintercept = 0, color = "red") +
+    facet_wrap(~subset.neg, ncol = 1) +
+    labs(x = "-1 x Log10(Neg-p / Missing-p)")
+  estimate_plot = sets_neg_test_present |>
+    ggplot(aes(x = estimate_neg_vs_org)) +
+    geom_histogram(bins = 30) +
+    geom_vline(xintercept = 0, color = "red") +
+    facet_wrap(~subset.neg, ncol = 1) +
+    labs(x = "Log2(Neg-estimate / Missing-estimate)")
+
+  sets_neg_direction = sets_neg_test_present |>
+    dplyr::mutate(
+      sign_p = sign(p.value_neg_vs_org),
+      sign_p2 = dplyr::case_when(
+        sign_p == 0 ~ 1,
+        TRUE ~ sign_p
+      ),
+      sign_estimate = sign(estimate_neg_vs_org),
+      sign_estimate2 = dplyr::case_when(
+        sign_estimate == 0 ~ 1,
+        TRUE ~ sign_estimate
+      )
+    )
+  sets_p_test_nozero = sets_neg_direction |>
+    dplyr::filter(sign_p != 0) |>
+    dplyr::summarise(n = dplyr::n(), .by = c(subset.neg, sign_p)) |>
+    dplyr::summarise(
+      binom_test = binom.test(n) |> broom::tidy(),
+      .by = subset.neg
+    )
+
+  sets_p_test_zeropos = sets_neg_direction |>
+    dplyr::summarise(n = dplyr::n(), .by = c(subset.neg, sign_p2)) |>
+    dplyr::summarise(
+      binom_test = binom.test(n) |> broom::tidy(),
+      .by = subset.neg
+    )
+
+  sets_estimate_test_nozero = sets_neg_direction |>
+    dplyr::filter(sign_estimate != 0) |>
+    dplyr::summarise(n = dplyr::n(), .by = c(subset.neg, sign_estimate)) |>
+    dplyr::summarise(
+      binom_test = binom.test(n) |> broom::tidy(),
+      .by = subset.neg
+    )
+
+  sets_estimate_test_zeropos = sets_neg_direction |>
+    dplyr::summarise(n = dplyr::n(), .by = c(subset.neg, sign_estimate2)) |>
+    dplyr::summarise(
+      binom_test = binom.test(n) |> broom::tidy(),
+      .by = subset.neg
+    )
+
+  list(
+    p_histogram = p_value_plot,
+    estimate_histogram = estimate_plot,
+    p_tests = list(
+      remove_zero = sets_p_test_nozero,
+      zero_to_positive = sets_p_test_zeropos
+    ),
+    estimate_tests = list(
+      remove_zero = sets_estimate_test_nozero,
+      zero_to_positive = sets_estimate_test_zeropos
+    )
+  )
 }

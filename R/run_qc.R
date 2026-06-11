@@ -33,9 +33,9 @@ get_qc_outputs = function(run_set) {
 }
 
 check_qc_se_1_3 = function() {
-  qc_run1 = tar_read(run_g01) |> get_qc_outputs()
-  qc_run2 = tar_read(run_g02) |> get_qc_outputs()
-  qc_run3 = tar_read(run_g03) |> get_qc_outputs()
+  qc_run1 = tar_read(neg_g01) |> get_qc_outputs()
+  qc_run2 = tar_read(neg_g02) |> get_qc_outputs()
+  qc_run3 = tar_read(neg_g03) |> get_qc_outputs()
   all_qc = dplyr::bind_rows(qc_run1, qc_run2, qc_run3)
   n_id = length(unique(all_qc$id))
   all_qc |>

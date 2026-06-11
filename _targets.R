@@ -100,7 +100,7 @@ sets_neg_test_t = tar_target(
 
 sets_neg_test_result_t = tar_target(
   sets_neg_test_result,
-  summarize_neg_tests(sets_neg_test)
+  plot_neg_tests(sets_neg_test)
 )
 
 manuscript_t = tar_quarto(
