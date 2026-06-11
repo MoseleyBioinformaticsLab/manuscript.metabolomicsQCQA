@@ -16,6 +16,18 @@ test_negative_value_behavior = function(sets_neg) {
   out_res
 }
 
+get_contains_negatives = function(sets_neg) {
+  qc_info = get_qc_outputs(sets_neg)
+
+  neg_qc = qc_info |>
+    dplyr::filter(why %in% "negative values present") |>
+    dplyr::pull(id) |>
+    unique()
+
+  neg_list = sets_neg[neg_qc]
+  neg_list
+}
+
 get_negative_test = function(in_se) {
   # in_se = neg_list[[1]]
   raw_data = assays(in_se)$raw

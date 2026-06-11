@@ -103,6 +103,11 @@ sets_neg_test_result_t = tar_target(
   plot_neg_tests(sets_neg_test)
 )
 
+just_contains_negatives_t = tar_target(
+  just_contains_negatives,
+  get_contains_negatives(sets_neg)
+)
+
 manuscript_t = tar_quarto(
   manuscript,
   "docs/manuscript.qmd",
@@ -124,5 +129,6 @@ list(
   sets_map,
   sets_neg_t,
   sets_neg_test_t,
-  sets_neg_test_result_t
+  sets_neg_test_result_t,
+  just_contains_negatives_t
 )
