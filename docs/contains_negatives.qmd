@@ -94,10 +94,6 @@ get_info_pieces = function(in_se) {
     geom_histogram(bins = 30) +
     labs(subtitle = mwtab_data$ID)
   print(negative_boxplot)
-
-  n_miss = MatrixGenerics::colCounts(is.na(raw_data))
-  n_neg = MatrixGenerics::colCounts(sign(raw_data) == -1, na.rm = TRUE)
-  print(cbind(n_miss, n_neg))
 }
 
 purrr::walk(just_contains_negatives, get_info_pieces)
