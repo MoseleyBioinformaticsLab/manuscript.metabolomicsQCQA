@@ -13,39 +13,66 @@ test_negative_value_behavior = function(sets_neg) {
   neg_list = sets_neg[neg_qc]
   out_res = purrr::map(neg_list, get_negative_test) |>
     purrr::list_rbind()
-  out_res_all = out_res |>
-    dplyr::filter(subset %in% "all") |>
-    dplyr::mutate(padjust = p.adjust(p.value, method = "BH"))
-  out_res_subset = out_res |>
-    dplyr::filter(subset %in% "ssf") |>
-    dplyr::mutate(padjust = p.adjust(p.value, method = "BH"))
-  dplyr::bind_rows(out_res_all, out_res_subset)
+  out_res
 }
 
 get_negative_test = function(in_se) {
-  # in_se = neg_list[["AN006242"]]
+  # in_se = neg_list[[1]]
   raw_data = assays(in_se)$raw
-  raw_data[is.na(raw_data)] = 0
-  raw_data[raw_data < 0] = NA
+  raw_data[raw_data == 0] = NA
 
-  all_test = ICIKendallTau::test_left_censorship(raw_data, global_na = NA)
+  org_tests = do_lc_tests(raw_data, in_se$ssf, ".org")
+
+  neg_data = raw_data
+  neg_data[raw_data < 0] = NA
+
+  neg_tests = do_lc_tests(neg_data, in_se$ssf, ".neg")
+
+  out_tests = dplyr::bind_cols(org_tests, neg_tests) |>
+    dplyr::mutate(id = metadata(in_se)$qc$id)
+  out_tests
+}
+
+do_lc_tests = function(raw_data, ssf, suffix = ".org") {
+  # ssf = in_se$ssf; suffix = ".org";
+  na_test = tibble::tibble(
+    estimate = 0,
+    statistic = as.numeric(NA),
+    p.value = 1,
+    parameter = as.numeric(NA),
+    conf.low = as.numeric(NA),
+    conf.high = as.numeric(NA),
+    method = "Exact binomial test",
+    alternative = "greater"
+  )
+
+  all_test = try(ICIKendallTau::test_left_censorship(
+    raw_data,
+    global_na = c(0, NA)
+  ))
+  if (inherits(all_test, "try-error") || is.null(all_test)) {
+    all_out = na_test
+  } else {
+    all_out = broom::tidy(all_test$binomial_test)
+  }
+  all_out = all_out |>
+    dplyr::mutate(subset = "all")
 
   ssf_test = try(ICIKendallTau::test_left_censorship(
     raw_data,
-    global_na = NA,
-    in_se$ssf
+    global_na = c(0, NA),
+    ssf
   ))
-  if (!inherits(ssf_test, "try-error")) {
-    binom_res = dplyr::bind_rows(
-      broom::tidy(all_test$binomial_test),
-      broom::tidy(ssf_test$binomial_test)
-    ) |>
-      dplyr::mutate(id = metadata(in_se)$id, subset = c("all", "ssf"))
+  if (inherits(ssf_test, "try-error") || is.null(ssf_test)) {
+    ssf_out = na_test
   } else {
-    binom_res = broom::tidy(all_test$binomial_test) |>
-      dplyr::mutate(id = metadata(in_se)$id, subset = "all")
+    ssf_out = broom::tidy(ssf_test$binomial_test)
   }
-  binom_res
+  ssf_out = ssf_out |>
+    dplyr::mutate(subset = "ssf")
+  test_out = dplyr::bind_rows(all_out, ssf_out)
+  names(test_out) = paste0(names(test_out), suffix)
+  test_out
 }
 
 
