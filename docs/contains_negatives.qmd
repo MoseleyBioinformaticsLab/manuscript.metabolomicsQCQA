@@ -1,0 +1,86 @@
+---
+title: Contains Negatives
+author: Moseley Bioinformatics Lab
+date: last-modified
+format:
+  html
+---
+
+Last generated at: `r Sys.time()`
+
+## Purpose
+
+This is a summary report for those analyses that contain negative values, to see why they contain negatives and how they should be handled.
+
+```{r}
+#| label: knitr-chunks
+#| echo: false
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = TRUE,
+  warning = FALSE,
+  fig.width = 14,
+  fig.height = 12,
+  dev = "ragg_png",
+  dpi = 150
+)
+```
+
+```{r}
+#| label: load-targets
+#| message: false
+#| warning: false
+tar_source(c("packages.R", "R"))
+# keep track of the line below, as it gets replaced.
+tar_load(just_contains_negatives)
+```
+
+```{r}
+#| label: outputs
+#| fig-show: asis
+lengthen_matrix = function(raw_data) {
+  raw_df = as.data.frame(raw_data) |>
+    tibble::rownames_to_column(var = "feature_id")
+  long_df = raw_df |>
+    tidyr::pivot_longer(
+      cols = -feature_id,
+      names_to = "sample_id",
+      values_to = "abundance"
+    )
+  long_df
+}
+get_info_pieces = function(in_se) {
+  # in_se = just_contains_negatives[[1]]
+  mwtab_data = metadata(in_se)$mwtab
+  analysis_info = mwtab_data$`METABOLOMICS WORKBENCH`
+  analysis_info = dplyr::bind_rows(
+    analysis_info,
+    tibble::tibble(
+      field = c("Measurement Type", "N-Samples", "N-Features"),
+      value = c(mwtab_data$MEASUREMENT_TYPE, ncol(in_se), nrow(in_se))
+    )
+  )
+  as.data.frame(analysis_info) |> paint::unpaint()
+  raw_data = assays(in_se)$raw
+
+  long_data = lengthen_matrix(raw_data)
+  raw_boxplot = long_data |>
+    ggplot(aes(x = sample_id, y = abundance)) +
+    geom_boxplot() +
+    labs(subtitle = mwtab_data$ID)
+  print(raw_boxplot)
+
+  log_boxplot = long_data |>
+    ggplot(aes(x = sample_id, y = log2(abundance))) +
+    geom_boxplot() +
+    labs(subtitle = mwtab_data$ID)
+  print(log_boxplot)
+  n_miss = MatrixGenerics::colCounts(is.na(raw_data))
+  n_neg = MatrixGenerics::colCounts(sign(raw_data) == -1, na.rm = TRUE)
+  print(cbind(n_miss, n_neg))
+}
+
+purrr::walk(just_contains_negatives, get_info_pieces)
+```
+
+

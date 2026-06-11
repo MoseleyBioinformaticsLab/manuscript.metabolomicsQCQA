@@ -118,6 +118,11 @@ reproducibility_t = tar_quarto(
   reproducibility_report,
   "docs/reproducibility.qmd"
 )
+
+contains_negatives_report_t = tar_quarto(
+  contains_negatives_report,
+  "docs/contains_negatives.qmd"
+)
 # setup_map = tar_map(
 #   json_all_map[[4]],
 #   tar_target(setup, run_setup)
@@ -130,5 +135,6 @@ list(
   sets_neg_t,
   sets_neg_test_t,
   sets_neg_test_result_t,
-  just_contains_negatives_t
+  just_contains_negatives_t,
+  contains_negatives_report_t
 )
