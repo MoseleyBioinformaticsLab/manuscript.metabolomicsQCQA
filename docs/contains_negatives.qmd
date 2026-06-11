@@ -75,6 +75,26 @@ get_info_pieces = function(in_se) {
     geom_boxplot() +
     labs(subtitle = mwtab_data$ID)
   print(log_boxplot)
+
+  n_miss = long_data |>
+    dplyr::filter(is.na(abundance)) |>
+    dplyr::summarise(n_missing = dplyr::n(), .by = sample_id)
+  n_neg = long_data |>
+    dplyr::filter(abundance < 0) |>
+    dplyr::summarise(n_negative = dplyr::n(), .by = sample_id)
+
+  missing_boxplot = n_miss |>
+    ggplot(aes(x = n_missing)) +
+    geom_histogram(bins = 30) +
+    labs(subtitle = mwtab_data$ID)
+  print(missing_boxplot)
+
+  negative_boxplot = n_neg |>
+    ggplot(aes(x = n_negative)) +
+    geom_histogram(bins = 30) +
+    labs(subtitle = mwtab_data$ID)
+  print(negative_boxplot)
+
   n_miss = MatrixGenerics::colCounts(is.na(raw_data))
   n_neg = MatrixGenerics::colCounts(sign(raw_data) == -1, na.rm = TRUE)
   print(cbind(n_miss, n_neg))
