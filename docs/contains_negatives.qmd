@@ -67,7 +67,7 @@ get_info_pieces = function(in_se) {
   long_data = long_data |>
     dplyr::mutate(
       adjusted_abundance = abundance +
-        (abs(min(abundance, na.rm = TRUE)) * 1.1)
+        (abs(min(abundance, na.rm = TRUE)))
     )
   raw_boxplot = long_data |>
     ggplot(aes(x = sample_id, y = abundance)) +
@@ -76,7 +76,7 @@ get_info_pieces = function(in_se) {
   print(raw_boxplot)
 
   log_boxplot = long_data |>
-    ggplot(aes(x = sample_id, y = log2(abundance))) +
+    ggplot(aes(x = sample_id, y = log1p(abundance))) +
     geom_boxplot() +
     labs(subtitle = paste0(mwtab_data$ID, " Raw"))
   print(log_boxplot)
@@ -88,7 +88,7 @@ get_info_pieces = function(in_se) {
   print(adj_raw_boxplot)
 
   adj_log_boxplot = long_data |>
-    ggplot(aes(x = sample_id, y = log2(adjusted_abundance))) +
+    ggplot(aes(x = sample_id, y = log1p(adjusted_abundance))) +
     geom_boxplot() +
     labs(subtitle = paste0(mwtab_data$ID, " Adjusted"))
   print(adj_log_boxplot)
