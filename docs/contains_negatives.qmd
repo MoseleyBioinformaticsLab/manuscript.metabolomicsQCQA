@@ -32,7 +32,7 @@ knitr::opts_chunk$set(
 #| warning: false
 tar_source(c("packages.R", "R"))
 # keep track of the line below, as it gets replaced.
-tar_load(just_contains_negatives)
+tar_load(sets_neg)
 ```
 
 ```{r}
@@ -50,7 +50,7 @@ lengthen_matrix = function(raw_data) {
   long_df
 }
 get_info_pieces = function(in_se) {
-  # in_se = just_contains_negatives[[1]]
+  # in_se = sets_neg[[1]]
   mwtab_data = metadata(in_se)$mwtab
   analysis_info = mwtab_data$`METABOLOMICS WORKBENCH`
   analysis_info = dplyr::bind_rows(
@@ -64,17 +64,33 @@ get_info_pieces = function(in_se) {
   raw_data = assays(in_se)$raw
 
   long_data = lengthen_matrix(raw_data)
+  long_data = long_data |>
+    dplyr::mutate(
+      adjusted_abundance = abundance + abs(min(abundance, na.rm = TRUE)) + 1e-6
+    )
   raw_boxplot = long_data |>
     ggplot(aes(x = sample_id, y = abundance)) +
     geom_boxplot() +
-    labs(subtitle = mwtab_data$ID)
+    labs(subtitle = paste0(mwtab_data$ID, " Raw"))
   print(raw_boxplot)
 
   log_boxplot = long_data |>
     ggplot(aes(x = sample_id, y = log2(abundance))) +
     geom_boxplot() +
-    labs(subtitle = mwtab_data$ID)
+    labs(subtitle = paste0(mwtab_data$ID, " Raw"))
   print(log_boxplot)
+
+  adj_raw_boxplot = long_data |>
+    ggplot(aes(x = sample_id, y = adjusted_abundance)) +
+    geom_boxplot() +
+    labs(subtitle = paste0(mwtab_data$ID, " Adjusted"))
+  print(adj_raw_boxplot)
+
+  adj_log_boxplot = long_data |>
+    ggplot(aes(x = sample_id, y = log2(adjusted_abundance))) +
+    geom_boxplot() +
+    labs(subtitle = paste0(mwtab_data$ID, " Adjusted"))
+  print(adj_log_boxplot)
 
   n_miss = long_data |>
     dplyr::filter(is.na(abundance)) |>
@@ -96,7 +112,7 @@ get_info_pieces = function(in_se) {
   print(negative_boxplot)
 }
 
-purrr::walk(just_contains_negatives, get_info_pieces)
+purrr::walk(sets_neg, get_info_pieces)
 ```
 
 
