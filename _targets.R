@@ -130,6 +130,5 @@ list(
   sets_neg_t,
   sets_neg_test_t,
   sets_neg_test_result_t,
-  just_contains_negatives_t,
   contains_negatives_report_t
 )
