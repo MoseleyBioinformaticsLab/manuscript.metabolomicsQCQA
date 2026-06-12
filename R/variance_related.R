@@ -12,7 +12,6 @@ calculate_dynamic_range_check_neg = function(se_data) {
   # exclude it right now, before we try and do left-censorship, correlations and PCA,
   # and set up the missingness correctly.
   data_matrix = assays(se_data)$raw
-  data_matrix[data_matrix == 0] = NA
   assays(se_data)$raw = data_matrix
 
   sample_mins = MatrixGenerics::colMins(data_matrix, na.rm = TRUE)
