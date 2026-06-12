@@ -3,15 +3,7 @@ test_negative_value_behavior = function(sets_neg) {
   # tar_load(c(neg_g01, neg_g02, neg_g03))
   # sets_neg = c(neg_g01, neg_g02, neg_g03)
 
-  qc_info = get_qc_outputs(sets_neg)
-
-  neg_qc = qc_info |>
-    dplyr::filter(why %in% "negative values present") |>
-    dplyr::pull(id) |>
-    unique()
-
-  neg_list = sets_neg[neg_qc]
-  out_res = purrr::map(neg_list, get_negative_test) |>
+  out_res = purrr::map(sets_neg, get_negative_test) |>
     purrr::list_rbind()
   out_res
 }

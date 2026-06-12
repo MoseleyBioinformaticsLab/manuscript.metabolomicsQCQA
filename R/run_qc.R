@@ -16,6 +16,15 @@ sets_run_qc_neg = function(se_set) {
 
   # then we do dynamic range calculations for those that can.
   dyn_range_set = purrr::map(se_set, calculate_dynamic_range)
+  qc_info = get_qc_outputs(dyn_range_set)
+
+  neg_qc = qc_info |>
+    dplyr::filter(why %in% "negative values present") |>
+    dplyr::pull(id) |>
+    unique()
+
+  neg_list = dyn_range_set[neg_qc]
+  neg_list
 }
 
 get_qc = function(se_data) {
