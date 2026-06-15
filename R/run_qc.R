@@ -112,6 +112,8 @@ readrds_convert_to_se = function(rds_file, md5_sum) {
   # setup_data = setup_set[["AN003915"]]
 
   # id = "AN000072"; rds_file = "parsed_rds/AN000072.rds"; md5_sum = "781a19811ab6cf3ca6524224ab2e3507"; tar_source("R")
+  # id = "AN003915"; rds_file = "parsed_rds/AN003915.rds"; tar_source("R")
+  # id = "AN004851"; rds_file = "parsed_rds/AN004851.rds"; tar_source("R")
   processed_data = readRDS(rds_file)
   check_md5(processed_data, md5_sum)
 
@@ -219,9 +221,9 @@ readrds_convert_to_se = function(rds_file, md5_sum) {
   out_matrix = safe_matrix
   processed_data$transform = "none"
   if (
-    !(is.na(mean_median_ratio)) ||
+    !(is.na(mean_median_ratio) ||
       is.nan(mean_median_ratio) ||
-      is.infinite(mean_median_ratio)
+      is.infinite(mean_median_ratio))
   ) {
     if ((mean_median_ratio >= low_ratio) && (mean_median_ratio <= hi_ratio)) {
       out_matrix = 2^safe_matrix

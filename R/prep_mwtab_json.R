@@ -154,6 +154,7 @@ parse_json_save = function(mwtab_file, id, ancillary_path, save_path) {
 
   # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN004188%2Fmwtab%2Ftxt.txt.json"
   # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000112%2Fmwtab%2Ftxt.txt.json"; ancillary_path = "mwtab/ancillary/"
+  # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN003915%2Fmwtab%2Ftxt.txt.json"; ancillary_path = "mwtab/ancillary"; tar_source("R")
   mwtab_list = jsonlite::fromJSON(mwtab_file, simplifyVector = FALSE)
 
   parsed_data = purrr::imap(mwtab_list, \(block, block_id) {
