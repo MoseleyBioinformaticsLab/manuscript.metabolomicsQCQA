@@ -85,7 +85,7 @@ plot_neg_tests = function(sets_neg_test) {
   # we identify and remove those that had an NA statistic so we aren't
   # overinflating anything.
   na_org = sets_neg_test |>
-    dplyr::filter(is.na(statistic.org) | is.na(statistic.neg)) |>
+    dplyr::filter(is.na(statistic.org) & is.na(statistic.neg)) |>
     dplyr::pull(id) |>
     unique()
 

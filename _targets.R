@@ -118,6 +118,11 @@ contains_negatives_report_t = tar_quarto(
   contains_negatives_report,
   "docs/contains_negatives.qmd"
 )
+
+negatives_testing_report_t = tar_quarto(
+  negatives_testing_report,
+  "docs/effect_of_negatives_as_missing.qmd"
+)
 # setup_map = tar_map(
 #   json_all_map[[4]],
 #   tar_target(setup, run_setup)
@@ -130,5 +135,6 @@ list(
   sets_neg_t,
   sets_neg_test_t,
   sets_neg_test_result_t,
-  contains_negatives_report_t
+  contains_negatives_report_t,
+  negatives_testing_report_t
 )

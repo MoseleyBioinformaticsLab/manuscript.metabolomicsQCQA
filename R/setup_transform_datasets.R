@@ -40,11 +40,21 @@ check_md5 = function(in_data, md5_sum) {
   return(invisible(NULL))
 }
 
-transform_abundances = function(in_abundances, max_min = 20) {
+transform_abundances = function(in_abundances) {
   transform = "none"
   abundance_matrix = as.matrix(in_abundances |> dplyr::select(-feature_id))
-  value_range = range(abundance_matrix, na.rm = TRUE)
-  if (max(value_range) < max_min) {
+  matrix_mean = mean(abundance_matrix, na.rm = TRUE)
+  matrix_median = median(abundance_matrix, na.rm = TRUE)
+  median_mean_ratio = abs(matrix_median / matrix_mean)
+
+  if (
+    is.na(median_mean_ratio) ||
+      is.nan(median_mean_ratio) ||
+      is.infinite(median_mean_ratio)
+  ) {
+    return(list(measurements = in_abundances, transform = transform))
+  }
+  if ((median_mean_ratio >= 0.95) && (median_mean_ratio <= 1.05)) {
     sample_cols = colnames(abundance_matrix)
     for (icol in sample_cols) {
       in_abundances[[icol]] = 2^in_abundances[[icol]]

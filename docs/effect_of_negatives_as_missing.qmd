@@ -1,0 +1,100 @@
+---
+title: Examining the effect of adding negative values to missing
+author: Moseley Bioinformatics Lab
+date: last-modified
+format:
+  html:
+    embed-resources: true
+---
+
+## Purpose
+
+We want to know if we can just add negatives to the missing, and keep going.
+
+So what I did, is I only considered the datasets that have at least two negative values in them.
+I took the actual missing values (end up as `NA` in the raw data), did the test for left-censorship, and then made anything $\le 0$ as missing, and did the test again.
+
+**If there were no missing values initially, I recorded the p-value as 1, and the estimate as 0.**
+
+To put a p-value on this, I also did a binomial test of the differences in log-p-value and ratio of effect sizes, both where I just removed no-change and where we consider no-change as being equal to positive change (i.e. more extreme p-value or larger effect size).
+
+
+```{r}
+#| label: setup
+#| include: false
+#| echo: false
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 10,
+  fig.height = 8,
+  dev = c("ragg_png", "svg"),
+  dpi = 600
+)
+```
+
+```{r}
+#| label: targets
+targets::tar_source(c("./packages.R", "R"))
+tar_load(sets_neg_test_result)
+```
+
+```{r}
+#| label: function-modify
+put_tables_together = function(in_tbl, tbl_names = c("all", "ssf")) {
+  # in_tbl = sets_neg_test_result$p_tests$remove_zero$binom_test
+  in_tbl = in_tbl |>
+    dplyr::mutate(subset = tbl_names)
+  in_tbl |>
+    dplyr::select(subset, p.value, statistic, estimate) |>
+    gt::gt() |>
+    gt::fmt_number(columns = c(p.value, estimate), decimals = 3)
+}
+```
+
+## Results
+
+### Change In P-Values
+
+```{r}
+#| label: fig-p-values
+#| fig-cap: Histogram of the differences in p-values using just missing, or also considering negative values as missing.
+sets_neg_test_result$p_histogram
+```
+
+```{r}
+#| label: tbl-p-values-nozero
+#| tbl-cap: Binomial test of changing p-values when adding negatives to missing, but removing zero change.
+sets_neg_test_result$p_tests$remove_zero$binom_test |>
+  put_tables_together()
+```
+
+```{r}
+#| label: tbl-p-values-addzero
+#| tbl-cap: Binomial test of changing p-value when adding negatives to missing, but including zero change as a positive.
+sets_neg_test_result$p_tests$zero_to_positive$binom_test |>
+  put_tables_together()
+```
+
+### Change in Estimate
+
+```{r}
+#| label: fig-estimate
+#| fig-cap: Histogram of the differences in estimate using just missing, or also considering negative values as missing.
+sets_neg_test_result$estimate_histogram
+```
+
+```{r}
+#| label: tbl-estimate-nozero
+#| tbl-cap: Binomial test of changing estimate when adding negatives to missing, but removing zero change.
+sets_neg_test_result$estimate_tests$remove_zero$binom_test |>
+  put_tables_together()
+```
+
+```{r}
+#| label: tbl-estimate-addzero
+#| tbl-cap: Binomial test of changing estimate when adding negatives to missing, but including zero change as a positive.
+sets_neg_test_result$estimate_tests$zero_to_positive$binom_test |>
+  put_tables_together()
+```
