@@ -23,12 +23,11 @@ get_contains_negatives = function(sets_neg) {
 get_negative_test = function(in_se) {
   # in_se = neg_list[[1]]
   raw_data = assays(in_se)$raw
-  raw_data[raw_data == 0] = NA
 
   org_tests = do_lc_tests(raw_data, in_se$ssf, ".org")
 
   neg_data = raw_data
-  neg_data[raw_data < 0] = NA
+  neg_data[raw_data <= 0] = NA
 
   neg_tests = do_lc_tests(neg_data, in_se$ssf, ".neg")
 
@@ -52,7 +51,7 @@ do_lc_tests = function(raw_data, ssf, suffix = ".org") {
 
   all_test = try(ICIKendallTau::test_left_censorship(
     raw_data,
-    global_na = c(0, NA)
+    global_na = NA
   ))
   if (inherits(all_test, "try-error") || is.null(all_test)) {
     all_out = na_test
@@ -64,7 +63,7 @@ do_lc_tests = function(raw_data, ssf, suffix = ".org") {
 
   ssf_test = try(ICIKendallTau::test_left_censorship(
     raw_data,
-    global_na = c(0, NA),
+    global_na = NA,
     ssf
   ))
   if (inherits(ssf_test, "try-error") || is.null(ssf_test)) {

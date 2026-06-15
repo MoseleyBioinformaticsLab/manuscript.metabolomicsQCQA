@@ -51,8 +51,7 @@ report_file_t = tar_file(report_file, "resources/example_report.qmd")
 sets_map = tar_map(
   group_sets,
   names = group,
-  tar_target(setup, sets_run_setup(set, processed_group)),
-  tar_target(se, sets_convert_to_se(setup)),
+  tar_target(se, sets_readrds_convert_to_se(set, processed_group)),
   tar_target(neg, sets_run_qc_neg(se)),
   tar_target(run, sets_run_qc(se))
 )

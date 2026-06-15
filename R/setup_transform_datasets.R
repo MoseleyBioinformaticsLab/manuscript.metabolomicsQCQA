@@ -71,6 +71,12 @@ transform_abundances = function(in_abundances) {
   list(measurements = in_abundances, transform = transform)
 }
 
+intersect_samples = function(abundance_data, sample_ids) {
+  keep_samples = base::intersect(colnames(abundance_data), sample_ids)
+  keep_cols = c(keep_samples, "feature_id")
+  abundance_data[, keep_cols]
+}
+
 #' filters measurements and ssf to matching samples
 #'
 #' Often, the analyses have sample factors for samples

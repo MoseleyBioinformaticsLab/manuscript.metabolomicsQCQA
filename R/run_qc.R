@@ -1,5 +1,15 @@
-sets_convert_to_se = function(setup_set) {
-  se_set = purrr::map(setup_set, convert_to_se)
+sets_readrds_convert_to_se = function(set_df, processed_group) {
+  if (inherits(set_df, "character")) {
+    stop(
+      "Run to processed_group first, and then the rest!  tar_make(processed_group)"
+    )
+  }
+  all_files = set_df$file
+  all_md5 = set_df$md5
+  all_id = set_df$id
+  all_se = furrr::future_map2(all_files, all_md5, readrds_convert_to_se)
+  names(all_se) = all_id
+  all_se
 }
 
 sets_run_dyn_neg = function(se_set) {
@@ -53,54 +63,7 @@ check_qc_se_1_3 = function() {
     paint::unpaint()
 }
 
-convert_to_se = function(setup_data) {
-  # setup_set = tar_read(setup_g01); tar_source("R")
-  # using setup_g01
-  # setup_data = setup_set[[4]]
-  # setup_data = setup_set[[55]]
-  # setup_data = setup_set[["AN000731"]]
-  # setup_data = setup_set[["AN003244"]]
-
-  # using setup_g02
-  # setup_data = setup_set[["AN004188"]]
-  # setup_data = setup_set[["AN001560"]]
-  # setup_data = setup_set[["AN002381"]]
-  # setup_data = setup_set[["AN002935"]]
-  # setup_data = setup_set[["AN003604"]]
-  # setup_data = setup_set[["AN003915"]]
-
-  if (!is.null(setup_data$MEASUREMENTS)) {
-    raw_matrix = get_just_values(setup_data$MEASUREMENTS)
-
-    n_feature = nrow(raw_matrix)
-    n_sample = ncol(raw_matrix)
-  } else {
-    se_data = create_empty_se(setup_data, why = "no feature data")
-    return(se_data)
-  }
-
-  if (n_feature == 0) {
-    filtered_features = setup_data$FILTERED_FEATURES
-    if (filtered_features$kept[1] == 0) {
-      why = "no features; didn't match metabolites"
-    } else {
-      why = "no features; unknown"
-    }
-    se_data = create_empty_se(setup_data, why = why)
-    return(se_data)
-  }
-
-  if (n_sample == 0) {
-    filtered_samples = setup_data$FILTERED_SAMPLES
-    if (filtered_samples$kept[2] == 0) {
-      why = "no samples; didn't match ssf"
-    } else {
-      why = "no samples; unknown"
-    }
-    se_data = create_empty_se(setup_data, why = why)
-    return(se_data)
-  }
-
+check_convert_character_matrix = function(raw_matrix) {
   if (is.character(raw_matrix[1, 1])) {
     safe_matrix = apply(
       raw_matrix,
@@ -121,28 +84,159 @@ convert_to_se = function(setup_data) {
       colnames(safe_matrix) = colnames(raw_matrix)
     }
     mode(safe_matrix) = "numeric"
-    na_vals = is.na(safe_matrix)
-    if (all(na_vals)) {
-      se_data = create_empty_se(
-        setup_data,
-        why = "all character values when converting to matrix"
-      )
-      return(se_data)
-    }
   } else {
     safe_matrix = raw_matrix
   }
+  return(safe_matrix)
+}
 
-  feature_data = setup_data$METABOLITES |> DataFrame()
-  rownames(feature_data) = feature_data$feature_id
-  feature_data = feature_data[rownames(safe_matrix), ]
+check_all_na = function(raw_matrix) {
+  na_vals = is.na(raw_matrix)
+  all(na_vals)
+}
 
-  ssf = setup_data$SUBJECT_SAMPLE_FACTORS
-  if (is.null(ssf)) {
-    se_data = create_empty_se(setup_data, why = "no subject sample factors")
+readrds_convert_to_se = function(rds_file, md5_sum) {
+  # setup_set = tar_read(setup_g01); tar_source("R")
+  # using setup_g01
+  # setup_data = setup_set[[4]]
+  # setup_data = setup_set[[55]]
+  # setup_data = setup_set[["AN000731"]]
+  # setup_data = setup_set[["AN003244"]]
+
+  # using setup_g02
+  # setup_data = setup_set[["AN004188"]]
+  # setup_data = setup_set[["AN001560"]]
+  # setup_data = setup_set[["AN002381"]]
+  # setup_data = setup_set[["AN002935"]]
+  # setup_data = setup_set[["AN003604"]]
+  # setup_data = setup_set[["AN003915"]]
+
+  # id = "AN000072"; rds_file = "parsed_rds/AN000072.rds"; md5_sum = "781a19811ab6cf3ca6524224ab2e3507"; tar_source("R")
+  processed_data = readRDS(rds_file)
+  check_md5(processed_data, md5_sum)
+
+  ssf_data = processed_data$SUBJECT_SAMPLE_FACTORS
+  abundance_data = processed_data$MEASUREMENTS
+  metabolite_data = processed_data$METABOLITES
+
+  if (is.null(abundance_data)) {
+    se_data = create_empty_se(processed_data, why = "no feature data")
     return(se_data)
   }
-  ssf = clean_ssf_factors(ssf)
+  if (is.null(ssf_data)) {
+    se_data = create_empty_se(processed_data, why = "no subject sample factors")
+    return(se_data)
+  }
+
+  original_abundance_cols = colnames(abundance_data)
+  original_ssf_samples = unique(ssf_data$sample_id)
+  original_abundance_metabolites = abundance_data$feature_id
+  original_metabolites = metabolite_data$feature_id
+
+  abundance_data = intersect_samples(
+    abundance_data,
+    original_ssf_samples
+  )
+  ssf_data = ssf_data |>
+    dplyr::filter(sample_id %in% colnames(abundance_data))
+
+  match_metabolites = base::intersect(
+    original_metabolites,
+    abundance_data$feature_id
+  )
+  metabolite_data = metabolite_data |>
+    dplyr::filter(feature_id %in% match_metabolites)
+  raw_matrix = get_just_values(abundance_data)
+  raw_matrix = raw_matrix[match_metabolites, , drop = FALSE]
+
+  n_feature = nrow(raw_matrix)
+  n_sample = ncol(raw_matrix)
+
+  n_filtered_samples = tibble::tribble(
+    ~source        , ~original                       , ~kept            , ~filtered                                                                              ,
+    "ssf"          , length(original_ssf_samples)    , ncol(raw_matrix) , paste0(base::setdiff(original_ssf_samples, colnames(abundance_data)), collapse = "; ") ,
+    "measurements" , length(original_abundance_cols) , ncol(raw_matrix) , paste0(base::setdiff(colnames(raw_matrix), original_ssf_samples), collapse = ";")
+  )
+  n_filtered_features = tibble::tribble(
+    ~source       , ~original                    , ~kept                 ,
+    "abundance"   , nrow(abundance_data)         , n_feature             ,
+    "metabolites" , length(original_metabolites) , nrow(metabolite_data)
+  )
+
+  processed_data$FILTERED_FEATURES = n_filtered_features
+  processed_data$FILTERED_SAMPLES = n_filtered_samples
+  if (n_feature == 0) {
+    if (n_filtered_features$kept[1] == 0) {
+      why = "no features; didn't match metabolites"
+    } else {
+      why = "no features; unknown"
+    }
+
+    se_data = create_empty_se(processed_data, why = why)
+    return(se_data)
+  }
+
+  if (n_sample == 0) {
+    if (n_filtered_samples$kept[2] == 0) {
+      why = "no samples; didn't match ssf"
+    } else {
+      why = "no samples; unknown"
+    }
+    se_data = create_empty_se(processed_data, why = why)
+    return(se_data)
+  }
+
+  safe_matrix = check_convert_character_matrix(raw_matrix)
+  safe_na = is.na(safe_matrix)
+
+  if (all(safe_na)) {
+    se_data = create_empty_se(processed_data, why = "no numeric abundances")
+    return(se_data)
+  }
+
+  use_features = rownames(safe_matrix)
+  keep_features = try(visualizationQualityControl::keep_non_missing_percentage(
+    safe_matrix,
+    keep_num = 1
+  ))
+
+  if (!inherits(keep_features, "try-error")) {
+    use_features = rownames(safe_matrix)[keep_features]
+  }
+  safe_matrix = safe_matrix[use_features, , drop = FALSE]
+
+  if (nrow(safe_matrix) == 0) {
+    se_data = create_empty_se(
+      processed_data,
+      why = "no features present in at least 1 sample"
+    )
+    return(se_data)
+  }
+
+  low_ratio = 0.95
+  hi_ratio = 1.05
+  mean_median_ratio = calculate_mean_median_ratio(safe_matrix)
+  out_matrix = safe_matrix
+  processed_data$transform = "none"
+  if (
+    !(is.na(mean_median_ratio)) ||
+      is.nan(mean_median_ratio) ||
+      is.infinite(mean_median_ratio)
+  ) {
+    if ((mean_median_ratio >= low_ratio) && (mean_median_ratio <= hi_ratio)) {
+      out_matrix = 2^safe_matrix
+      processed_data$transform = "exponentiated"
+    }
+  }
+  processed_data$mean_median_ratio = mean_median_ratio
+
+  feature_data = metabolite_data |>
+    dplyr::filter(feature_id %in% rownames(out_matrix)) |>
+    DataFrame()
+  rownames(feature_data) = feature_data$feature_id
+  feature_data = feature_data[rownames(out_matrix), ]
+
+  ssf = clean_ssf_factors(ssf_data)
 
   if (length(unique(ssf$subject)) == 1) {
     ssf$subject = NULL
@@ -158,31 +252,24 @@ convert_to_se = function(setup_data) {
   ssf_wide = widen_ssf_json(ssf, id_cols)
 
   if (nrow(ssf_wide) > length(unique(ssf$sample_id))) {
-    se_data = create_empty_se(setup_data, why = "duplicate samples somewhere")
+    se_data = create_empty_se(
+      processed_data,
+      why = "duplicate samples somewhere"
+    )
     return(se_data)
   }
   is_list = purrr::map_lgl(ssf_wide, is.list)
-  has_p_n = grepl("\\+$|\\-$", ssf$item)
-  if (any(is_list) && any(has_p_n)) {
-    tmp_item = ssf$item
-    tmp_item = gsub("\\+$", "_p", tmp_item)
-    tmp_item = gsub("\\-$", "_n", tmp_item)
-    ssf2 = ssf
-    ssf2$item = tmp_item
-    ssf2_wide = widen_ssf_json(ssf2, id_cols)
-    is_list2 = purrr::map_lgl(ssf2_wide, is.list)
-    if (any(is_list2)) {
-      se_data = create_empty_se(setup_data, why = "duplicate sample attributes")
-      return(se_data)
-    }
-  }
-  if (any(is_list) && !any(has_p_n)) {
-    se_data = create_empty_se(setup_data, why = "duplicate sample attributes")
+
+  if (any(is_list)) {
+    se_data = create_empty_se(
+      processed_data,
+      why = "duplicate sample attributes"
+    )
     return(se_data)
   }
   ssf_wide = ssf_wide |>
-    dplyr::filter(sample_id %in% colnames(safe_matrix))
-  safe_matrix = safe_matrix[, ssf_wide$sample_id, drop = FALSE]
+    dplyr::filter(sample_id %in% colnames(out_matrix))
+  out_matrix = out_matrix[, ssf_wide$sample_id, drop = FALSE]
 
   use_for_factors = c(id_cols, grab_factor_types(factor_type))
   ssf_concat = create_ssf_groups_json(
@@ -218,27 +305,19 @@ convert_to_se = function(setup_data) {
       )
     )
 
-  if (!is.null(setup_data$MS_METABOLITE_DATA)) {
-    setup_data$MS_METABOLITE_DATA = NULL
-  }
-  if (!is.null(setup_data$NMR_METABOLITE_DATA)) {
-    setup_data$NMR_METABOLITE_DATA = NULL
-  }
-  if (!is.null(setup_data$NMR_BINNED_DATA)) {
-    setup_data$NMR_BINNED_DATA = NULL
-  }
-  setup_data$MEASUREMENTS = NULL
-  setup_data$METABOLITES = NULL
-
   se_out = SummarizedExperiment(
-    assays = SimpleList(raw = safe_matrix),
+    assays = SimpleList(raw = out_matrix),
     rowData = feature_data,
     colData = ssf_use,
     metadata = list(
-      mwtab = setup_data,
+      mwtab = clean_processed_data(processed_data),
       factor_types = factor_type,
+      transformation = list(
+        mean_median_ratio = mean_median_ratio,
+        transform = transform
+      ),
       qc = list(
-        id = setup_data$ID,
+        id = processed_data$ID,
         failed = "",
         succeeded = "create_se",
         do_next = "go"
@@ -248,12 +327,28 @@ convert_to_se = function(setup_data) {
   se_out
 }
 
-create_empty_se = function(setup_data, why = "") {
+clean_processed_data = function(processed_data) {
+  if (!is.null(processed_data$MS_METABOLITE_DATA)) {
+    processed_data$MS_METABOLITE_DATA = NULL
+  }
+  if (!is.null(processed_data$NMR_METABOLITE_DATA)) {
+    processed_data$NMR_METABOLITE_DATA = NULL
+  }
+  if (!is.null(processed_data$NMR_BINNED_DATA)) {
+    processed_data$NMR_BINNED_DATA = NULL
+  }
+  processed_data$MEASUREMENTS = NULL
+  processed_data$METABOLITES = NULL
+  processed_data
+}
+
+create_empty_se = function(processed_data, why = "") {
+  processed_data = clean_processed_data(processed_data)
   se_data = SummarizedExperiment()
   metadata(se_data) = list(
-    mwtab = setup_data,
+    mwtab = processed_data,
     qc = list(
-      id = setup_data$ID,
+      id = processed_data$ID,
       failed = "create_se",
       why = why,
       succeeded = "none",
@@ -305,6 +400,12 @@ clean_ssf_factors = function(ssf) {
     }
   }
   ssf
+}
+
+calculate_mean_median_ratio = function(safe_matrix) {
+  safe_median = median(safe_matrix, na.rm = TRUE)
+  safe_mean = mean(safe_matrix, na.rm = TRUE)
+  abs(safe_mean / safe_median)
 }
 
 run_qc = function(in_data) {
