@@ -138,6 +138,7 @@ list(
   processed_t,
   processed_group_t,
   sets_map,
+  se_qc_combine_t,
   sets_neg_t,
   sets_neg_test_t,
   sets_neg_test_result_t,
