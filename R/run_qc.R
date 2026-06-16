@@ -220,28 +220,11 @@ readrds_convert_to_se = function(rds_file, md5_sum) {
     return(se_data)
   }
 
-  low_ratio = 0.95
-  hi_ratio = 1.05
-  mean_median_ratio = calculate_mean_median_ratio(safe_matrix)
-  out_matrix = safe_matrix
-  processed_data$transform = "none"
-  if (
-    !(is.na(mean_median_ratio) ||
-      is.nan(mean_median_ratio) ||
-      is.infinite(mean_median_ratio))
-  ) {
-    if ((mean_median_ratio >= low_ratio) && (mean_median_ratio <= hi_ratio)) {
-      out_matrix = 2^safe_matrix
-      processed_data$transform = "exponentiated"
-    }
-  }
-  processed_data$mean_median_ratio = mean_median_ratio
-
   feature_data = metabolite_data |>
-    dplyr::filter(feature_id %in% rownames(out_matrix)) |>
+    dplyr::filter(feature_id %in% rownames(safe_matrix)) |>
     DataFrame()
   rownames(feature_data) = feature_data$feature_id
-  feature_data = feature_data[rownames(out_matrix), ]
+  feature_data = feature_data[rownames(safe_matrix), ]
 
   ssf = clean_ssf_factors(ssf_data)
 
@@ -275,8 +258,8 @@ readrds_convert_to_se = function(rds_file, md5_sum) {
     return(se_data)
   }
   ssf_wide = ssf_wide |>
-    dplyr::filter(sample_id %in% colnames(out_matrix))
-  out_matrix = out_matrix[, ssf_wide$sample_id, drop = FALSE]
+    dplyr::filter(sample_id %in% colnames(safe_matrix))
+  safe_matrix = safe_matrix[, ssf_wide$sample_id, drop = FALSE]
 
   use_for_factors = c(id_cols, grab_factor_types(factor_type))
   ssf_concat = create_ssf_groups_json(
@@ -313,16 +296,12 @@ readrds_convert_to_se = function(rds_file, md5_sum) {
     )
 
   se_out = SummarizedExperiment(
-    assays = SimpleList(raw = out_matrix),
+    assays = SimpleList(raw = safe_matrix),
     rowData = feature_data,
     colData = ssf_use,
     metadata = list(
       mwtab = clean_processed_data(processed_data),
       factor_types = factor_type,
-      transformation = list(
-        mean_median_ratio = mean_median_ratio,
-        transform = transform
-      ),
       qc = list(
         id = processed_data$ID,
         failed = "",

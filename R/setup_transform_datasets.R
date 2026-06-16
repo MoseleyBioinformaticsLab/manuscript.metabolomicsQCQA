@@ -40,35 +40,27 @@ check_md5 = function(in_data, md5_sum) {
   return(invisible(NULL))
 }
 
-transform_abundances = function(in_abundances) {
-  transform = "none"
-  abundance_matrix = as.matrix(in_abundances |> dplyr::select(-feature_id))
-  matrix_mean = mean(abundance_matrix, na.rm = TRUE)
-  matrix_median = median(abundance_matrix, na.rm = TRUE)
-  median_mean_ratio = abs(matrix_median / matrix_mean)
-
+transform_abundances = function(raw_matrix) {
+  low_ratio = 0.95
+  hi_ratio = 1.05
+  mean_median_ratio = calculate_mean_median_ratio(raw_matrix)
+  out_matrix = safe_matrix
+  transformation = "none"
   if (
-    is.na(median_mean_ratio) ||
-      is.nan(median_mean_ratio) ||
-      is.infinite(median_mean_ratio)
+    !(is.na(mean_median_ratio) ||
+      is.nan(mean_median_ratio) ||
+      is.infinite(mean_median_ratio))
   ) {
-    return(list(measurements = in_abundances, transform = transform))
-  }
-  if ((median_mean_ratio >= 0.95) && (median_mean_ratio <= 1.05)) {
-    sample_cols = colnames(abundance_matrix)
-    for (icol in sample_cols) {
-      in_abundances[[icol]] = 2^in_abundances[[icol]]
+    if ((mean_median_ratio >= low_ratio) && (mean_median_ratio <= hi_ratio)) {
+      out_matrix = 2^raw_matrix
+      transformation = "exponentiated"
     }
-    transform_matrix = as.matrix(in_abundances |> dplyr::select(-feature_id))
-    na_org = is.na(abundance_matrix)
-    na_new = is.na(transform_matrix)
-    if (!all.equal(na_org, na_new)) {
-      stop("Transforming made different missingness patterns!")
-    }
-
-    transform = "2-exponentiated"
   }
-  list(measurements = in_abundances, transform = transform)
+  list(
+    matrix = out_matrix,
+    transformation = transformation,
+    mean_median_ratio = mean_median_ratio
+  )
 }
 
 intersect_samples = function(abundance_data, sample_ids) {
