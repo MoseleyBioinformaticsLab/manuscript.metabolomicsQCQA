@@ -52,8 +52,15 @@ sets_map = tar_map(
   group_sets,
   names = group,
   tar_target(se, sets_readrds_convert_to_se(set, processed_group)),
+  tar_target(se_qc, get_qc_outputs(se)),
   tar_target(neg, sets_run_qc_neg(se)),
   tar_target(run, sets_run_qc(se))
+)
+
+se_qc_combine_t = tar_combine(
+  se_qc_combine,
+  sets_map[[2]],
+  command = dplyr::bind_rows(!!!.x)
 )
 
 sets_neg_t = tar_target(

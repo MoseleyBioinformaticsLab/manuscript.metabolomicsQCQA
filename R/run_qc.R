@@ -38,7 +38,12 @@ sets_run_qc_neg = function(se_set) {
 }
 
 get_qc = function(se_data) {
-  metadata(se_data)$qc
+  qc_metadata = metadata(se_data)$qc
+  transform_metadata = metadata(se_data)$transform
+  if (inherits(transform_metadata$transform, "function")) {
+    transform_metadata$transform = NULL
+  }
+  c(qc_metadata, transform_metadata)
 }
 
 
