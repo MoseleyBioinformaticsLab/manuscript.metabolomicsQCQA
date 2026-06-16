@@ -1,10 +1,3 @@
-calculate_mean_median_ratio = function(safe_matrix) {
-  safe_median = median(safe_matrix, na.rm = TRUE)
-  safe_mean = mean(safe_matrix, na.rm = TRUE)
-  abs(safe_mean / safe_median)
-}
-
-
 calculate_dynamic_range_check_neg = function(se_data) {
   # first step is always to get the qc metadata, and
   # check if we can even do this step.
