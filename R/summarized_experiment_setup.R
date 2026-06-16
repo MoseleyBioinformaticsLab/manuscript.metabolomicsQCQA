@@ -12,6 +12,12 @@ sets_readrds_convert_to_se = function(set_df, processed_group) {
   all_se
 }
 
+check_md5 = function(in_data, md5_sum) {
+  new_md5 = digest::digest(in_data, algo = "md5")
+  stopifnot(new_md5 == md5_sum)
+  return(invisible(NULL))
+}
+
 check_convert_character_matrix = function(raw_matrix) {
   if (is.character(raw_matrix[1, 1])) {
     safe_matrix = apply(
