@@ -52,6 +52,7 @@ sets_map = tar_map(
   group_sets,
   names = group,
   tar_target(se, sets_readrds_convert_to_se(set, processed_group)),
+  tar_target(se_mmr, sets_check_mmr_negatives(se)),
   tar_target(se_qc, get_qc_outputs(se)),
   tar_target(neg, sets_run_qc_neg(se)),
   tar_target(run, sets_run_qc(se))
