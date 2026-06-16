@@ -58,9 +58,15 @@ sets_map = tar_map(
   tar_target(run, sets_run_qc(se))
 )
 
+se_mmr_combine_t = tar_combine(
+  se_mmr_combine,
+  sets_map[[2]],
+  command = dplyr::bind_rows(!!!.x)
+)
+
 se_qc_combine_t = tar_combine(
   se_qc_combine,
-  sets_map[[2]],
+  sets_map[[3]],
   command = dplyr::bind_rows(!!!.x)
 )
 
@@ -139,6 +145,7 @@ list(
   processed_t,
   processed_group_t,
   sets_map,
+  se_mmr_combine_t,
   se_qc_combine_t,
   sets_neg_t,
   sets_neg_test_t,
