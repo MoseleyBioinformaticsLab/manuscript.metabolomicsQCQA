@@ -61,3 +61,15 @@ check_mmr_negatives = function(in_se) {
     )
   )
 }
+
+
+working_mmr_data = function(se_mmr_combine) {
+  use_mmr = se_mmr_combine |>
+    dplyr::filter(mmr > 0.01, mmr <= 200) |>
+    dplyr::mutate(raw_max = 2^max)
+
+  # if we think things might possibly be log transformed, then a max cutoff of
+  # 100 for the max intensity is probably reasonable as well.
+  use_mmr = use_mmr |>
+    dplyr::filter(max <= 100)
+}

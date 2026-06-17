@@ -11,6 +11,7 @@ library(quarto)
 library(ggplot2)
 theme_set(cowplot::theme_cowplot())
 library(ggforce)
+library(patchwork)
 
 suppressWarnings(suppressMessages(library(SummarizedExperiment)))
 

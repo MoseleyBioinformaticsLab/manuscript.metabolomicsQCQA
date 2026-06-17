@@ -1,0 +1,186 @@
+---
+title: Examining the Mean / Median Ratio for Log-Transform Detection
+author: Moseley Bioinformatics Lab
+date: last-modified
+format:
+  html:
+    embed-resources: true
+---
+
+## Purpose
+
+We want to know **how** we should be using the mean / median ratio for log-transformed dataset detection.
+
+
+```{r}
+#| label: setup
+#| include: false
+#| echo: false
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 10,
+  fig.height = 8,
+  dev = c("ragg_png", "svg"),
+  dpi = 600
+)
+```
+
+```{r}
+#| label: targets
+targets::tar_source(c("./packages.R", "R"))
+tar_load(se_mmr_combine)
+```
+
+## Initial Distribution of Values
+
+OK, so what does the mean / median ratio (MMR) look like across all the datasets? We are going to cap the high end at 200 and low end at 0.2, because otherwise it's too long-tailed to visualize and work with.
+
+
+```{r}
+#| label: fig-mmr-all
+#| fig-cap: Log(Mean/Median) for all datasets.
+plot_mmr_all = se_mmr_combine |>
+  ggplot(aes(x = log(mmr))) +
+  geom_histogram(bins = 100) +
+  labs(subtitle = "All Values")
+plot_mmr_200 = se_mmr_combine |>
+  dplyr::filter(dplyr::between(mmr, 0.2, 200)) |>
+  ggplot(aes(x = log(mmr))) +
+  geom_histogram(bins = 100) +
+  labs(subtitle = "0.2 <= MMR <= 200")
+plot_mmr_all | plot_mmr_200
+```
+
+```{r}
+#| label: trim-mmr
+mmr_200 = se_mmr_combine |>
+  dplyr::filter(dplyr::between(mmr, 0.2, 200))
+```
+
+## Do We Need All Datasets?
+
+From the plot in @fig-mmr-all, it looks like there is a nice peak right around an MMR value of 1.0 that we could try to distinguish the two distributions.
+However, something we need to consider as well is the maximum abundances observed in the datasets, because anything **already log-transformed** has to be able to survive being exponentiated.
+We've recorded the maximum abundances in each of these datasets where available.
+
+@fig-abundance plots the MMR vs the maximum abundances, for all datasets, and then for datasets with $0.8 \le MMR \le 1.2$.
+Given the max abundances are log10-scaled, this implies there are datasets with an MMR right around 1.0, with abundances in the $1\times10^{10}$.
+If we try to exponentiate those values, we will end up with $\infty$ in our datasets.
+
+```{r}
+#| label: fig-abundance
+#| fig-cap: Exploring the distribution of maximum abundances with MMR value.
+plot_all_abundance = mmr_200 |>
+  ggplot(aes(x = log(mmr), y = log10(max))) +
+  geom_point(alpha = 0.5) +
+  labs(subtitle = "All Max Abundances", y = "Log10(Max-Abundance)")
+
+plot_slice_abundance = plot_all_abundance +
+  coord_cartesian(xlim = log(c(0.8, 1.2))) +
+  labs(subtitle = "0.8 <= MMR <= 1.2")
+
+plot_all_abundance | plot_slice_abundance
+```
+
+If we restrict ourselves to just those datasets in the region we **think** represent log-transformed, and plot the histogram of max abundances, hopefully we see the **majority** are under a reasonable cutoff, as shown in @fig-abundance-interesting (red line represents an observed value of 100, black is 1000).
+
+The cutoff lines for a maximum abundance are important.
+The maximum value that R will handle doing for an exponent in $2\times10^{exponent}$ is about 1000. 
+
+```{r}
+#| label: fig-abundance-interesting
+#| fig-cap: Distribution of maximum abundance within the MMR range of 0.8 - 1.2.
+plot_slice_max_histogram = mmr_200 |>
+  dplyr::filter(dplyr::between(mmr, 0.8, 1.2)) |>
+  ggplot(aes(x = log10(max))) +
+  geom_vline(xintercept = log10(100), color = "red") +
+  geom_vline(xintercept = log10(1000), color = "black") +
+  geom_histogram(bins = 100) +
+  labs(
+    subtitle = "Max abundance for data with (0.8 <= MMR <= 1.2), Red Line = 100, Black = 1000",
+    x = "Log10(Max-Abundance)"
+  )
+plot_slice_max_histogram
+```
+
+## MMR Distribution After Max Abundance Limit
+
+So now we can look at the distribution of MMR values after applying a cutoff on the maximum observed abundance, @fig-mmr-abundance-cutoffs.
+Based on this plot, I think we can justify taking a max abundance cutoff, then looking at the MMR value, and if it's in a range, do exponentiation.
+
+```{r}
+#| label: fig-mmr-abundance-cutoffs
+#| fig-cap: Distribution of MMR values after filtering for datasets with the maximum abundance <= 100 (top) or <= 1000 (bottom). Black lines indicate MMR values of 0.8 and 1.2, respectively.
+#| fig-height: 12
+plot_mmr_max100 = mmr_200 |>
+  dplyr::filter(max <= 100) |>
+  ggplot(aes(x = log(mmr))) +
+  geom_vline(xintercept = log(0.8)) +
+  geom_vline(xintercept = log(1.2)) +
+  geom_histogram(bins = 200) +
+  labs(subtitle = "MMR for Max-Abundance <= 100")
+plot_mmr_max1000 = mmr_200 |>
+  dplyr::filter(max <= 1000) |>
+  ggplot(aes(x = log(mmr))) +
+  geom_vline(xintercept = log(0.8)) +
+  geom_vline(xintercept = log(1.2)) +
+  geom_histogram(bins = 200) +
+  labs(subtitle = "MMR for Max-Abundance <= 1000")
+plot_mmr_max100 / plot_mmr_max1000
+```
+
+## Effect On Negative Abundances
+
+```{r}
+#| label: filter-neg
+mmr_has_neg = mmr_200 |>
+  dplyr::filter(N_neg >= 2)
+perc_neg_interesting = (mmr_has_neg |>
+  dplyr::filter(dplyr::between(mmr, 0.8, 1.2), max <= 1000) |>
+  nrow() /
+  nrow(mmr_has_neg))
+out_neg_interesting = paste0(
+  format(perc_neg_interesting * 100, digits = 2),
+  "%"
+)
+```
+
+This all started with discovering some log-transformed datasets existing in the datasets that still had negative values, so we should check how many of the datasets with negative values are represented in these subsets.
+Although the scatterplot shows datasets all over that space (see @fig-negatives), `{r} out_neg_interesting` of the datasets are in the region where we consider the most likely for log-transformed datasets (max abundance <= 1000, 0.8 <= MMR <= 1.2).
+
+```{r}
+#| label: fig-negatives
+#| fig-cap: MMR vs max-abundance for datasets with more than 2 negative values.
+plot_mmr_neg_max = mmr_has_neg |>
+  ggplot(aes(x = log(mmr), y = log10(max))) +
+  geom_hline(yintercept = log10(1000)) +
+  geom_point() +
+  labs(
+    subtitle = "Datasets N-neg >= 2, Black = 1000",
+    y = "Log10(Max-Abundance)"
+  )
+plot_mmr_neg_max
+```
+
+## Can We Put Some Confidence On A Distribution?
+
+OK, so if we take that set, can we figure out the distribution, and be confident that we have it covered?
+One way would be to pretend the data is normal-ish, and scale the MMR data, to have mean of 0 and standard deviation of 1, and then plot the histogram to see how many SD's we cover, as shown in @fig-distribution.
+
+```{r}
+#| label: fig-distribution
+#| fig-cap: Histogram of scaled (mean = 0, SD = 1) MMR values (0.8 <= MMR <= 1.2, max-abundance <= 1000).
+mmr_consider = mmr_200 |>
+  dplyr::filter(dplyr::between(mmr, 0.8, 1.2), max <= 1000) |>
+  dplyr::mutate(mmr_scale = scale(mmr))
+mmr_consider |>
+  ggplot(aes(x = mmr_scale)) +
+  geom_histogram(bins = 100) +
+  labs(subtitle = "Scaled MMR values (0.8 <= MMR <= 1.2)", x = "Scaled(MMR)")
+```
+
+## Conclusion
+
+I think we can justify doing a max abundance cutoff <= 1000, and then consider mean-median-ratios between 0.8 and 1.2 as likely log-transformed.
