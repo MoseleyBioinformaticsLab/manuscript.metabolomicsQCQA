@@ -11,7 +11,7 @@ sets_run_qc_neg = function(se_set) {
   # setup_set = tar_read(setup_g02); tar_source("R")
 
   # then we do dynamic range calculations for those that can.
-  dyn_range_set = purrr::map(se_set, calculate_dynamic_range)
+  dyn_range_set = furrr::future_map(se_set, calculate_dynamic_range_check_neg)
   qc_info = get_qc_outputs(dyn_range_set)
 
   neg_qc = qc_info |>
