@@ -1,8 +1,8 @@
 transform_abundances = function(raw_matrix) {
-  low_ratio = 0.95
-  hi_ratio = 1.05
+  low_ratio = 0.8
+  hi_ratio = 1.2
   mean_median_ratio = calculate_mean_median_ratio(raw_matrix)
-  out_matrix = safe_matrix
+  out_matrix = raw_matrix
   transformation = "none"
   if (
     !(is.na(mean_median_ratio) ||

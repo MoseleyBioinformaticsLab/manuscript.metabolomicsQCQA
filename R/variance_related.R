@@ -12,7 +12,20 @@ calculate_dynamic_range_check_neg = function(se_data) {
   # exclude it right now, before we try and do left-censorship, correlations and PCA,
   # and set up the missingness correctly.
   data_matrix = assays(se_data)$raw
-  assays(se_data)$raw = data_matrix
+
+  max_data = max(data_matrix, na.rm = TRUE)
+
+  if (max_data <= 1000) {
+    transform_info = transform_abundances(data_matrix)
+    if (transform_info$transformation %in% "exponentiated") {
+      data_matrix = transform_info$matrix
+    }
+  } else {
+    transform_info = list(
+      transformation = "none",
+      mean_median_ratio = calculate_mean_median_ratio(data_matrix)
+    )
+  }
 
   sample_mins = MatrixGenerics::colMins(data_matrix, na.rm = TRUE)
   sample_maxs = MatrixGenerics::colMaxs(data_matrix, na.rm = TRUE)
@@ -31,8 +44,6 @@ calculate_dynamic_range_check_neg = function(se_data) {
   perc_neg = col_neg / n_feature
 
   se_data$removed = NA_character_
-  se_data$removed[perc_na >= 0.9] = "> 90% missing"
-  se_data$removed[perc_neg >= 0.1] = "> 10% negative values"
 
   metadata(se_data)$factor_types = rbind(
     metadata(se_data)$factor_types,
@@ -43,7 +54,7 @@ calculate_dynamic_range_check_neg = function(se_data) {
   )
 
   # data_matrix[data_sign == -1] = NA
-  data_matrix = data_matrix[, is.na(se_data$removed), drop = FALSE]
+  # data_matrix = data_matrix[, is.na(se_data$removed), drop = FALSE]
   qc$succeeded = c(qc$succeeded, "calculate_dynamic_range")
   if ((nrow(data_matrix) >= 10) && (ncol(data_matrix) >= 3)) {
     if (sum(data_sign == -1, na.rm = TRUE) >= 2) {
@@ -56,6 +67,7 @@ calculate_dynamic_range_check_neg = function(se_data) {
     qc$do_next = "stop"
     qc$why = "too few features or samples"
   }
+  assays(se_data)$raw = data_matrix
   metadata(se_data)$qc = qc
   return(se_data)
 }
