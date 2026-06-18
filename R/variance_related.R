@@ -108,11 +108,18 @@ sets_get_negative_information = function(sets_se) {
     purrr::list_rbind()
 }
 
+extract_qc_last_step = function(qc_metadata) {
+  out_qc = purrr::map(qc_metadata, \(x) {
+    x[length(x)]
+  })
+}
+
 get_negative_information = function(se_data) {
   # se_data = sets_se[[1]]
   transformation_info = metadata(se_data)$transformation |>
     tibble::as_tibble()
-  progress_info = metadata(se_data)$qc[c("id", "do_next")] |>
+  progress_info = metadata(se_data)$qc |>
+    extract_qc_last_step() |>
     tibble::as_tibble()
 
   dplyr::bind_cols(transformation_info, progress_info)
