@@ -25,8 +25,8 @@ calculate_dynamic_range = function(se_data) {
     transform_info = transform_abundances(data_matrix)
     if (transform_info$transformation %in% "exponentiated") {
       data_matrix = transform_info$matrix
-      transform_info$matrix = NULL
     }
+    transform_info$matrix = NULL
   } else {
     transform_info = list(
       transformation = "none",
