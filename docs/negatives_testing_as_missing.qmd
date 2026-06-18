@@ -49,7 +49,8 @@ put_tables_together = function(in_tbl, tbl_names = c("all", "ssf")) {
   in_tbl |>
     dplyr::select(subset, p.value, statistic, estimate) |>
     gt::gt() |>
-    gt::fmt_number(columns = c(p.value, estimate), decimals = 3)
+    gt::fmt_scientific(columns = c(p.value), decimals = 2) |>
+    gt::fmt_number(columns = c(estimate), decimals = 3)
 }
 ```
 
