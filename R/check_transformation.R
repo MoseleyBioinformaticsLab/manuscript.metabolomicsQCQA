@@ -1,4 +1,4 @@
-sets_check_transformation = function(sets_neg) {
+sets_check_was_transformed = function(sets_neg) {
   # tar_load(sets_neg); tar_source("R");
   transform_status = purrr::map(sets_neg, check_transformation) |>
     purrr::list_rbind()

@@ -51,10 +51,19 @@ report_file_t = tar_file(report_file, "resources/example_report.qmd")
 sets_map = tar_map(
   group_sets,
   names = group,
+  # first we convert everything to summarized-experiment objects
   tar_target(se, sets_readrds_convert_to_se(set, processed_group)),
+  # we do the analysis to figure out how to detect things that should be
+  # log-transformed
   tar_target(se_mmr, sets_check_mmr_negatives(se)),
+  # this is for getting some qc data out
   tar_target(se_qc, get_qc_outputs(se)),
+  # checking if we treat negative as missing,
+  # how does that effect the left-censorship test
   tar_target(neg, sets_run_qc_neg(se)),
+  # transforming if necessary, normalizing, calculating dynamic range,
+  # and checking if any further steps can be done.
+  tar_target(se_dynamic_range, sets_calculate_dynamic_range(se)),
   tar_target(run, sets_run_qc(se))
 )
 
@@ -104,7 +113,7 @@ contains_negatives_report_t = tar_quarto(
 
 negatives_testing_report_t = tar_quarto(
   negatives_testing_report,
-  "docs/effect_of_negatives_as_missing.qmd"
+  "docs/negatives_testing_as_missing.qmd"
 )
 
 mean_median_ratios_report_t = tar_quarto(
