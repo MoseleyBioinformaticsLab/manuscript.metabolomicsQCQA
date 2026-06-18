@@ -64,7 +64,17 @@ sets_map = tar_map(
   # transforming if necessary, normalizing, calculating dynamic range,
   # and checking if any further steps can be done.
   tar_target(se_dynamic_range, sets_calculate_dynamic_range(se)),
+  tar_target(
+    se_negative_info,
+    sets_get_negative_information(se_dynamic_range)
+  ),
   tar_target(run, sets_run_qc(se))
+)
+
+se_negative_information_t = tar_combine(
+  se_negative_information,
+  sets_map[[5]],
+  command = dplyr::bind_rows(!!!.x)
 )
 
 se_mmr_combine_t = tar_combine(
@@ -130,6 +140,7 @@ list(
   processed_group_t,
   sets_map,
   se_mmr_combine_t,
+  se_negative_information_t,
   se_qc_combine_t,
   sets_neg_t,
   sets_neg_test_t,

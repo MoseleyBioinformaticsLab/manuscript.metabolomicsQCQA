@@ -1,5 +1,6 @@
 sets_calculate_dynamic_range = function(sets_se) {
   # sets_se = tar_read(se_g01); tar_source("R")
+  # sets_se = tar_read(se_g02); tar_source("R")
   sets_dynamic_range = furrr::future_map(sets_se, calculate_dynamic_range)
   sets_dynamic_range
 }
