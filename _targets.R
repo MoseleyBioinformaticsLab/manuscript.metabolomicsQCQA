@@ -52,28 +52,28 @@ sets_map = tar_map(
   group_sets,
   names = group,
   # first we convert everything to summarized-experiment objects
-  tar_target(se, sets_readrds_convert_to_se(set, processed_group)),
+  tar_target(se, sets_readrds_convert_to_se(set, processed_group)), #1
   # we do the analysis to figure out how to detect things that should be
   # log-transformed
-  tar_target(se_mmr, sets_check_mmr_negatives(se)),
+  tar_target(se_mmr, sets_check_mmr_negatives(se)), #2
   # this is for getting some qc data out
-  tar_target(se_qc, get_qc_outputs(se)),
+  tar_target(se_qc, get_qc_outputs(se)), #3
   # checking if we treat negative as missing,
   # how does that effect the left-censorship test
-  tar_target(neg, sets_run_qc_neg(se)),
+  tar_target(neg, sets_run_qc_neg(se)), #4
   # transforming if necessary, normalizing, calculating dynamic range,
   # and checking if any further steps can be done.
-  tar_target(se_dynamic_range, sets_calculate_dynamic_range(se)),
+  tar_target(se_dynamic_range, sets_calculate_dynamic_range(se)), #5
   tar_target(
     se_negative_info,
-    sets_get_negative_information(se_dynamic_range)
+    sets_get_negative_information(se_dynamic_range) #6
   ),
   tar_target(run, sets_run_qc(se))
 )
 
 se_negative_information_t = tar_combine(
   se_negative_information,
-  sets_map[[5]],
+  sets_map[[6]],
   command = dplyr::bind_rows(!!!.x)
 )
 
