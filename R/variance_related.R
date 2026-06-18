@@ -25,6 +25,7 @@ calculate_dynamic_range = function(se_data) {
     transform_info = transform_abundances(data_matrix)
     if (transform_info$transformation %in% "exponentiated") {
       data_matrix = transform_info$matrix
+      transform_info$matrix = NULL
     }
   } else {
     transform_info = list(
@@ -99,6 +100,23 @@ calculate_dynamic_range = function(se_data) {
   metadata(se_data)$qc = qc
   return(se_data)
 }
+
+sets_get_negative_information = function(sets_se) {
+  # sets_se = tar_read(se_dynamic_range_g14); tar_source("R")
+  sets_info = purrr::map(sets_se, get_negative_information) |>
+    purrr::list_rbind()
+}
+
+get_negative_information = function(se_data) {
+  # se_data = sets_se[[1]]
+  transformation_info = metadata(se_data)$transformation |>
+    tibble::as_tibble()
+  progress_info = metadata(se_data)$qc[c("id", "do_next")] |>
+    tibble::as_tibble()
+
+  dplyr::bind_cols(transformation_info, progress_info)
+}
+
 
 calculate_rsd_matrix = function(
   abundance_matrix,
