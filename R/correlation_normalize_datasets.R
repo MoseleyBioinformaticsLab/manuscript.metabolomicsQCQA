@@ -1,8 +1,8 @@
-sets_run_group_correlations = function(in_setup) {
-  # in_setup = tar_read(setup_g01)
+sets_run_correlations_pca = function(sets_se) {
+  # sets_se = tar_read(se_dynamic_range_g01); tar_source("R")
 
   cor_data = purrr::map(
-    in_setup,
+    sets_se,
     do_correlation
   )
 }
@@ -50,12 +50,27 @@ count_missingness_testleftcensored = function(raw_matrix, ssf_wide) {
   out_res
 }
 
-do_correlation = function(setup_data) {
-  # setup_data = in_group[[1]]
-  raw_matrix = get_just_values(setup_data$MEASUREMENTS)
-  missing_matrix = setup_missing_matrix(raw_matrix, c(0, NA, Inf))
-  raw_matrix[missing_matrix] = NA
+do_correlation = function(se_data) {
+  if (!metadata(se_data)$qc$do_next %in% "go") {
+    return(se_data)
+  }
+  # se_data = sets_se[[1]]
+  use_cols = is.na(se_data$removed)
 
+  raw_matrix = assays(se_data)$raw[, use_cols, drop = FALSE]
+
+  # this actually should never happen, but it's a failsafe
+  # and can point out possibly problematic datasets.
+  min_val = min(raw_matrix, na.rm = TRUE)
+  if (min_val < 0) {
+    warning("There are negative values!")
+    metadata(se_data)$qc = add_step(
+      metadata(se_data)$qc,
+      "failed",
+      "correlation"
+    )
+    return(se_data)
+  }
   n_cores = future::nbrOfWorkers()
 
   n_item = ncol(raw_matrix) * nrow(raw_matrix)
@@ -63,30 +78,27 @@ do_correlation = function(setup_data) {
   if (n_item > 1e6) {
     plan(multicore, workers = ceiling(n_cores / 2))
   }
-
-  norm_matrix = median_normalize_matrix(raw_matrix)
-  norm_df = as.data.frame(norm_matrix)
-  norm_df$feature_id = setup_data$MEASUREMENTS$feature_id
-  setup_ici = ICIKendallTau::ici_kendalltau(raw_matrix, return_matrix = FALSE)
-  ssf_wide = widen_ssf_json(
-    setup_data$SUBJECT_SAMPLE_FACTORS |>
-      dplyr::filter(type %in% "subject_sample_factor")
-  ) |>
-    create_ssf_groups_json()
+  se_ici = ICIKendallTau::ici_kendalltau(raw_matrix, return_matrix = FALSE)
   # make sure to put them back
   plan(multicore, workers = n_cores)
 
-  cor_data = list(
-    id = setup_data$ID,
-    raw = setup_data$MEASUREMENTS,
-    normalized = norm_df,
-    icikt_cor = setup_ici$cor,
-    icikt_runtime = setup_ici$run_time,
-    ssf = ssf_wide
+  metadata(se_data)$icikt = se_ici
+  metadata(se_data)$qc = add_step(
+    metadata(se_data)$qc,
+    "succeeded",
+    "correlation"
   )
-  cor_data
+  se_data
 }
 
+
+add_step = function(qc, id, message) {
+  tmp_id = qc[[id]]
+  keep_id = tmp_id[nchar(tmp_id) > 0]
+  out_id = c(keep_id, message)
+  qc[[id]] = out_id
+  qc
+}
 
 count_features_samples_factors = function(lc_sets) {
   # lc_sets = tar_read(lc_g04)
