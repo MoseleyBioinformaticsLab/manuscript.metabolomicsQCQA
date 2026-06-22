@@ -5,6 +5,11 @@ sets_run_correlations_pca = function(sets_se) {
     sets_se,
     do_correlation
   )
+
+  pca_data = furrr::future_map(
+    sets_se,
+    do_pca_rsd_leftcensorship
+  )
 }
 
 get_just_values = function(in_df) {
@@ -27,7 +32,14 @@ median_normalize_matrix = function(in_matrix) {
   return(norm_matrix)
 }
 
-count_missingness_testleftcensored = function(raw_matrix, ssf_wide) {
+check_isstop = function(in_metadata) {
+  in_metadata$qc$do_next %in% "stop"
+}
+
+count_missingness_testleftcensored = function(se_data) {
+  if (metadata(se_data) |> check_isstop()) {
+    return(se_data)
+  }
   perc_missing = sum(is.na(raw_matrix) | (raw_matrix == 0)) /
     (nrow(raw_matrix) * ncol(raw_matrix)) *
     100
@@ -51,7 +63,7 @@ count_missingness_testleftcensored = function(raw_matrix, ssf_wide) {
 }
 
 do_correlation = function(se_data) {
-  if (!metadata(se_data)$qc$do_next %in% "go") {
+  if (metadata(se_data) |> check_isstop()) {
     return(se_data)
   }
   # se_data = sets_se[[1]]

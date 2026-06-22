@@ -11,7 +11,7 @@ calculate_dynamic_range = function(se_data) {
   # check if we can even do this step.
   # if not, we just return the data as is.
   qc = metadata(se_data)$qc
-  if (qc$do_next %in% "stop") {
+  if (metadata(se_data) |> check_isstop()) {
     return(se_data)
   }
 
