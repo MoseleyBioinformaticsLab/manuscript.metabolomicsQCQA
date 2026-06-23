@@ -64,9 +64,10 @@ sets_map = tar_map(
   # transforming if necessary, normalizing, calculating dynamic range,
   # and checking if any further steps can be done.
   tar_target(se_dynamic_range, sets_calculate_dynamic_range(se)), #5
+  tar_target(se_pca, sets_calculate_correlations_pca(se_dynamic_range)), #6
   tar_target(
     se_negative_info,
-    sets_get_negative_information(se_dynamic_range) #6
+    sets_get_negative_information(se_dynamic_range) #7
   ),
   tar_target(run, sets_run_qc(se))
 )

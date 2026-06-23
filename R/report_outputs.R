@@ -124,7 +124,7 @@ create_pca_anova_table = function(anova_results) {
 
 calculate_variance_stuff = function(in_abundance) {
   sample_metadata = get_vardata(in_abundance)
-  all_factors = unique(sample_metadata$factors)
+  all_factors = unique(sample_metadata$ssf)
 
   raw_abundance = assays(in_abundance)$raw
   norm_abundance = assays(in_abundance)$normalized
@@ -141,9 +141,18 @@ calculate_variance_stuff = function(in_abundance) {
     dplyr::mutate(data = "n")
 
   all_rsd = dplyr::bind_rows(raw_rsd, norm_rsd) |>
-    dplyr::mutate(factors_data = paste0(factors, "-", data))
+    dplyr::mutate(ssf_data = paste0(ssf, "-", data))
+  all_rsd_wide_rn = all_rsd |>
+    tidyr::pivot_wider(
+      id_cols = c(feature_id, ssf),
+      names_from = data,
+      values_from = rsd
+    ) |>
+    dplyr::mutate(r_n = r - n)
   all_rsd_median = all_rsd |>
-    dplyr::summarise(median = median(rsd, na.rm = TRUE), .by = c(factors, data))
+    dplyr::summarise(median = median(rsd, na.rm = TRUE), .by = c(ssf, data))
+  all_rsd_median_diff = all_rsd_wide_rn |>
+    dplyr::summarise(median_rn = median(r_n, na.rm = TRUE), .by = c(ssf))
   raw_medians = matrixStats::colMedians(raw_abundance, na.rm = TRUE)
   raw_medians_rsd = sd(raw_medians) / mean(raw_medians)
   norm_medians = matrixStats::colMedians(norm_abundance, na.rm = TRUE)
@@ -152,6 +161,7 @@ calculate_variance_stuff = function(in_abundance) {
   list(
     all_rsd = all_rsd,
     all_rsd_median = all_rsd_median,
+    all_rsd_median_diff = all_rsd_median_diff,
     raw_medians_rsd = raw_medians_rsd,
     norm_medians_rsd = norm_medians_rsd
   )

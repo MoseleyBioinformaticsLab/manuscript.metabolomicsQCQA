@@ -132,11 +132,11 @@ calculate_rsd_matrix = function(
   all_factors
 ) {
   sample_metadata = sample_metadata |>
-    dplyr::arrange(factors, sample_id)
+    dplyr::arrange(ssf, sample_id)
   abundance_matrix = abundance_matrix[, sample_metadata$sample_id]
 
-  sample_metadata$factors = factor(
-    sample_metadata$factors,
+  sample_metadata$ssf = factor(
+    sample_metadata$ssf,
     levels = all_factors
   )
 
@@ -146,7 +146,7 @@ calculate_rsd_matrix = function(
     tidyr::pivot_longer(cols = -feature_id, names_to = "sample_id")
   abundance_df = dplyr::left_join(
     abundance_df,
-    sample_metadata[, c("sample_id", "factors")],
+    sample_metadata[, c("sample_id", "ssf")],
     by = "sample_id"
   )
 
@@ -157,7 +157,7 @@ calculate_rsd_matrix = function(
       mean = mean(value),
       sd = sd(value),
       rsd = sd / mean,
-      .by = c(feature_id, factors)
+      .by = c(feature_id, ssf)
     )
   abundance_summary
 }

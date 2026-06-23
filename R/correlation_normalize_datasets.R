@@ -1,15 +1,16 @@
-sets_run_correlations_pca = function(sets_se) {
-  # sets_se = tar_read(se_dynamic_range_g01); tar_source("R")
+sets_calculate_correlations_pca = function(sets_se) {
+  # sets_se = tar_read(se_dynamic_range_g01); tar_source("R"); sets_se = sets_se[1:60];
 
-  cor_data = purrr::map(
+  cor_sets = purrr::map(
     sets_se,
     do_correlation
   )
 
-  pca_data = furrr::future_map(
-    sets_se,
-    do_pca_rsd_leftcensorship
+  pca_sets = furrr::future_map(
+    cor_sets,
+    run_pca_experimental_design
   )
+  pca_sets
 }
 
 get_just_values = function(in_df) {

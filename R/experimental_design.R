@@ -1,12 +1,10 @@
-determine_experimental_design = function(in_ssf) {
+determine_experimental_design = function(in_ssf, factor_types) {
   # in_dataset = tar_read(cor_g06)[[1]]
-  extra_vars = c(
-    "experiment_or_qc",
-    "median_ici_correlation",
-    "outlier_fraction",
-    "score",
-    "outlier"
-  )
+  extra_vars = factor_types |>
+    dplyr::filter(
+      (type %in% c("computed", "derived")) & (!factor %in% c("ssf"))
+    ) |>
+    dplyr::pull(factor)
   in_ssf = in_ssf |>
     dplyr::select(!(tidyselect::all_of(extra_vars)))
   factor_info = count_possible_factors(in_ssf)
@@ -20,7 +18,7 @@ determine_experimental_design = function(in_ssf) {
       `N-Samples` = dplyr::n(),
       .by = tidyselect::all_of(use_factors)
     )
-  all_factors = c(use_factors, "factors")
+  all_factors = c(use_factors, "ssf")
   n_by_factor_factors = in_ssf |>
     dplyr::select(tidyselect::all_of(all_factors)) |>
     dplyr::summarise(
@@ -42,15 +40,15 @@ determine_experimental_design = function(in_ssf) {
 
 count_possible_factors = function(ssf) {
   left_over = ssf |>
-    dplyr::select(c(-subject, -sample_id, -factors))
+    dplyr::select(c(-subject, -sample_id, -ssf))
   n_left_over = ncol(left_over)
   n_each = purrr::imap(left_over, \(in_col, id) {
     tibble::tibble(factor = id, n_group = length(unique(in_col)))
   }) |>
     purrr::list_rbind()
   factor_info = tibble::tibble(
-    factor = "factors",
-    n_group = length(unique(ssf$factors))
+    factor = "ssf",
+    n_group = length(unique(ssf$ssf))
   )
   dplyr::bind_rows(n_each, factor_info)
 }
