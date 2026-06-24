@@ -130,40 +130,44 @@ run_pca_experimental_design = function(se_data) {
 
   if (has_qc) {
     no_qc = se_kept[, se_kept$experiment_or_qc %in% "experiment", drop = FALSE]
-    noqc_res = list(
-      pca = do_pca(no_qc),
-      design = no_qc |>
-        get_vardata() |>
-        determine_experimental_design(factor_types),
-      order = determine_neigbors_ordering(
-        icikt_data,
-        get_vardata(no_qc)
-      ),
-      rsd = calculate_variance_stuff(no_qc)
-    )
-    noqc_res$scores = dplyr::bind_rows(
-      score_rle(noqc_res$order$diff_rle),
-      score_median_ici(noqc_res$order$diff_median_ici)
-    )
+    if (ncol(no_qc) >= 2) {
+      noqc_res = list(
+        pca = do_pca(no_qc),
+        design = no_qc |>
+          get_vardata() |>
+          determine_experimental_design(factor_types),
+        order = determine_neigbors_ordering(
+          icikt_data,
+          get_vardata(no_qc)
+        ),
+        rsd = calculate_variance_stuff(no_qc)
+      )
+      noqc_res$scores = dplyr::bind_rows(
+        score_rle(noqc_res$order$diff_rle),
+        score_median_ici(noqc_res$order$diff_median_ici)
+      )
+    }
   }
 
   if (length(has_outliers) > 0) {
     no_outlier = se_kept[, !se_kept$outlier, drop = FALSE]
-    not_outlier_res = list(
-      pca = do_pca(no_outlier),
-      design = no_outlier |>
-        get_vardata() |>
-        determine_experimental_design(factor_types),
-      order = determine_neigbors_ordering(
-        icikt_data,
-        get_vardata(no_outlier)
-      ),
-      rsd = calculate_variance_stuff(no_outlier)
-    )
-    not_outlier_res$scores = dplyr::bind_rows(
-      score_rle(not_outlier_res$order$diff_rle),
-      score_median_ici(not_outlier_res$order$diff_median_ici)
-    )
+    if (ncol(no_outlier) >= 2) {
+      not_outlier_res = list(
+        pca = do_pca(no_outlier),
+        design = no_outlier |>
+          get_vardata() |>
+          determine_experimental_design(factor_types),
+        order = determine_neigbors_ordering(
+          icikt_data,
+          get_vardata(no_outlier)
+        ),
+        rsd = calculate_variance_stuff(no_outlier)
+      )
+      not_outlier_res$scores = dplyr::bind_rows(
+        score_rle(not_outlier_res$order$diff_rle),
+        score_median_ici(not_outlier_res$order$diff_median_ici)
+      )
+    }
   }
 
   if (has_qc && (length(has_outliers) > 0)) {
@@ -172,21 +176,23 @@ run_pca_experimental_design = function(se_data) {
       se_kept$sample_id %in% not_outlier_qc,
       drop = FALSE
     ]
-    noqc_nooutlier_res = list(
-      pca = do_pca(noqc_nooutlier),
-      design = noqc_nooutlier |>
-        get_vardata() |>
-        determine_experimental_design(factor_types),
-      order = determine_neigbors_ordering(
-        icikt_data,
-        get_vardata(noqc_nooutlier)
-      ),
-      rsd = calculate_variance_stuff(noqc_nooutlier)
-    )
-    noqc_nooutlier_res$scores = dplyr::bind_rows(
-      score_rle(noqc_nooutlier_res$order$diff_rle),
-      score_median_ici(noqc_nooutlier_res$order$diff_median_ici)
-    )
+    if (ncol(noqc_nooutlier) >= 2) {
+      noqc_nooutlier_res = list(
+        pca = do_pca(noqc_nooutlier),
+        design = noqc_nooutlier |>
+          get_vardata() |>
+          determine_experimental_design(factor_types),
+        order = determine_neigbors_ordering(
+          icikt_data,
+          get_vardata(noqc_nooutlier)
+        ),
+        rsd = calculate_variance_stuff(noqc_nooutlier)
+      )
+      noqc_nooutlier_res$scores = dplyr::bind_rows(
+        score_rle(noqc_nooutlier_res$order$diff_rle),
+        score_median_ici(noqc_nooutlier_res$order$diff_median_ici)
+      )
+    }
   }
 
   end_time = Sys.time()

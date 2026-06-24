@@ -69,6 +69,7 @@ readrds_convert_to_se = function(rds_file, md5_sum) {
   # id = "AN000072"; rds_file = "parsed_rds/AN000072.rds"; md5_sum = "781a19811ab6cf3ca6524224ab2e3507"; tar_source("R")
   # id = "AN003915"; rds_file = "parsed_rds/AN003915.rds"; tar_source("R")
   # id = "AN004851"; rds_file = "parsed_rds/AN004851.rds"; tar_source("R")
+  # id = "AN002880"; rds_file = "parsed_rds/AN002880.rds"; tar_source("R")
   processed_data = readRDS(rds_file)
   check_md5(processed_data, md5_sum)
 
@@ -235,7 +236,27 @@ readrds_convert_to_se = function(rds_file, md5_sum) {
     data.frame(factor = c("ssf", "experiment_or_qc"), type = "derived")
   )
 
-  pooled_or_qc = determine_qc_samples(ssf)
+  pooled_or_qc = determine_qc_samples(
+    ssf |> dplyr::filter(sample_id %in% ssf_use$sample_id)
+  )
+
+  # check if we accidentally grabbed all the samples as QC
+  use_setdiff = base::setdiff(ssf_use$sample_id, pooled_or_qc)
+
+  # try to mitigate by removing the additional data thing from the long SSF.
+  if (length(use_setdiff) == 0) {
+    ssf_trim = ssf |>
+      dplyr::filter(
+        type %in% "subject_sample_factor",
+        sample_id %in% ssf_use$sample_id
+      )
+    pooled_or_qc = determine_qc_samples(ssf_trim)
+    use_setdiff = base::setdiff(ssf_use$sample_id, pooled_or_qc)
+    # and if nothing seems right, then we keep everything as experiment
+    if (length(use_setdiff) == 0) {
+      pooled_or_qc = vector("character")
+    }
+  }
 
   ssf_use = ssf_use |>
     dplyr::mutate(
