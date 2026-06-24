@@ -27,7 +27,11 @@ calculate_mean_median_ratio = function(safe_matrix) {
   abs(safe_mean / safe_median)
 }
 
-calculate_dynamic_range = function(safe_matrix) {}
+calculate_range_difference = function(safe_matrix) {
+  max_val = max(safe_matrix, na.rm = TRUE)
+  min_val = min(safe_matrix, na.rm = TRUE)
+  max_val - min_val
+}
 sets_check_mmr_negatives = function(in_set) {
   # in_set = tar_read(se_g01); tar_source("R");
   sets_mmr = furrr::future_map(in_set, check_mmr_negatives) |>
@@ -45,7 +49,7 @@ check_mmr_negatives = function(in_se) {
   raw_data = assays(in_se)$raw
 
   mmr_value = calculate_mean_median_ratio(raw_data)
-  dynamic_range_value = calculate_dynamic_range(raw_data)
+  range_difference = calculate_range_difference(raw_data)
   n_vals = nrow(raw_data) * ncol(raw_data)
   n_miss = sum(is.na(raw_data))
   n_neg = sum(raw_data < 0, na.rm = TRUE)
@@ -56,6 +60,7 @@ check_mmr_negatives = function(in_se) {
     qc_info,
     tibble::tibble(
       mmr = mmr_value,
+      range_difference = range_difference,
       N = n_vals,
       N_present = n_vals - n_miss,
       N_neg = n_neg,
