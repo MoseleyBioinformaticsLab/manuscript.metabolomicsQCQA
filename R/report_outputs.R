@@ -129,6 +129,12 @@ calculate_variance_stuff = function(in_abundance) {
   raw_abundance = assays(in_abundance)$raw
   norm_abundance = assays(in_abundance)$normalized
 
+  all_rsd = NULL
+  all_rsd_median = NULL
+  all_rsd_median_diff = NULL
+  raw_medians_rsd = NULL
+  norm_medians_rsd = NULL
+
   raw_rsd = calculate_rsd_matrix(raw_abundance, sample_metadata, all_factors) |>
     dplyr::filter(n >= 3) |>
     dplyr::mutate(data = "r")
@@ -140,23 +146,25 @@ calculate_variance_stuff = function(in_abundance) {
     dplyr::filter(n >= 3) |>
     dplyr::mutate(data = "n")
 
-  all_rsd = dplyr::bind_rows(raw_rsd, norm_rsd) |>
-    dplyr::mutate(ssf_data = paste0(ssf, "-", data))
-  all_rsd_wide_rn = all_rsd |>
-    tidyr::pivot_wider(
-      id_cols = c(feature_id, ssf),
-      names_from = data,
-      values_from = rsd
-    ) |>
-    dplyr::mutate(r_n = r - n)
-  all_rsd_median = all_rsd |>
-    dplyr::summarise(median = median(rsd, na.rm = TRUE), .by = c(ssf, data))
-  all_rsd_median_diff = all_rsd_wide_rn |>
-    dplyr::summarise(median_rn = median(r_n, na.rm = TRUE), .by = c(ssf))
-  raw_medians = matrixStats::colMedians(raw_abundance, na.rm = TRUE)
-  raw_medians_rsd = sd(raw_medians) / mean(raw_medians)
-  norm_medians = matrixStats::colMedians(norm_abundance, na.rm = TRUE)
-  norm_medians_rsd = sd(norm_medians) / mean(norm_medians)
+  if ((nrow(raw_rsd) >= 5) && (nrow(raw_rsd) == nrow(norm_rsd))) {
+    all_rsd = dplyr::bind_rows(raw_rsd, norm_rsd) |>
+      dplyr::mutate(ssf_data = paste0(ssf, "-", data))
+    all_rsd_wide_rn = all_rsd |>
+      tidyr::pivot_wider(
+        id_cols = c(feature_id, ssf),
+        names_from = data,
+        values_from = rsd
+      ) |>
+      dplyr::mutate(r_n = r - n)
+    all_rsd_median = all_rsd |>
+      dplyr::summarise(median = median(rsd, na.rm = TRUE), .by = c(ssf, data))
+    all_rsd_median_diff = all_rsd_wide_rn |>
+      dplyr::summarise(median_rn = median(r_n, na.rm = TRUE), .by = c(ssf))
+    raw_medians = matrixStats::colMedians(raw_abundance, na.rm = TRUE)
+    raw_medians_rsd = sd(raw_medians) / mean(raw_medians)
+    norm_medians = matrixStats::colMedians(norm_abundance, na.rm = TRUE)
+    norm_medians_rsd = sd(norm_medians) / mean(norm_medians)
+  }
 
   list(
     all_rsd = all_rsd,

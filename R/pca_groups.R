@@ -62,9 +62,11 @@ run_pca_experimental_design = function(se_data) {
     return(se_data)
   }
 
+  se_kept = se_data[, is.na(se_data$removed)]
+  icikt_data = get_specific_metadata(se_kept, "icikt")$cor
   possible_outliers = determine_outliers(
-    get_specific_metadata(se_data, "icikt")$cor,
-    se_data |> get_vardata()
+    icikt_data,
+    se_kept |> get_vardata()
   )
   just_outlier_info = possible_outliers |>
     dplyr::transmute(
@@ -79,6 +81,8 @@ run_pca_experimental_design = function(se_data) {
     just_outlier_info,
     by = "sample_id"
   )
+  just_outlier_info = just_outlier_info |>
+    dplyr::mutate(outlier = dplyr::replace_values(outlier, NA ~ FALSE))
 
   factor_types = get_specific_metadata(se_data, "factor_types")
   factor_types = dplyr::bind_rows(
@@ -103,8 +107,7 @@ run_pca_experimental_design = function(se_data) {
   noqc_nooutlier_res = NULL
 
   # first remove anything that needs to be
-  se_kept = se_data[, is.na(se_data$removed)]
-  icikt_data = get_specific_metadata(se_kept, "icikt")$cor
+  se_kept = se_data[, is.na(se_data$removed), drop = FALSE]
 
   all_res = list(
     pca = do_pca(se_kept),
