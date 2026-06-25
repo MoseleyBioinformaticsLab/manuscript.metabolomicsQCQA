@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
   fig.width = 12,
   fig.height = 8,
   dev = c("ragg_png"),
-  dpi = 600
+  dpi = 300
 )
 ```
 
