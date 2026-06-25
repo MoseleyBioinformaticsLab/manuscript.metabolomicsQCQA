@@ -132,7 +132,7 @@ plot_mmr_dr_points_neg_frac = mmr_200_dr_12 |>
 plot_mmr_neg_frac = mmr_200_dr_12 |>
   ggplot(aes(x = log(mmr), y = neg_fraction)) +
   geom_point()
-(plot_points_alpha | plot_points_neg_frac) / plot_mmr_neg_frac
+(plot_mmr_dr_points_alpha | plot_mmr_dr_points_neg_frac) / plot_mmr_neg_frac
 ```
 
 ```{r}
