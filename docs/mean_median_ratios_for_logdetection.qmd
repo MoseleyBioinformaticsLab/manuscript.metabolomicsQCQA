@@ -20,9 +20,9 @@ knitr::opts_chunk$set(
   echo = FALSE,
   message = FALSE,
   warning = FALSE,
-  fig.width = 10,
+  fig.width = 12,
   fig.height = 8,
-  dev = c("ragg_png", "svg"),
+  dev = c("ragg_png"),
   dpi = 600
 )
 ```
@@ -33,18 +33,24 @@ targets::tar_source(c("./packages.R", "R"))
 tar_load(se_mmr_combine)
 ```
 
-## Initial Distribution of Values
+```{r}
+#| label: add-perc-neg
+se_mmr_combine = se_mmr_combine |>
+  dplyr::mutate(neg_fraction = N_neg / N_present)
+```
 
-OK, so what does the mean / median ratio (MMR) look like across all the datasets? We are going to cap the high end at 200 and low end at 0.2, because otherwise it's too long-tailed to visualize and work with.
+## Initial Distribution of Various Measures
+
+OK, so what does the mean / median ratio (MMR), maximum value, dynamic range and percent of negative values look like across all the datasets? 
 
 
 ```{r}
 #| label: fig-mmr-all
-#| fig-cap: Log(Mean/Median) for all datasets.
+#| fig-cap: Mean-median ratio for all datasets.
 plot_mmr_all = se_mmr_combine |>
   ggplot(aes(x = log(mmr))) +
   geom_histogram(bins = 100) +
-  labs(subtitle = "All Values")
+  labs(subtitle = "MMR: All Values")
 plot_mmr_200 = se_mmr_combine |>
   dplyr::filter(dplyr::between(mmr, 0.2, 200)) |>
   ggplot(aes(x = log(mmr))) +
@@ -53,10 +59,92 @@ plot_mmr_200 = se_mmr_combine |>
 plot_mmr_all | plot_mmr_200
 ```
 
+
+```{r}
+#| label: fig-max-value-all
+#| fig-cap: Maximum observed intensity histogram.
+plot_max_all = se_mmr_combine |>
+  ggplot(aes(x = log10(max))) +
+  geom_histogram(bins = 100) +
+  labs(subtitle = "Max Value: All Datasets")
+plot_max_12 = se_mmr_combine |>
+  dplyr::filter(max <= 10^12) |>
+  ggplot(aes(x = log10(max))) +
+  geom_histogram(bins = 100) +
+  labs(subtitle = "Max Value <= 1x10e12")
+plot_max_all | plot_max_12
+```
+
+
+```{r}
+#| label: fig-dynrange-all
+#| fig-cap: Dynamic-Range for all datasets.
+plot_dynrange_all = se_mmr_combine |>
+  ggplot(aes(x = log10(dynamic_range))) +
+  geom_histogram(bins = 100) +
+  labs(subtitle = "Dynamic Range All Values")
+plot_dynrange_12 = se_mmr_combine |>
+  dplyr::filter(dynamic_range <= 10^12) |>
+  ggplot(aes(x = log10(dynamic_range))) +
+  geom_histogram(bins = 100) +
+  labs(subtitle = "Dynamic Range <= 1x10e12")
+plot_dynrange_all | plot_dynrange_12
+```
+
+```{r}
+#| label: fig-negfraction-all
+#| fig-cap: Fraction of negative values for all datasets.
+plot_negfraction_all = se_mmr_combine |>
+  ggplot(aes(x = neg_fraction)) +
+  geom_histogram(bins = 100) +
+  scale_y_log10() +
+  coord_cartesian(expand = FALSE) +
+  labs(
+    y = "Log10(counts)",
+    subtitle = "Fraction of abundances that are negative"
+  )
+plot_negfraction_all
+```
+
+## What Does This Tell Us?
+
 ```{r}
 #| label: trim-mmr
 mmr_200 = se_mmr_combine |>
   dplyr::filter(dplyr::between(mmr, 0.2, 200))
+```
+
+I don't know.
+What happens if we plot the MMR vs the dynamic range, and then fill in by their negative fraction (see @fig-mmr-vs-dynrange)?
+This is kind of cool, the points in our likely log-transformed region (0.8 <= MMR <= 1.2), also seem to have the highest fraction of negative values.
+
+```{r}
+#| label: fig-mmr-vs-dynrange
+#| fig-cap: MMR vs Dynamic Range
+mmr_200_dr_12 = mmr_200 |>
+  dplyr::filter(dynamic_range <= 10^12)
+plot_mmr_dr_points_alpha = mmr_200_dr_12 |>
+  ggplot(aes(x = log(mmr), y = log10(dynamic_range))) +
+  geom_point(alpha = 0.2)
+plot_mmr_dr_points_neg_frac = mmr_200_dr_12 |>
+  ggplot(aes(x = log(mmr), y = log10(dynamic_range), alpha = neg_fraction)) +
+  geom_point()
+plot_mmr_neg_frac = mmr_200_dr_12 |>
+  ggplot(aes(x = log(mmr), y = neg_fraction)) +
+  geom_point()
+(plot_points_alpha | plot_points_neg_frac) / plot_mmr_neg_frac
+```
+
+```{r}
+#| label: fig-mmr-vs-max
+#| fig-cap: MMR vs Max Value
+plot_mmr_max_points_alpha = mmr_200_dr_12 |>
+  ggplot(aes(x = log(mmr), y = log10(max))) +
+  geom_point(alpha = 0.2)
+plot_mmr_max_points_neg_frac = mmr_200_dr_12 |>
+  ggplot(aes(x = log(mmr), y = log10(max), alpha = neg_fraction)) +
+  geom_point()
+plot_mmr_max_points_alpha | plot_mmr_max_points_neg_frac
 ```
 
 ## Do We Need All Datasets?
@@ -74,7 +162,7 @@ If we try to exponentiate those values, we will end up with $\infty$ in our data
 #| fig-cap: Exploring the distribution of maximum abundances with MMR value.
 plot_all_abundance = mmr_200 |>
   ggplot(aes(x = log(mmr), y = log10(max))) +
-  geom_point(alpha = 0.5) +
+  geom_point(alpha = 0.2) +
   labs(subtitle = "All Max Abundances", y = "Log10(Max-Abundance)")
 
 plot_slice_abundance = plot_all_abundance +
@@ -88,6 +176,9 @@ If we restrict ourselves to just those datasets in the region we **think** repre
 
 The cutoff lines for a maximum abundance are important.
 The maximum value that R will handle doing for an exponent in $2\times10^{exponent}$ is about 1000. 
+
+It looks like with a cutoff on the MMR, or MMR + max value, we still cover a decent slice of dynamic range as well, as shown in @fig-dr-interesting.
+I think the max value is a more important criterion than the dynamic range, but knowing the dynamic range here is useful.
 
 ```{r}
 #| label: fig-abundance-interesting
@@ -105,13 +196,31 @@ plot_slice_max_histogram = mmr_200 |>
 plot_slice_max_histogram
 ```
 
+```{r}
+#| label: fig-dr-interesting
+#| fig-cap: Distribution of dynamic range within the MMR range of 0.8 - 1.2
+plot_slice_dr_histogram_all = mmr_200 |>
+  dplyr::filter(dplyr::between(mmr, 0.8, 1.2)) |>
+  ggplot(aes(x = log10(dynamic_range))) +
+  geom_histogram(bins = 100) +
+  labs(subtitle = "Dynamic range for data with (0.8 <= MMR <= 1.2)")
+plot_slice_dr_histogram_max1000 = mmr_200 |>
+  dplyr::filter(dplyr::between(mmr, 0.8, 1.2), max <= 1000) |>
+  ggplot(aes(x = log10(dynamic_range))) +
+  geom_histogram(bins = 100) +
+  labs(
+    subtitle = "Dynamic range for data with (0.8 <= MMR <= 1.2), max value <= 1000"
+  )
+plot_slice_dr_histogram_all | plot_slice_dr_histogram_max1000
+```
+
 ## MMR Distribution After Max Abundance Limit
 
-So now we can look at the distribution of MMR values after applying a cutoff on the maximum observed abundance, @fig-mmr-abundance-cutoffs.
+So now we can look at the distribution of MMR values after applying a cutoff on the maximum observed abundance, @fig-mmr-max-abundance-cutoffs.
 Based on this plot, I think we can justify taking a max abundance cutoff, then looking at the MMR value, and if it's in a range, do exponentiation.
 
 ```{r}
-#| label: fig-mmr-abundance-cutoffs
+#| label: fig-mmr-max-abundance-cutoffs
 #| fig-cap: Distribution of MMR values after filtering for datasets with the maximum abundance <= 100 (top) or <= 1000 (bottom). Black lines indicate MMR values of 0.8 and 1.2, respectively.
 #| fig-height: 12
 plot_mmr_max100 = mmr_200 |>
@@ -184,3 +293,47 @@ mmr_consider |>
 ## Conclusion
 
 I think we can justify doing a max abundance cutoff <= 1000, and then consider mean-median-ratios between 0.8 and 1.2 as likely log-transformed.
+
+## Addendum
+
+A previous attempt at deciding if data should be log-transformed used a simple cutoff on the maximum observed intensity, if it was $\le 20$, then we log-transformed it.
+
+We can examine the transformation information from the dynamic range step to see what is being transformed now, what was being transformed then, and why we have more negative datasets now.
+
+```{r}
+#| label: load-negatives
+tar_load(se_negative_information)
+library(ComplexHeatmap)
+```
+
+```{r}
+#| label: summarize-negs
+n_total = nrow(se_negative_information)
+n_transform_now = sum(
+  se_negative_information$transformation %in% "exponentiated"
+)
+n_transform_old = sum(se_negative_information$original_max <= 20)
+
+diff_list = list(
+  `Cutoff <= 1000 + MMR` = se_negative_information |>
+    dplyr::filter(transformation %in% "exponentiated") |>
+    dplyr::pull(id),
+  `Cutoff <= 20` = se_negative_information |>
+    dplyr::filter(original_max <= 20) |>
+    dplyr::pull(id),
+  `Has Negatives, Never Transformed` = se_negative_information |>
+    dplyr::filter(n_neg >= 2, transformation %in% "none") |>
+    dplyr::pull(id)
+)
+```
+
+```{r}
+#| label: fig-complexheatmap
+comb_mat = make_comb_mat(diff_list)
+plot_upset = UpSet(
+  comb_mat,
+  top_annotation = upset_top_annotation(comb_mat, add_numbers = TRUE),
+  right_annotation = upset_right_annotation(comb_mat, add_numbers = TRUE)
+)
+draw(plot_upset, padding = unit(c(2, 10, 2, 2), "mm"))
+```
