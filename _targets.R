@@ -74,7 +74,7 @@ sets_map = tar_map(
 
 se_negative_information_t = tar_combine(
   se_negative_information,
-  sets_map[[6]],
+  sets_map[[7]],
   command = dplyr::bind_rows(!!!.x)
 )
 
