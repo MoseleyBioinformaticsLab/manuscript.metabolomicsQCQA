@@ -32,12 +32,13 @@ calculate_matrix_dynamic_range = function(safe_matrix) {
   # we will do:
   # add the most negative value, + 1
   # take the ratio.
-  max_val = max(safe_matrix, na.rm = TRUE)
   min_val = min(safe_matrix, na.rm = TRUE)
   if (min_val < 0) {
-    max_val = max_val + abs(min_val) + 1
-    min_val = min_val + abs(min_val) + 1
+    safe_matrix = safe_matrix + abs(min_val) + 1
   }
+  max_val = max(safe_matrix, na.rm = TRUE)
+  min_val = min(safe_matrix[safe_matrix > 0], na.rm = TRUE)
+
   max_val / min_val
 }
 
