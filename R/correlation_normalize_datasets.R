@@ -45,7 +45,7 @@ count_missingness_testleftcensored = function(raw_matrix, ssf_wide) {
 
   raw_matrix = raw_matrix[, ssf_wide$sample_id]
 
-  if (perc_missing > 0) {
+  if (!is.na(perc_missing) && (perc_missing > 0)) {
     lc_results = try(ICIKendallTau::test_left_censorship(
       raw_matrix,
       sample_classes = ssf_wide$ssf
