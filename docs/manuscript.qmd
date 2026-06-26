@@ -36,7 +36,7 @@ tar_load(c(reproducibility))
 Data repositories are good.
 They theoretically encourage the reuse of data.
 Some groups have found very, very cool ways to reuse and reanalyze transcriptomics data, for examples.
-However, as with all data, and most especially -omics level data, there are issues with data quality.
+However, as with all data, and most especially -omics level data, there are issues both with the ability to reuse the data that is there, and the data quality.
 As such, we have attempted to assess the quality of a large number of datasets in an open data repository where we are very familiar with the underlying data format, the Metabolomics Workbench.
 
 Previous related publications include
@@ -49,5 +49,16 @@ The measures we have used to assess the quality include:
 
 We also provide quality-control reports for a large number of analyses.
 
-In addition, for those analyses with a small number of subject-sample-factors, we attempt to recapture the experimental design, and then examine the MW analyses for cases where there is only a single factor present that perhaps is incorrect.
+## Methods
 
+### Detection of Log-Transformed Datasets
+
+Some deposited abundances are already log-transformed.
+We want to be able to detect them, un-transform them (exponentiate with base 2), and evaluate them in their un-transformed state.
+In our experience, non-transormed dataset distributions tend to be heavily skewed with long-tailed distributions, i.e. look much like a log-normal distribution, and then the log-transformed data appears much more "normal-like".
+Therefore, we can detect already log-transformed data by determining if it is "normal".
+However, tests for normality are notoriously fickle and prone to return non-significant values if the data is at all different from expectations.
+One common element of normally distributed data is that the mean and median of the data are relatively close together, whereas for skewed or long-tailed data the mean and median, by definition, are very different.
+
+We calculated the mean-median-ratio (MMR) across all 5904 datasets that created a summarized experiment object, as well as the number of negative values, the maximum observed abundance, and the dynamic range (maximum / minimum values).
+The dynamic range calculated in the presence of negative values involves first adding the absolute value of the minimum value, + 1, to transform all values to be positive, and subsequently calcuating the ratio of the maximum and minimum of the transformed values.

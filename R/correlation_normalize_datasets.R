@@ -38,35 +38,29 @@ check_isstop = function(in_metadata) {
   in_metadata$qc$do_next %in% "stop"
 }
 
-count_missingness_testleftcensored = function(se_data) {
-  if (metadata(se_data) |> check_isstop()) {
-    return(se_data)
-  }
-  perc_missing = sum(is.na(raw_matrix) | (raw_matrix == 0)) /
+count_missingness_testleftcensored = function(raw_matrix, ssf_wide) {
+  perc_missing = sum(is.na(raw_matrix)) /
     (nrow(raw_matrix) * ncol(raw_matrix)) *
     100
 
   raw_matrix = raw_matrix[, ssf_wide$sample_id]
 
-  if (perc_missing > 1) {
+  if (perc_missing > 0) {
     lc_results = try(ICIKendallTau::test_left_censorship(
       raw_matrix,
-      sample_classes = ssf_wide$factors
+      sample_classes = ssf_wide$ssf
     ))
     if (inherits(lc_results, "try-error")) {
       out_res = list(lc_test = NULL, perc_missing = perc_missing)
     } else {
+      tibble_lc2 = broom::tidy(lc_results$binomial_test)
+      lc_results$binomial_test = tibble_lc2
       out_res = list(lc_test = lc_results, perc_missing = perc_missing)
     }
   } else {
     out_res = list(lc_test = NULL, perc_missing = perc_missing)
   }
-  metadata(se_data)$left_censorship = out_res
-  metadata(se_data)$qc = add_step(
-    metadata(se_data)$qc,
-    "succeeded",
-    "left-censorship"
-  )
+  out_res
 }
 
 do_correlation = function(se_data) {

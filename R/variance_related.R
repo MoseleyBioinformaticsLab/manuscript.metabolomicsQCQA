@@ -53,6 +53,11 @@ calculate_dynamic_range = function(se_data) {
   }
   assays(se_data)$raw = data_matrix
 
+  lc_info = count_missingness_testleftcensored(
+    data_matrix,
+    get_vardata(se_data)
+  )
+
   data_normalized = median_normalize_matrix(data_matrix)
   assays(se_data)$normalized = data_normalized
   sample_mins = MatrixGenerics::colMins(data_normalized, na.rm = TRUE)
@@ -98,6 +103,7 @@ calculate_dynamic_range = function(se_data) {
   }
   metadata(se_data)$transformation = transform_info
   metadata(se_data)$dynamic_range_filtering = filtering_df
+  metadata(se_data)$left_censorship = lc_info
   metadata(se_data)$qc = qc
   return(se_data)
 }
