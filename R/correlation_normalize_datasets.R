@@ -12,7 +12,8 @@ sets_calculate_correlations_pca = function(sets_se) {
   message("Running PCA ...")
   pca_sets = furrr::future_map(
     cor_sets,
-    run_pca_experimental_design
+    run_pca_experimental_design,
+    .progress = TRUE
   )
   pca_sets
 }
