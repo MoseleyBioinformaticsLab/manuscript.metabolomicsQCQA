@@ -61,7 +61,12 @@ count_missingness_testleftcensored = function(se_data) {
   } else {
     out_res = list(lc_test = NULL, perc_missing = perc_missing)
   }
-  out_res
+  metadata(se_data)$left_censorship = out_res
+  metadata(se_data)$qc = add_step(
+    metadata(se_data)$qc,
+    "succeeded",
+    "left-censorship"
+  )
 }
 
 do_correlation = function(se_data) {
