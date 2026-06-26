@@ -1,4 +1,8 @@
-sets_readrds_convert_to_se = function(set_df, processed_group) {
+sets_readrds_convert_to_se = function(
+  set_df,
+  processed_group,
+  mwtab_raw_files
+) {
   if (inherits(set_df, "character")) {
     stop(
       "Run to processed_group first, and then the rest!  tar_make(processed_group)"
@@ -7,7 +11,12 @@ sets_readrds_convert_to_se = function(set_df, processed_group) {
   all_files = set_df$file
   all_md5 = set_df$md5
   all_id = set_df$id
-  all_se = furrr::future_map2(all_files, all_md5, readrds_convert_to_se)
+  all_se = furrr::future_map2(
+    all_files,
+    all_md5,
+    readrds_convert_to_se,
+    mwtab_raw_files
+  )
   names(all_se) = all_id
   all_se
 }
@@ -31,7 +40,9 @@ get_mwtab_ftp_files = function(
   file_matrix = do.call(rbind, file_list)
   just_files = file_matrix[, 9]
 
-  likely_raw = just_files[!(grepl("supp|Results.txt$", just_files))]
+  likely_raw = just_files[
+    !(grepl("supp|_Results|docx$|xlsx$|txt$|csv$", just_files))
+  ]
   likely_raw
 }
 
@@ -67,7 +78,7 @@ check_all_na = function(raw_matrix) {
   all(na_vals)
 }
 
-readrds_convert_to_se = function(rds_file, md5_sum) {
+readrds_convert_to_se = function(rds_file, md5_sum, mwtab_raw_files) {
   # setup_set = tar_read(setup_g01); tar_source("R")
   # using setup_g01
   # setup_data = setup_set[[4]]
@@ -86,7 +97,7 @@ readrds_convert_to_se = function(rds_file, md5_sum) {
   # id = "AN000072"; rds_file = "parsed_rds/AN000072.rds"; md5_sum = "781a19811ab6cf3ca6524224ab2e3507"; tar_source("R")
   # id = "AN003915"; rds_file = "parsed_rds/AN003915.rds"; tar_source("R")
   # id = "AN004851"; rds_file = "parsed_rds/AN004851.rds"; tar_source("R")
-  # id = "AN002880"; rds_file = "parsed_rds/AN002880.rds"; tar_source("R")
+  # id = "AN002880"; rds_file = "parsed_rds/AN002880.rds"; tar_load(mwtab_raw_files); tar_source("R")
   processed_data = readRDS(rds_file)
   check_md5(processed_data, md5_sum)
 
@@ -94,6 +105,11 @@ readrds_convert_to_se = function(rds_file, md5_sum) {
   abundance_data = processed_data$MEASUREMENTS
   metabolite_data = processed_data$METABOLITES
 
+  study_id = processed_data[["METABOLOMICS WORKBENCH"]] |>
+    dplyr::filter(field %in% "STUDY_ID") |>
+    dplyr::pull(value)
+
+  processed_data$RAW_DATA = grep(study_id, mwtab_raw_files, value = TRUE)
   if (is.null(abundance_data)) {
     se_data = create_empty_se(processed_data, why = "no feature data")
     return(se_data)

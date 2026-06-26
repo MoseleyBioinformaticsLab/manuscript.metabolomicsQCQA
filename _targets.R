@@ -49,20 +49,23 @@ processed_group_t = tar_target(
 report_file_t = tar_file(report_file, "resources/example_report.qmd")
 
 mwtab_ftp_file_t = tar_file(
-  mwtab_file,
+  mwtab_ftp_file,
   "resources/mwbench_ftp_studies_files_2026-06-25.txt"
 )
 
 mwtab_raw_files_t = tar_target(
   mwtab_raw_files,
-  get_mwtab_ftp_files(mwtab_ftp_file_t)
+  get_mwtab_ftp_files(mwtab_ftp_file)
 )
 
 sets_map = tar_map(
   group_sets,
   names = group,
   # first we convert everything to summarized-experiment objects
-  tar_target(se, sets_readrds_convert_to_se(set, processed_group)), #1
+  tar_target(
+    se,
+    sets_readrds_convert_to_se(set, processed_group, mwtab_raw_files)
+  ), #1
   # we do the analysis to figure out how to detect things that should be
   # log-transformed
   tar_target(se_mmr, sets_check_mmr_negatives(se)), #2
