@@ -98,6 +98,7 @@ readrds_convert_to_se = function(rds_file, md5_sum, mwtab_raw_files) {
   # id = "AN003915"; rds_file = "parsed_rds/AN003915.rds"; tar_source("R")
   # id = "AN004851"; rds_file = "parsed_rds/AN004851.rds"; tar_source("R")
   # id = "AN002880"; rds_file = "parsed_rds/AN002880.rds"; tar_load(mwtab_raw_files); tar_source("R")
+  # rds_file = "parsed_rds/AN000627.rds"; tar_load(mwtab_raw_files); tar_source("R")
   processed_data = readRDS(rds_file)
   check_md5(processed_data, md5_sum)
 
@@ -109,7 +110,12 @@ readrds_convert_to_se = function(rds_file, md5_sum, mwtab_raw_files) {
     dplyr::filter(field %in% "STUDY_ID") |>
     dplyr::pull(value)
 
-  processed_data$RAW_DATA = grep(study_id, mwtab_raw_files, value = TRUE)
+  if (!is.na(nchar(study_id[1]))) {
+    processed_data$RAW_DATA = grep(study_id, mwtab_raw_files, value = TRUE)
+  } else {
+    processed_data$RAW_DATA = NULL
+  }
+
   if (is.null(abundance_data)) {
     se_data = create_empty_se(processed_data, why = "no feature data")
     return(se_data)
