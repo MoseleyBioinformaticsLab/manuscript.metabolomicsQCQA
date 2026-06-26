@@ -18,6 +18,23 @@ check_md5 = function(in_data, md5_sum) {
   return(invisible(NULL))
 }
 
+# takes the FTP listing, and actually finds the files
+# that likely have the raw data in them, to match against
+# the study ID.
+get_mwtab_ftp_files = function(
+  file = "resources/mwbench_ftp_studies_files_2026-06-25.txt"
+) {
+  all_files = readr::read_lines(file = file)
+  all_files = gsub("\\s+", " ", all_files)
+  all_files = gsub("->.*", "", all_files)
+  file_list = strsplit(all_files, " ")
+  file_matrix = do.call(rbind, file_list)
+  just_files = file_matrix[, 9]
+
+  likely_raw = just_files[!(grepl("supp|Results.txt$", just_files))]
+  likely_raw
+}
+
 check_convert_character_matrix = function(raw_matrix) {
   if (is.character(raw_matrix[1, 1])) {
     safe_matrix = apply(

@@ -48,6 +48,16 @@ processed_group_t = tar_target(
 
 report_file_t = tar_file(report_file, "resources/example_report.qmd")
 
+mwtab_ftp_file_t = tar_file(
+  mwtab_file,
+  "resources/mwbench_ftp_studies_files_2026-06-25.txt"
+)
+
+mwtab_raw_files_t = tar_target(
+  mwtab_raw_files,
+  get_mwtab_ftp_files(mwtab_ftp_file_t)
+)
+
 sets_map = tar_map(
   group_sets,
   names = group,
@@ -137,6 +147,8 @@ mean_median_ratios_report_t = tar_quarto(
 # )
 
 list(
+  mwtab_ftp_file_t,
+  mwtab_raw_files_t,
   processed_t,
   processed_group_t,
   sets_map,

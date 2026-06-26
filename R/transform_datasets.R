@@ -56,6 +56,9 @@ check_mmr_negatives = function(in_se) {
   if (qc_info$do_next %in% "stop") {
     return(NULL)
   }
+
+  mwtab_info = get_specific_metadata(in_se, "mwtab")
+
   raw_data = assays(in_se)$raw
 
   mmr_value = calculate_mean_median_ratio(raw_data)
@@ -75,7 +78,8 @@ check_mmr_negatives = function(in_se) {
       N_present = n_vals - n_miss,
       N_neg = n_neg,
       max = max_value,
-      min = min_value
+      min = min_value,
+      type = mwtab_info$MEASUREMENT_TYPE
     )
   )
 }
