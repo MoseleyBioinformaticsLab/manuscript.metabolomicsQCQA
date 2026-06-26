@@ -2,11 +2,14 @@ sets_calculate_correlations_pca = function(sets_se) {
   # sets_se = tar_read(se_dynamic_range_g01); tar_source("R"); sets_se = sets_se[1:60];
   # sets_se = tar_read(se_dynamic_range_g02); tar_source("R"); sets_se = sets_se[1:60];
 
+  message("Running correlations ...")
   cor_sets = purrr::map(
     sets_se,
-    do_correlation
+    do_correlation,
+    .progress = TRUE
   )
 
+  message("Running PCA ...")
   pca_sets = furrr::future_map(
     cor_sets,
     run_pca_experimental_design
