@@ -8,8 +8,8 @@ sets_calculate_correlations_pca = function(sets_se) {
   cor_sets = purrr::map2(
     sets_se,
     n_set,
-    \(in_set, n_set) {
-      p_cor(sprintf("Correlating N=%g", n_set))
+    \(in_set, in_n) {
+      p_cor(sprintf("Correlating N=%g", in_n))
       do_correlation(in_set)
     }
   )
@@ -19,8 +19,8 @@ sets_calculate_correlations_pca = function(sets_se) {
   pca_sets = furrr::future_map2(
     cor_sets,
     n_set,
-    \(in_set, n_set) {
-      p_pca(sprintf("PCA'ing N=%g", n_set))
+    \(in_set, in_n) {
+      p_pca(sprintf("PCA'ing N=%g", in_n))
       run_pca_experimental_design(in_set)
     }
   )
