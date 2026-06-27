@@ -18,6 +18,7 @@ sets_calculate_correlations_pca = function(sets_se) {
   )
 
   p_pca = progressr::progressor(length(cor_sets))
+  n_set = seq_along(cor_sets)
   pca_sets = furrr::future_map2(
     cor_sets,
     n_set,
