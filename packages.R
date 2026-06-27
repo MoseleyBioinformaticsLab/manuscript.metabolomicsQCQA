@@ -19,8 +19,4 @@ conflicts_prefer(base::setdiff)
 tar_option_set(memory = "transient")
 options(tflow.report_dir = "docs")
 options(future.globals.maxSize = 3.0 * 1e9, future.rng.onMisuse = "ignore")
-
-library(progressr)
-handlers("cli")
-handlers(global = TRUE)
 paint::mask_print()
