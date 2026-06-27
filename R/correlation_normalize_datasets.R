@@ -9,11 +9,8 @@ sets_calculate_correlations_pca = function(sets_se) {
     sets_se,
     n_set,
     \(in_set, n_set) {
-      # p needs some indicator of what number of thing it's on
-      # to print the progress. We can test this by passing it random
-      # values to see what it will print.
-      do_correlation(in_set)
       p_cor(sprintf("Correlating N=%g", n_set))
+      do_correlation(in_set)
     }
   )
 
@@ -23,8 +20,8 @@ sets_calculate_correlations_pca = function(sets_se) {
     cor_sets,
     n_set,
     \(in_set, n_set) {
-      run_pca_experimental_design(in_set)
       p_pca(sprintf("PCA'ing N=%g", n_set))
+      run_pca_experimental_design(in_set)
     }
   )
   pca_sets
