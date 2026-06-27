@@ -2,18 +2,29 @@ sets_calculate_correlations_pca = function(sets_se) {
   # sets_se = tar_read(se_dynamic_range_g01); tar_source("R"); sets_se = sets_se[1:60];
   # sets_se = tar_read(se_dynamic_range_g02); tar_source("R"); sets_se = sets_se[1:60];
 
-  message("Running correlations ...")
-  cor_sets = purrr::map(
+  # message("Running correlations ...")
+  p_cor = progressr::progressor(length(sets_se))
+  n_set = seq_along(sets_se)
+  cor_sets = purrr::map2(
     sets_se,
-    do_correlation,
-    .progress = TRUE
+    n_set,
+    \(in_set, n_set) {
+      # p needs some indicator of what number of thing it's on
+      # to print the progress. We can test this by passing it random
+      # values to see what it will print.
+      do_correlation(in_set)
+      p_cor(sprintf("Correlating N=%g", n_set))
+    }
   )
 
-  message("Running PCA ...")
-  pca_sets = furrr::future_map(
+  p_pca = progressr::progressor(length(cor_sets))
+  pca_sets = furrr::future_map2(
     cor_sets,
-    run_pca_experimental_design,
-    .progress = TRUE
+    n_set,
+    \(in_set, n_set) {
+      run_pca_experimental_design(in_set)
+      p_pca(sprintf("PCA'ing N=%g", n_set))
+    }
   )
   pca_sets
 }

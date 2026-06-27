@@ -11,7 +11,7 @@ run_a_lot = function(a_lot = seq(1, 20)) {
   p = progressr::progressor(along = a_lot)
   out_res = furrr::future_map(a_lot, \(x) {
     run_something(x)
-    p(sprintf("x=%g", x))
+    p(message = c("Correlating ", sprintf("N=%g", x)))
   })
 }
 
