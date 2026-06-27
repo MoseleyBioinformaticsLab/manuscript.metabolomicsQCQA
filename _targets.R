@@ -33,10 +33,6 @@ save_path = "parsed_rds"
 # daemons(3)
 library(furrr)
 plan(multicore, workers = 10)
-library(progressr)
-handlers(global = TRUE)
-handlers("txtprogressbar")
-
 
 # first time running, go to **processed_group** so the group file
 # gets created properly.
