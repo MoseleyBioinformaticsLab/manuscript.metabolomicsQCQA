@@ -35,3 +35,5 @@
   * Might be the same deal with a sample with all NA.
 * AN000163:
   * Has no measurements in the mwtab, and no ancillary data.
+* AN004749:
+  * Has all same values, or missing.

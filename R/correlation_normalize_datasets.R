@@ -109,11 +109,23 @@ do_correlation = function(se_data) {
   plan(multicore, workers = n_cores)
 
   metadata(se_data)$icikt = se_ici
-  metadata(se_data)$qc = add_step(
-    metadata(se_data)$qc,
-    "succeeded",
-    "correlation"
-  )
+  # if we encounter any NA values in the correlation,
+  # we make sure we don't try PCA.
+  if (any(is.na(se_ici$raw))) {
+    metadata(se_data)$qc = add_step(
+      metadata(se_data)$qc,
+      "failed",
+      "correlation"
+    )
+    metadata(se_data)$qc$do_next = "stop"
+  } else {
+    metadata(se_data)$qc = add_step(
+      metadata(se_data)$qc,
+      "succeeded",
+      "correlation"
+    )
+  }
+
   se_data
 }
 
