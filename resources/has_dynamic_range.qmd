@@ -1,0 +1,83 @@
+Data was read in, samples were matched between the sample-subject-factors (SSF) data block and the measurements block, features were matched between the metabolite-info block and the measurements block.
+
+If log-transformed data were detected, they were exponentiated.
+Values $\le 0$ were set to missing for all further calculations.
+
+## N-Samples by Factors and Features
+
+```{r}
+#| label: tbl-experimental-factors
+#| tbl-cap: Number of samples in each group of factors.
+tmp_ssf = get_vardata(se_data)
+factor_types = metadata(se_data)$factor_types
+experimental_design = determine_experimental_design(tmp_ssf, factor_types)
+experimental_design$n_by_factor_factors |>
+  add_total_samples_by_factor() |>
+  gt::gt()
+```
+
+Number of features with a non-missing value in at least one sample: **`{r} nrow(se_data)`**.
+
+## Quality Control / Quality Assurance
+
+### Missing Values as Result of Left Censorship
+
+For each analysis, we counted the number of missing values ($\le 0$), and determine their percentage.
+Then, we for each sample, we determined the median abundance in the sample, and for each feature that had any missing values across the samples, we count how many of that feature's non-missing values are below the median in the samples.
+If it is below the median, that is considered a success in a binomial test, and the total number of trials is the number of non-missing observations for that feature.
+For missing-at-random features, we expect a 50/50 ratio.
+For missing-not-at-random due to left-censorship, we expect a skewed ratio.
+We aggregate the success and trials across features and test the ratio using a binomial test.
+
+* % Missing Values: `r format(use_pca$left_censorship$perc_missing, digits = 2)`%.
+
+Left censorship test results:
+
+```{r}
+#| label: tbl-left-censorship-results
+#| tbl-cap: Number of non-missing values that are below the median for each group (success) vs number of missing (trials).
+#| message: true
+if (!is.null(use_pca$left_censorship[["lc_test"]])) {
+  use_pca$left_censorship$lc_test$values |>
+    dplyr::select(class, trials, success) |>
+    dplyr::transmute(factors = class, trials = trials, success = success) |>
+    gt::gt()
+} else {
+  message("No left-censorship test results.")
+}
+```
+
+* Binomial test result:
+
+```{r}
+#| label: left-censorship-test
+#| message: true
+if (!is.null(use_pca$left_censorship[["lc_test"]])) {
+  use_pca$left_censorship$lc_test$binomial_test
+} else {
+  message("No left-censroship test results.")
+}
+```
+
+### Raw Data Boxplot
+
+```{r}
+#| label: create-qcqa-plots
+use_graphs = create_qcqa_plots(use_pca)
+```
+
+```{r}
+#| label: fig-raw-data-boxplot
+#| fig-cap: Raw abundance data boxplot, log2-transformed.
+use_graphs$raw
+```
+
+### Median Normalized Data Boxplot
+
+For each sample, we calculate the median abundance of non-missing features in the sample, and divide the abundances by the median abundance.
+
+```{r}
+#| label: fig-normalized-data-boxplot
+#| fig-cap: Median normalized data boxplot, log2-transformed.
+use_graphs$normalized
+```

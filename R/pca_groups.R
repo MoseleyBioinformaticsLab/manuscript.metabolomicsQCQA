@@ -209,6 +209,7 @@ run_pca_experimental_design = function(se_data) {
     "succeeded",
     "pca"
   )
+  metadata(se_data)$factor_types = factor_types
 
   se_data
 }
