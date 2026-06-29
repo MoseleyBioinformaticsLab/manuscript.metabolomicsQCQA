@@ -69,18 +69,23 @@ knitr::opts_chunk$set(
 #| warning: false
 tar_source(c("packages.R", "R"))
 # keep track of the line below, as it gets replaced.
-use_pca = readRDS("tempfile")
+se_data = readRDS("tests_problems/pca_tempfile_g01_1.rds")
 
-has_outlier_qc = check_for_outliers_qc(use_pca$abundance)
+report_list = check_qc_outputs(se_data)
 ```
 
 ## Metabolomics Workbench Information
+
+```{r}
+#| label: mwtab-metadata
+mwtab_meta = metadata(se_data)$mwtab
+```
 
 
 ```{r}
 #| label: tbl-mw-table
 #| tbl-cap: Metabolomics workbench data block.
-use_pca$mwtab$`METABOLOMICS WORKBENCH` |>
+mwtab_meta$`METABOLOMICS WORKBENCH` |>
   gt::gt() |>
   gt::tab_options(column_labels.hidden = TRUE)
 ```
@@ -89,7 +94,7 @@ use_pca$mwtab$`METABOLOMICS WORKBENCH` |>
 ```{r}
 #| label: tbl-mw-project
 #| tbl-cap: Metabolomics workbench project block.
-use_pca$mwtab$PROJECT |>
+mwtab_meta$PROJECT |>
   gt::gt() |>
   gt::tab_options(column_labels.hidden = TRUE)
 ```
@@ -98,7 +103,19 @@ use_pca$mwtab$PROJECT |>
 ```{r}
 #| label: tbl-mw-study
 #| tbl-cap: Metabolomics workbench study block.
-use_pca$mwtab$STUDY |>
+study_info = mwtab_meta$STUDY
+if (!is.null(mwtab_meta$RAW_DATA)) {
+  study_info = dplyr::bind_rows(
+    study_info,
+    tibble::tibble(field = "RAW_DATA", value = "Yes")
+  )
+} else {
+  study_info = dplyr::bind_rows(
+    study_info,
+    tibble::tibble(field = "RAW_DATA", value = "No")
+  )
+}
+study_info |>
   gt::gt() |>
   gt::tab_options(column_labels.hidden = TRUE)
 ```
@@ -107,7 +124,7 @@ use_pca$mwtab$STUDY |>
 ```{r}
 #| label: tbl-mw-subjects
 #| tbl-cap: Metabolomics workbench subjects block.
-use_pca$mwtab$SUBJECT |>
+mwtab_meta$SUBJECT |>
   gt::gt() |>
   gt::tab_options(column_labels.hidden = TRUE)
 ```
@@ -115,9 +132,19 @@ use_pca$mwtab$SUBJECT |>
 ```{r}
 #| label: tbl-mw-analysis-info
 #| tbl-cap: Metabolomics workbench analysis information.
-use_pca$mwtab$ANALYSIS |>
+mwtab_meta$ANALYSIS |>
   gt::gt() |>
   gt::tab_options(column_labels.hidden = TRUE)
+```
+
+
+```{r}
+#| label: include-basic-se
+if (report_list$steps[1] %in% "none") {
+  {{<include resources/got_nothing.qmd>}}
+} else if {
+  {{<include resources/has_dynamic_range.qmd}}
+}
 ```
 
 ## N-Samples by Factors and Features
