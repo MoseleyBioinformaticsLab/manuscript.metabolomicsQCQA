@@ -111,13 +111,14 @@ do_correlation = function(se_data) {
   metadata(se_data)$icikt = se_ici
   # if we encounter any NA values in the correlation,
   # we make sure we don't try PCA.
-  if (any(is.na(se_ici$raw))) {
+  if (any(is.na(se_ici$cor$raw))) {
     metadata(se_data)$qc = add_step(
       metadata(se_data)$qc,
       "failed",
       "correlation"
     )
     metadata(se_data)$qc$do_next = "stop"
+    metadata(se_data)$qc$why = "NA correlations"
   } else {
     metadata(se_data)$qc = add_step(
       metadata(se_data)$qc,

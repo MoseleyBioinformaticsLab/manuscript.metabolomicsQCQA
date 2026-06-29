@@ -35,10 +35,6 @@ These include:
   * [removing QC samples](#quality-control-samples-removed);
   * [removing both outliers and QC samples](#outliers-and-quality-control-samples-removed)
 
-It is important to note that if there are no outlier or QC samples, then the results in subsequent sections will be **blank**.
-However, this is an automated analysis and report, so the section headers are all present.
-
-If a section is blank, that likely means there were no samples left to use to create graphs or tables, and the code cell was not evaluated.
 
 ## Important terms
 
