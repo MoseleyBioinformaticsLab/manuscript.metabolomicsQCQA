@@ -1,3 +1,52 @@
+setup_missing_matrix = function(data_matrix, global_na = c(NA, NaN)) {
+  exclude_loc = matrix(
+    FALSE,
+    nrow = nrow(data_matrix),
+    ncol = ncol(data_matrix)
+  )
+  rownames(exclude_loc) = rownames(data_matrix)
+  colnames(exclude_loc) = colnames(data_matrix)
+  if (length(global_na) > 0) {
+    if (any(is.na(global_na))) {
+      exclude_loc[is.na(data_matrix)] = TRUE
+      global_na = global_na[!is.na(global_na)]
+    }
+    if (any(is.infinite(global_na))) {
+      exclude_loc[is.infinite(data_matrix)] = TRUE
+      global_na = global_na[!is.infinite(global_na)]
+    }
+    if (any(is.nan(global_na))) {
+      exclude_loc[is.nan(data_matrix)] = TRUE
+      global_na = global_na[!is.nan(global_na)]
+    }
+  }
+  if (length(global_na) > 0) {
+    for (ival in global_na) {
+      exclude_loc[data_matrix == ival] = TRUE
+    }
+  }
+
+  out_matrix = data_matrix
+  out_matrix[exclude_loc] = NA
+  out_matrix
+}
+
+count_data_issues = function(data_matrix) {
+  n_missing = sum(is.na(data_matrix) | is.nan(data_matrix))
+  n_infinite = sum(is.infinite(data_matrix))
+  n_negative = sum(data_matrix < 0, na.rm = TRUE)
+
+  inf_features = MatrixGenerics::rowCounts(is.infinite(data_matrix)) > 0
+
+  n_inf_features = sum(inf_features)
+
+  data_issues_df = tibble::tibble(
+    Issue = c("Missing", "Infinite", "Negative", "Infinite Features"),
+    N = c(n_missing, n_infinite, n_negative, n_inf_features)
+  )
+  list(df = data_issues_df, inf_features = inf_features)
+}
+
 sets_calculate_dynamic_range = function(sets_se) {
   # sets_se = tar_read(se_g01); tar_source("R")
   # sets_se = tar_read(se_g02); tar_source("R")
@@ -16,14 +65,30 @@ calculate_dynamic_range = function(se_data) {
   }
 
   data_matrix = assays(se_data)$raw
+  data_issues = count_data_issues(data_matrix)
+  se_data = se_data[!data_issues$inf_features, , drop = FALSE]
 
-  max_data = max(data_matrix, na.rm = TRUE)
-  neg_data = sum(data_matrix < 0, na.rm = TRUE)
-  n_original_features = nrow(data_matrix)
-  n_original_samples = ncol(data_matrix)
+  # just in case we somehow have no data left after
+  # checking for infinite values in the features
+  if (nrow(se_data) == 0) {
+    qc$failed = "dynamic range"
+    qc$do_next = "stop"
+    qc$why = "all features removed due to infinite values"
+    metadata(se_data)$qc = qc
+    metadata(se_data)$data_issues = data_issues$df
+    return(se_data)
+  }
+  data_matrix = assays(se_data)$raw
+
+  clean_matrix = setup_missing_matrix(data_matrix)
+
+  max_data = max(clean_matrix, na.rm = TRUE)
+  neg_data = sum(clean_matrix < 0, na.rm = TRUE)
+  n_original_features = nrow(clean_matrix)
+  n_original_samples = ncol(clean_matrix)
 
   if (max_data <= 1000) {
-    transform_info = transform_abundances(data_matrix)
+    transform_info = transform_abundances(clean_matrix)
     if (transform_info$transformation %in% "exponentiated") {
       data_matrix = transform_info$matrix
     }
@@ -38,27 +103,27 @@ calculate_dynamic_range = function(se_data) {
   transform_info$original_max = max_data
   transform_info$n_neg = neg_data
 
-  data_matrix[data_matrix <= 0] = NA
+  clean_matrix[clean_matrix <= 0] = NA
 
   # now that we've set the negatives and zeros to missing proper, we can try
   # doing the filtering to being present in at least one sample again.
   data_keep = try(visualizationQualityControl::keep_non_missing_percentage(
-    data_matrix,
+    clean_matrix,
     keep_num = 1
   ))
 
   if (!inherits(data_keep, "try-error")) {
-    data_matrix = data_matrix[data_keep, , drop = FALSE]
-    se_data = se_data[data_keep, ]
+    clean_matrix = clean_matrix[data_keep, , drop = FALSE]
+    se_data = se_data[data_keep, , drop = FALSE]
   }
-  assays(se_data)$raw = data_matrix
+  assays(se_data)$raw = clean_matrix
 
   lc_info = count_missingness_testleftcensored(
-    data_matrix,
+    clean_matrix,
     get_vardata(se_data)
   )
 
-  data_normalized = median_normalize_matrix(data_matrix)
+  data_normalized = median_normalize_matrix(clean_matrix)
   assays(se_data)$normalized = data_normalized
   sample_mins = MatrixGenerics::colMins(data_normalized, na.rm = TRUE)
   sample_maxs = MatrixGenerics::colMaxs(data_normalized, na.rm = TRUE)
@@ -104,6 +169,7 @@ calculate_dynamic_range = function(se_data) {
   metadata(se_data)$transformation = transform_info
   metadata(se_data)$dynamic_range_filtering = filtering_df
   metadata(se_data)$left_censorship = lc_info
+  metadata(se_data)$data_issues = data_issues$df
   metadata(se_data)$qc = qc
   return(se_data)
 }
