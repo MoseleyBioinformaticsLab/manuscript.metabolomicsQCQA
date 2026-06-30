@@ -90,13 +90,13 @@ calculate_dynamic_range = function(se_data) {
   if (max_data <= 1000) {
     transform_info = transform_abundances(clean_matrix)
     if (transform_info$transformation %in% "exponentiated") {
-      data_matrix = transform_info$matrix
+      clean_matrix = transform_info$matrix
     }
     transform_info$matrix = NULL
   } else {
     transform_info = list(
       transformation = "none",
-      mean_median_ratio = calculate_mean_median_ratio(data_matrix)
+      mean_median_ratio = calculate_mean_median_ratio(clean_matrix)
     )
   }
 
@@ -133,8 +133,8 @@ calculate_dynamic_range = function(se_data) {
 
   data_range = range(data_normalized, na.rm = TRUE)
   data_dyn_range = data_range[2] / data_range[1]
-  n_feature = nrow(data_matrix)
-  col_not_na = n_feature - MatrixGenerics::colCounts(data_matrix, value = NA)
+  n_feature = nrow(clean_matrix)
+  col_not_na = n_feature - MatrixGenerics::colCounts(clean_matrix, value = NA)
 
   se_data$removed = NA_character_
   se_data$removed[col_not_na < 10] = "< 10 present values"
@@ -156,13 +156,13 @@ calculate_dynamic_range = function(se_data) {
     which = c("original", "filtered")
   )
   # data_matrix[data_sign == -1] = NA
-  data_matrix = data_matrix[, is.na(se_data$removed), drop = FALSE]
+  clean_matrix = clean_matrix[, is.na(se_data$removed), drop = FALSE]
   qc$succeeded = c(qc$succeeded, "calculate_dynamic_range / normalized")
-  if ((nrow(data_matrix) < 10)) {
+  if ((nrow(clean_matrix) < 10)) {
     qc$do_next = "stop"
     qc$why = "too few features"
   }
-  if (ncol(data_matrix) < 3) {
+  if (ncol(clean_matrix) < 3) {
     qc$do_next = "stop"
     qc$why = "too few samples"
   }
