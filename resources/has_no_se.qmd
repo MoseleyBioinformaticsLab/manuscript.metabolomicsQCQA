@@ -1,0 +1,9 @@
+```{r}
+#| label: determine-reason-no-se
+if (report_list$failed["why"] %in% "no feature data") {
+  out_reason = "The analysis had no metabolite feature data present."
+}
+```
+
+For this MW analysis, no data was able to be extracted and analyzed.
+`{r} out_reason`
