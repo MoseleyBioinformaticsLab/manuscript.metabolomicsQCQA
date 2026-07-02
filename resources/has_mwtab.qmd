@@ -82,6 +82,10 @@ mwtab_meta = metadata(se_data)$mwtab
 ```
 
 
+::: {.panel-tabset}
+
+### Metabolomics Workbench
+
 ```{r}
 #| label: tbl-mw-table
 #| tbl-cap: Metabolomics workbench data block.
@@ -90,6 +94,7 @@ mwtab_meta$`METABOLOMICS WORKBENCH` |>
   gt::tab_options(column_labels.hidden = TRUE)
 ```
 
+### Project
 
 ```{r}
 #| label: tbl-mw-project
@@ -99,6 +104,8 @@ mwtab_meta$PROJECT |>
   gt::tab_options(column_labels.hidden = TRUE)
 ```
 
+
+### Study
 
 ```{r}
 #| label: tbl-mw-study
@@ -129,6 +136,8 @@ study_info |>
 ```
 
 
+### Subjects
+
 ```{r}
 #| label: tbl-mw-subjects
 #| tbl-cap: Metabolomics workbench subjects block.
@@ -137,13 +146,18 @@ mwtab_meta$SUBJECT |>
   gt::tab_options(column_labels.hidden = TRUE)
 ```
 
+### Sample Factors
+
 ```{r}
 #| label: tbl-mw-factors
 #| tbl-cap: Metabolomics workbench subject sample factors data.
 mwtab_meta$SUBJECT_SAMPLE_FACTORS |>
   widen_ssf_json() |>
-  gt::gt()
+  gt::gt() |>
+  gt::opt_interactive()
 ```
+
+### Analysis
 
 ```{r}
 #| label: tbl-mw-analysis-info
@@ -153,3 +167,4 @@ bind_analysis_related_tables(mwtab_meta) |>
   gt::tab_options(column_labels.hidden = TRUE)
 ```
 
+:::

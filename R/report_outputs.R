@@ -8,9 +8,9 @@ sets_create_qcqa_reports = function(
     paste0(tempfile(paste0(in_id, "_")), c(".rds", ".qmd"))
   })
   names(sets_tmp_files) = names(pca_sets)
-  out_reports = purrr::map2(
-    pca_sets[1:10],
-    sets_tmp_files[1:10],
+  out_reports = furrr::future_map2(
+    pca_sets,
+    sets_tmp_files,
     create_report_from_templates,
     save_loc,
     quiet = TRUE
@@ -25,7 +25,7 @@ create_report_from_templates = function(
 ) {
   # se_data = pca_sets[[1]]; in_tmp_files = sets_tmp_files[[1]]; quiet = FALSE; tar_source("R")
   analysis_id = get_specific_metadata(se_data, "qc")$id
-  message(analysis_id)
+  # message(analysis_id)
   mwtab_info = get_specific_metadata(se_data, "mwtab")
   report_text = suppressWarnings(readLines("resources/has_mwtab.qmd"))
   title_text = glue::glue("title: QC/QA Report for MW {analysis_id}")
