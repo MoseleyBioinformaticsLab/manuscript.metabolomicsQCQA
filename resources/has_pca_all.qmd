@@ -1,6 +1,18 @@
-### RSD Raw and Normalized
+### Variance Evaluations
 
-For both raw and normalized data, for each feature we calculate the relative-standard-deviation (RSD) (or coefficient of variation, $sd / mean$) within each set of factors.
+We evaluate the dynamic range of each sample, as well as the relative standard deviation (RSD) when there are three or more samples in a SSF group.
+
+#### Dynamic Range
+
+```{r}
+#| label: fig-dynamic-range
+#| fig-cap: Log10 Dynamic range values for each sample by SSF.
+use_graphs$dynamic_range
+```
+
+#### RSD Raw and Normalized
+
+For both raw and normalized data, for each feature we calculate the relative-standard-deviation (RSD) (or coefficient of variation, $sd / mean$) within each set of SSF.
 We expect the RSD to stay the same or decrease in the normalized data.
 We also expect that the RSD of quality-control samples will be lower than other samples.
 
@@ -14,7 +26,7 @@ show_rsd_message = !can_rsd_graph
 
 ```{r}
 #| label: fig-rsd-raw-normalized
-#| fig-cap: RSD of raw (r) and normalized (n) measurements by factors.
+#| fig-cap: RSD of raw (r) and normalized (n) measurements by SSF.
 #| include: !expr can_rsd_graph
 #| eval: !expr can_rsd_graph
 rsd_graph = create_rsd_plot(rsd_all$all_rsd)
@@ -30,7 +42,7 @@ cat("**No RSD values calculated.**")
 
 ```{r}
 #| label: tbl-rsd-raw-normalized
-#| tbl-cap: Median RSDs of raw and normalized measurements by factors.
+#| tbl-cap: Median RSDs of raw and normalized measurements by SSF.
 #| include: !expr can_rsd_table
 #| eval: !expr can_rsd_table
 rsd_compare_table = create_rsd_comparison_table(
@@ -43,7 +55,7 @@ rsd_compare_table
 
 ```{r}
 #| label: tbl-sample-summary
-#| tbl-cap: Number of different types of samples.
+#| tbl-cap: Number of different types of samples (experimental, quality control, and outliers).
 sample_info = get_vardata(se_data)
 tibble::tibble(
   `Sample Type` = c("Overall", "Experimental", "QC", "Outliers"),
@@ -56,6 +68,8 @@ tibble::tibble(
 ) |>
   gt::gt()
 ```
+
+## Experimental Group Evaluations
 
 ### All Samples
 
@@ -142,7 +156,7 @@ In addition, for each principal component up to those accounting for 90% of the 
 ```{r}
 #| label: all-pca-anova
 pca_data$all$pca$anova |>
-  create_pca_anova_table()
+  create_pca_anova_table(pca_data$all$pca$variance)
 ```
 
 `{r} all_variances$table` 

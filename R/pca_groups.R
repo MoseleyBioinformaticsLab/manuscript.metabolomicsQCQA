@@ -385,7 +385,8 @@ sets_create_qcqa_plots = function(pca_sets) {
 
 
 create_qcqa_plots = function(se_data, report_list) {
-  # in_pca_set = pca_sets[[1]]
+  # se_data = pca_sets[[1]]
+  # report_list = check_qc_outputs(se_data)
 
   use_samples = is.na(se_data$removed)
   se_data = se_data[, use_samples, drop = FALSE]
@@ -427,6 +428,18 @@ create_qcqa_plots = function(se_data, report_list) {
     guide_ncol
   )
 
+  dynamic_ranges = as.matrix(log10(sample_metadata$dynamic_range)) |> t()
+  rownames(dynamic_ranges) = "dynamic_range"
+  colnames(dynamic_ranges) = sample_metadata$sample_id
+  dyn_range_sina = create_sina_boxplot(
+    dynamic_ranges,
+    sample_metadata,
+    ssf_colors,
+    guide_nrow,
+    guide_ncol
+  ) +
+    labs(x = "Log10(Dynamic Range)")
+
   if ("pca" %in% report_list$steps) {
     pca_data = metadata(se_data)$pca_groups
     pca_heatmap_median_ici_each = purrr::map(
@@ -449,6 +462,7 @@ create_qcqa_plots = function(se_data, report_list) {
   list(
     raw = raw_boxplot,
     normalized = norm_boxplot,
+    dynamic_range = dyn_range_sina,
     iterative_plots = pca_heatmap_median_ici_each
   )
 }
@@ -604,7 +618,7 @@ create_boxplot = function(
   # abundance_matrix = raw_abundance; point_colors_fill = factor_colors
   sample_metadata = sample_metadata |>
     dplyr::arrange(ssf, sample_id)
-  abundance_matrix = abundance_matrix[, sample_metadata$sample_id]
+  abundance_matrix = abundance_matrix[, sample_metadata$sample_id, drop = FALSE]
 
   sample_metadata$factors = factor(sample_metadata$ssf)
 
@@ -640,6 +654,48 @@ create_boxplot = function(
     guides(color = guide_legend(nrow = guide_nrow, ncol = guide_ncol))
   out_boxplot
 }
+
+
+create_sina_boxplot = function(
+  abundance_matrix,
+  sample_metadata,
+  point_colors_fill,
+  guide_nrow,
+  guide_ncol
+) {
+  # abundance_matrix = raw_abundance; point_colors_fill = factor_colors
+  # abundance_matrix = dynamic_ranges; point_colors_fill = ssf_colors
+  sample_metadata = sample_metadata |>
+    dplyr::arrange(ssf, sample_id)
+  abundance_matrix = abundance_matrix[, sample_metadata$sample_id, drop = FALSE]
+
+  sample_metadata$ssf = factor(sample_metadata$ssf)
+
+  abundance_df = abundance_matrix |>
+    as.data.frame() |>
+    tidyr::pivot_longer(cols = everything(), names_to = "sample_id")
+  abundance_df = dplyr::left_join(
+    abundance_df,
+    sample_metadata[, c("sample_id", "ssf")],
+    by = "sample_id"
+  )
+
+  out_boxplot = abundance_df |>
+    ggplot(aes(x = value, y = ssf, group = ssf)) +
+    geom_boxplot(alpha = 0) +
+    geom_sina(aes(color = ssf)) +
+    scale_color_manual(values = point_colors_fill) +
+    labs(x = "Dynamic Range") +
+    theme(
+      legend.position = "top",
+      legend.location = "plot",
+      legend.justification.top = "left",
+      plot.title.position = "plot"
+    ) +
+    guides(color = guide_legend(nrow = guide_nrow, ncol = guide_ncol))
+  out_boxplot
+}
+
 
 sets_extract_grouping_scores = function(pca_sets) {
   # pca_sets = tar_read(pca_g03); tar_source("R")

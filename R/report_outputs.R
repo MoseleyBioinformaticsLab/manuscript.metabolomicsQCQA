@@ -151,34 +151,39 @@ get_study_id_link = function(mwtab_data) {
   ))
 }
 
-create_pca_anova_table = function(anova_results) {
+create_pca_anova_table = function(anova_results, variance_info) {
   tmp_anova = anova_results |>
     dplyr::filter(!is.na(df)) |>
     dplyr::mutate(p.adjust = p.adjust(p.value, method = "bonferroni"))
+  tmp_anova = dplyr::left_join(
+    tmp_anova,
+    variance_info[, c("pc", "labels")],
+    by = c("PC" = "pc")
+  )
   use_pcs = c("PC1", "PC2", "PC3", "PC4", "PC5")
   tmp_anova |>
-    dplyr::select(
-      PC,
-      variable,
-      p.adjust,
-      p.value,
+    dplyr::filter(PC %in% use_pcs) |>
+    dplyr::arrange(PC, p.value) |>
+    dplyr::transmute(
+      PC = labels,
+      variable = variable,
+      `P-adjusted` = p.adjust,
+      `P-value` = p.value,
       df,
       sumsq,
       meansq,
       statistic
     ) |>
-    dplyr::filter(PC %in% use_pcs) |>
-    dplyr::arrange(PC, p.value) |>
     gt::gt() |>
     gt::fmt_integer(columns = df) |>
     gt::fmt_number(columns = c(sumsq, meansq, statistic), decimals = 1) |>
-    gt::fmt_engineering(columns = c(p.adjust, p.value), decimals = 2) |>
+    gt::fmt_engineering(columns = c(`P-adjusted`, `P-value`), decimals = 2) |>
     gt::tab_style(
       style = list(
         gt::cell_text(weight = "bold")
       ),
       locations = gt::cells_body(
-        rows = p.adjust <= 0.05
+        rows = `P-adjusted` <= 0.05
       )
     )
 }

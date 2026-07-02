@@ -62,7 +62,7 @@ Outlier and QC samples removed.
 ```{r}
 #| label: not-out-qc-pca-anova
 pca_data$not_outlier_qc$pca$anova |>
-  create_pca_anova_table()
+  create_pca_anova_table(pca_data$not_outlier_qc$pca$variance)
 ```
 
 `{r} not_outlier_qc_variances$table`

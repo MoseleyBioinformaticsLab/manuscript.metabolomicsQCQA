@@ -63,7 +63,7 @@ QC samples removed.
 ```{r}
 #| label: not-qc-pca-anova
 pca_data$not_qc$pca$anova |>
-  create_pca_anova_table()
+  create_pca_anova_table(pca_data$not_qc$pca$variance)
 ```
 
 `{r} not_qc_variances$table`
