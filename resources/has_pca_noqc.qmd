@@ -1,0 +1,73 @@
+### Quality-Control Samples Removed
+
+In this case, we remove any quality-control samples, such as pooled, blanks, or otherwise indicated as QC samples.
+
+```{r}
+#| label: not-qc
+not_qc_variances = create_variance_values(
+  pca_data$not_qc$pca$variance,
+  ind = max_ind,
+  group = max_group
+)
+```
+
+#### Heatmap
+
+```{r}
+#| label: not-qc-heatmap
+#| fig-cap: ICI-Kt sample-sample correlation heatmap, with correlation values, QC samples removed.
+use_graphs$iterative_plots$not_qc$heatmap
+```
+
+#### Median Correlations
+
+```{r}
+#| label: not-qc-median
+#| fig-cap: Median ICI-Kt sample-sample correlations by sample factors, after removing QC samples.
+use_graphs$iterative_plots$not_qc$median_ici
+```
+
+#### Group Scores
+
+```{r}
+#| label: tbl-not-qc-icikt-scores
+#| tbl-cap: Count (n_differences) and fraction (differences_fraction) of samples where between factors median ICI-Kt was higher than the within factors median ICI-Kt. QC samples removed.
+pca_data$not_qc$scores |>
+  create_grouping_scores_table("median-ici")
+```
+
+```{r}
+#| label: tbl-not-qc-rle-scores
+#| tbl-cap: Count (n_differences) and fraction (differences_fraction) of runs of each factors from hierarchical clustering differing from the expected number based on the number of samples in each factor. Outlier samples removed.
+pca_data$not_qc$scores |>
+  create_grouping_scores_table("rle")
+```
+
+
+#### PCA
+
+::: {#fig-not-qc-pca}
+
+```{r}
+#| label: not-qc-pca
+use_graphs$iterative_plots$not_qc$pca
+```
+
+`{r} not_qc_variances$plot`
+QC samples removed.
+
+:::
+
+::: {#tbl-not-qc-pca-anova}
+
+```{r}
+#| label: not-qc-pca-anova
+pca_data$not_qc$pca$anova |>
+  create_pca_anova_table()
+```
+
+`{r} not_qc_variances$table`
+QC samples removed.
+
+:::
+

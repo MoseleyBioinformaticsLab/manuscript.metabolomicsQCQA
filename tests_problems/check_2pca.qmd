@@ -362,3 +362,216 @@ use_pca$pca_groups$not_outlier_qc$pca$anova |>
 Outlier and QC samples removed.
 
 :::
+
+
+
+### Outliers Removed
+
+We remove any outlier samples (scoring using median ICI-Kt), and redo all the calculations.
+
+```{r}
+#| label: not-outliers
+not_outlier_variances = create_variance_values(
+  use_pca$pca_groups$not_outlier$pca$variance,
+  ind = max_ind,
+  group = max_group
+)
+```
+
+#### Heatmap
+
+```{r}
+#| label: not-outlier-heatmap
+#| fig-cap: ICI-Kt sample-sample correlation heatmap, with correlation values, with outlier samples removed.
+#| eval: !expr 'use_graphs$iterative_plots$not_outlier$eval && has_outlier_qc$outliers'
+use_graphs$iterative_plots$not_outlier$heatmap
+```
+
+#### Median Correlations
+
+```{r}
+#| label: not-outlier-median
+#| fig-cap: Median ICI-Kt sample-sample correlations by sample factors, with outlier samples removed.
+#| eval: !expr 'use_graphs$iterative_plots$not_outlier$eval && has_outlier_qc$outliers'
+use_graphs$iterative_plots$not_outlier$median_ici
+```
+
+#### Group Scores
+
+```{r}
+#| label: tbl-not-outlier-icikt-scores
+#| tbl-cap: Count (n_differences) and fraction (differences_fraction) of samples where between factors median ICI-Kt was higher than the within factors median ICI-Kt. Outlier samples removed.
+pca_data$not_outlier$scores |>
+  create_grouping_scores_table("median-ici")
+```
+
+```{r}
+#| label: tbl-not-outlier-rle-scores
+#| tbl-cap: Count (n_differences) and fraction (differences_fraction) of runs of each factors from hierarchical clustering differing from the expected number based on the number of samples in each factor. Outlier samples removed.
+pca_data$not_outlier$scores |>
+  create_grouping_scores_table("rle")
+```
+
+#### PCA
+
+::: {#fig-not-outlier-pca}
+
+```{r}
+#| label: not-outlier-pca
+use_graphs$iterative_plots$not_outlier$pca
+```
+
+`{r} not_outlier_variances$plot`
+Outlier samples removed.
+
+:::
+
+::: {#tbl-not-outlier-pca-anova}
+
+```{r}
+#| label: not-outlier-pca-anova
+pca_data$not_outlier$pca$anova |>
+  create_pca_anova_table()
+```
+
+`{r} not_outlier_variances$table`
+Outlier samples removed.
+
+:::
+
+### Quality-Control Samples Removed
+
+In this case, we remove any quality-control samples, such as pooled, blanks, or otherwise indicated as QC samples.
+
+
+#### Heatmap
+
+```{r}
+#| label: not-qc-heatmap
+#| fig-cap: ICI-Kt sample-sample correlation heatmap, with correlation values, QC samples removed.
+#| eval: !expr 'use_graphs$iterative_plots$not_qc$eval && has_outlier_qc$qc'
+use_graphs$iterative_plots$not_qc$heatmap
+```
+
+#### Median Correlations
+
+```{r}
+#| label: not-qc-median
+#| fig-cap: Median ICI-Kt sample-sample correlations by sample factors, after removing QC samples.
+#| eval: !expr 'use_graphs$iterative_plots$not_qc$eval && has_outlier_qc$qc'
+use_graphs$iterative_plots$not_qc$median_ici
+```
+
+#### Group Scores
+
+```{r}
+#| label: tbl-not-qc-icikt-scores
+#| tbl-cap: Count (n_differences) and fraction (differences_fraction) of samples where between factors median ICI-Kt was higher than the within factors median ICI-Kt. QC samples removed.
+#| eval: !expr 'use_graphs$iterative_plots$not_qc$eval && has_outlier_qc$qc'
+use_pca$pca_groups$not_qc$scores |>
+  create_grouping_scores_table("median-ici")
+```
+
+```{r}
+#| label: tbl-not-qc-rle-scores
+#| tbl-cap: Count (n_differences) and fraction (differences_fraction) of runs of each factors from hierarchical clustering differing from the expected number based on the number of samples in each factor. Outlier samples removed.
+#| eval: !expr 'use_graphs$iterative_plots$not_qc$eval && has_outlier_qc$qc'
+use_pca$pca_groups$not_qc$scores |>
+  create_grouping_scores_table("rle")
+```
+
+
+#### PCA
+
+::: {#fig-not-qc-pca}
+
+```{r}
+#| label: not-qc-pca
+#| eval: !expr 'use_graphs$iterative_plots$not_qc$eval && has_outlier_qc$qc'
+use_graphs$iterative_plots$not_qc$pca
+```
+
+`{r} not_qc_variances$plot`
+QC samples removed.
+
+:::
+
+::: {#tbl-not-qc-pca-anova}
+
+```{r}
+#| label: not-qc-pca-anova
+#| eval: !expr 'use_graphs$iterative_plots$not_qc$eval && has_outlier_qc$qc'
+use_pca$pca_groups$not_qc$pca$anova |>
+  create_pca_anova_table()
+```
+
+`{r} not_qc_variances$table`
+QC samples removed.
+
+:::
+
+### Outliers and Quality-Control Samples Removed
+
+Finally, we remove both outliers and any quality-control samples.
+
+#### Heatmap
+
+```{r}
+#| label: not-out-qc-heatmap
+#| fig-cap: ICI-Kt sample-sample correlation heatmap, with correlation values, with QC and outlier samples removed.
+#| eval: !expr 'use_graphs$iterative_plots$not_outlier_qc$eval && has_outlier_qc$both'
+use_graphs$iterative_plots$not_outlier_qc$heatmap
+```
+
+#### Median Correlations
+
+```{r}
+#| label: not-out-qc-median
+#| fig-cap: Median ICI-Kt sample-sample correlations by sample factors, after removing QC and outlier samples.
+#| eval: !expr 'use_graphs$iterative_plots$not_outlier_qc$eval && has_outlier_qc$both'
+use_graphs$iterative_plots$not_outlier_qc$median_ici
+```
+
+#### Group Scores
+
+```{r}
+#| label: tbl-not-out-qc-icikt-scores
+#| tbl-cap: Count (n_differences) and fraction (differences_fraction) of samples where between factors median ICI-Kt was higher than the within factors median ICI-Kt. Outlier and QC samples removed.
+#| eval: !expr 'use_graphs$iterative_plots$not_outlier_qc$eval && has_outlier_qc$both'
+use_pca$pca_groups$not_outlier_qc$scores |>
+  create_grouping_scores_table("median-ici")
+```
+
+```{r}
+#| label: tbl-not-out-qc-rle-scores
+#| tbl-cap: Count (n_differences) and fraction (differences_fraction) of runs of each factors from hierarchical clustering differing from the expected number based on the number of samples in each factor. Outlier and QC samples removed.
+pca_data$not_outlier_qc$scores |>
+  create_grouping_scores_table("rle")
+```
+
+#### PCA
+
+::: {#fig-not-out-qc-pca}
+
+```{r}
+#| label: not-out-qc-pca
+use_graphs$iterative_plots$not_outlier_qc$pca
+```
+
+`{r} not_outlier_qc_variances$plot`
+Outlier and QC samples removed.
+
+:::
+
+::: {#tbl-not-out-qc-pca-anova}
+
+```{r}
+#| label: not-out-qc-pca-anova
+pca_data$not_outlier_qc$pca$anova |>
+  create_pca_anova_table()
+```
+
+`{r} not_outlier_qc_variances$table`
+Outlier and QC samples removed.
+
+:::

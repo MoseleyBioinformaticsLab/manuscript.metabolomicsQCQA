@@ -383,21 +383,25 @@ sets_create_qcqa_plots = function(pca_sets) {
   out_plots
 }
 
-create_qcqa_plots = function(in_pca_set) {
+
+create_qcqa_plots = function(se_data, report_list) {
   # in_pca_set = pca_sets[[1]]
 
-  sample_metadata = get_vardata(in_pca_set$abundance)
-  all_factors = unique(sample_metadata$factors)
-  factor_colors = scales::hue_pal()(length(all_factors))
-  names(factor_colors) = all_factors
+  use_samples = is.na(se_data$removed)
+  se_data = se_data[, use_samples, drop = FALSE]
 
-  n_factors = length(all_factors)
-  if (n_factors <= 3) {
+  sample_metadata = get_vardata(se_data)
+  all_ssf = unique(sample_metadata$ssf)
+  ssf_colors = scales::hue_pal()(length(all_ssf))
+  names(ssf_colors) = all_ssf
+
+  n_ssf = length(all_ssf)
+  if (n_ssf <= 3) {
     guide_nrow = 1
     guide_ncol = 3
   } else {
     guide_ncol = 3
-    guide_nrow = ceiling(n_factors / guide_ncol)
+    guide_nrow = ceiling(n_ssf / guide_ncol)
   }
 
   n_value = 40
@@ -405,32 +409,42 @@ create_qcqa_plots = function(in_pca_set) {
     seq(-1, 1, length.out = n_value),
     scico::scico(n_value, palette = "berlin")
   )
-  raw_abundance = log2(assays(in_pca_set$abundance)$raw)
-  norm_abundance = log2(assays(in_pca_set$abundance)$normalized)
+  raw_abundance = log2(assays(se_data)$raw)
+  norm_abundance = log2(assays(se_data)$normalized)
 
   raw_boxplot = create_boxplot(
     raw_abundance,
     sample_metadata,
-    factor_colors,
+    ssf_colors,
     guide_nrow,
     guide_ncol
   )
   norm_boxplot = create_boxplot(
     norm_abundance,
     sample_metadata,
-    factor_colors,
+    ssf_colors,
     guide_nrow,
     guide_ncol
   )
 
-  pca_heatmap_median_ici_each = purrr::map(
-    in_pca_set$pca_groups[c("all", "not_outlier", "not_qc", "not_outlier_qc")],
-    create_pca_median_ici_heatmap,
-    factor_colors,
-    cor_colors,
-    guide_nrow,
-    guide_ncol
-  )
+  if ("pca" %in% report_list$steps) {
+    pca_data = metadata(se_data)$pca_groups
+    pca_heatmap_median_ici_each = purrr::map(
+      pca_data[c(
+        "all",
+        "not_outlier",
+        "not_qc",
+        "not_outlier_qc"
+      )],
+      create_pca_median_ici_heatmap,
+      ssf_colors,
+      cor_colors,
+      guide_nrow,
+      guide_ncol
+    )
+  } else {
+    pca_heatmap_median_ici_each = NULL
+  }
 
   list(
     raw = raw_boxplot,
@@ -483,7 +497,7 @@ score_median_ici = function(ici_df) {
 
 create_pca_median_ici_heatmap = function(
   pca_group,
-  factor_colors,
+  ssf_colors,
   cor_colors,
   guide_nrow,
   guide_ncol
@@ -498,9 +512,9 @@ create_pca_median_ici_heatmap = function(
   }
   # pca_group = in_pca_set$pca_groups$all
   pca_plot = pca_group$pca$pca |>
-    ggplot(aes(x = PC1, y = PC2, color = factors, shape = outlier)) +
+    ggplot(aes(x = PC1, y = PC2, color = ssf, shape = outlier)) +
     geom_point(size = 3) +
-    scale_color_manual(values = factor_colors) +
+    scale_color_manual(values = ssf_colors) +
     theme(
       legend.position = "top",
       legend.location = "plot",
@@ -523,18 +537,18 @@ create_pca_median_ici_heatmap = function(
   )
 
   heatmap_colors = list(
-    factors = factor_colors,
+    ssf = ssf_colors,
     outlier = c("FALSE" = "#000000", "TRUE" = "#FFFFFF")
   )
 
   left_var = ComplexHeatmap::HeatmapAnnotation(
-    df = sample_info[, c("factors", "outlier")],
+    df = sample_info[, c("ssf", "outlier")],
     col = heatmap_colors,
     which = "row",
     show_annotation_name = FALSE
   )
   bottom_var = ComplexHeatmap::HeatmapAnnotation(
-    df = sample_info[, c("factors", "outlier")],
+    df = sample_info[, c("ssf", "outlier")],
     col = heatmap_colors,
     which = "column",
     show_legend = FALSE
@@ -555,13 +569,13 @@ create_pca_median_ici_heatmap = function(
   out_sina = pca_group$pca$pca |>
     ggplot(aes(
       x = median_ici_correlation,
-      y = factors,
-      color = factors,
+      y = ssf,
+      color = ssf,
       shape = outlier,
-      group = factors
+      group = ssf
     )) +
     geom_sina(size = 3) +
-    scale_color_manual(values = factor_colors) +
+    scale_color_manual(values = ssf_colors) +
     theme(
       legend.position = "top",
       legend.location = "plot",
@@ -589,17 +603,17 @@ create_boxplot = function(
 ) {
   # abundance_matrix = raw_abundance; point_colors_fill = factor_colors
   sample_metadata = sample_metadata |>
-    dplyr::arrange(factors, sample_id)
+    dplyr::arrange(ssf, sample_id)
   abundance_matrix = abundance_matrix[, sample_metadata$sample_id]
 
-  sample_metadata$factors = factor(sample_metadata$factors)
+  sample_metadata$factors = factor(sample_metadata$ssf)
 
   abundance_df = abundance_matrix |>
     as.data.frame() |>
     tidyr::pivot_longer(cols = everything(), names_to = "sample_id")
   abundance_df = dplyr::left_join(
     abundance_df,
-    sample_metadata[, c("sample_id", "factors")],
+    sample_metadata[, c("sample_id", "ssf")],
     by = "sample_id"
   )
 
@@ -613,7 +627,7 @@ create_boxplot = function(
   )
   out_boxplot = abundance_df |>
     ggplot(aes(x = value, y = sample_id, group = sample_id)) +
-    geom_sina(aes(color = factors)) +
+    geom_sina(aes(color = ssf)) +
     geom_boxplot(alpha = 0) +
     scale_color_manual(values = point_colors_fill) +
     labs(x = "log2(Abundance)") +

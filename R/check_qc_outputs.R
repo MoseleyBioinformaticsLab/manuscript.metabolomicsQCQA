@@ -35,7 +35,7 @@ check_qc_outputs = function(se_data) {
       failed = c(last = last_failed, why = why_failed)
     )
   }
-  if (last_succeeded %in% "dynamic_range") {
+  if (last_succeeded %in% "calculate_dynamic_range / normalized") {
     report_list = list(
       steps = c("se", "dynamic_range"),
       pca = NULL,

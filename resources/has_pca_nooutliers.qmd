@@ -1,0 +1,72 @@
+### Outliers Removed
+
+We remove any outlier samples (scoring using median ICI-Kt), and redo all the calculations.
+
+```{r}
+#| label: not-outliers
+not_outlier_variances = create_variance_values(
+  pca_data$not_outlier$pca$variance,
+  ind = max_ind,
+  group = max_group
+)
+```
+
+#### Heatmap
+
+```{r}
+#| label: not-outlier-heatmap
+#| fig-cap: ICI-Kt sample-sample correlation heatmap, with correlation values, with outlier samples removed.
+use_graphs$iterative_plots$not_outlier$heatmap
+```
+
+#### Median Correlations
+
+```{r}
+#| label: not-outlier-median
+#| fig-cap: Median ICI-Kt sample-sample correlations by sample factors, with outlier samples removed.
+use_graphs$iterative_plots$not_outlier$median_ici
+```
+
+#### Group Scores
+
+```{r}
+#| label: tbl-not-outlier-icikt-scores
+#| tbl-cap: Count (n_differences) and fraction (differences_fraction) of samples where between factors median ICI-Kt was higher than the within factors median ICI-Kt. Outlier samples removed.
+pca_data$not_outlier$scores |>
+  create_grouping_scores_table("median-ici")
+```
+
+```{r}
+#| label: tbl-not-outlier-rle-scores
+#| tbl-cap: Count (n_differences) and fraction (differences_fraction) of runs of each factors from hierarchical clustering differing from the expected number based on the number of samples in each factor. Outlier samples removed.
+pca_data$not_outlier$scores |>
+  create_grouping_scores_table("rle")
+```
+
+#### PCA
+
+::: {#fig-not-outlier-pca}
+
+```{r}
+#| label: not-outlier-pca
+use_graphs$iterative_plots$not_outlier$pca
+```
+
+`{r} not_outlier_variances$plot`
+Outlier samples removed.
+
+:::
+
+::: {#tbl-not-outlier-pca-anova}
+
+```{r}
+#| label: not-outlier-pca-anova
+pca_data$not_outlier$pca$anova |>
+  create_pca_anova_table()
+```
+
+`{r} not_outlier_variances$table`
+Outlier samples removed.
+
+:::
+

@@ -69,7 +69,7 @@ knitr::opts_chunk$set(
 #| warning: false
 tar_source(c("packages.R", "R"))
 # keep track of the line below, as it gets replaced.
-se_data = readRDS("tests_problems/pca_tempfile_g01_1.rds")
+# se_data = readRDS("tests_problems/pca_tempfile_g01_4_nodata.rds")
 
 report_list = check_qc_outputs(se_data)
 ```
@@ -138,27 +138,18 @@ mwtab_meta$SUBJECT |>
 ```
 
 ```{r}
+#| label: tbl-mw-factors
+#| tbl-cap: Metabolomics workbench subject sample factors data.
+mwtab_meta$SUBJECT_SAMPLE_FACTORS |>
+  widen_ssf_json() |>
+  gt::gt()
+```
+
+```{r}
 #| label: tbl-mw-analysis-info
-#| tbl-cap: Metabolomics workbench analysis information.
-mwtab_meta$ANALYSIS |>
+#| tbl-cap: Metabolomics workbench analysis, instrumentation, and chromatography information.
+bind_analysis_related_tables(mwtab_meta) |>
   gt::gt() |>
   gt::tab_options(column_labels.hidden = TRUE)
 ```
-
-
-```{r}
-#| label: include-basic-se-dynamic-range
-if (report_list$steps[1] %in% "none") {
-  {{<include resources/has_no_se.qmd>}}
-} else if {
-  {{<include resources/has_dynamic_range.qmd}}
-}
-```
-
-
-```{r}
-#| label: include-pca-results
-
-```
-
 

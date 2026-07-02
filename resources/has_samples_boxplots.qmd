@@ -1,0 +1,22 @@
+### Raw Data Boxplot
+
+```{r}
+#| label: create-qcqa-plots
+use_graphs = create_qcqa_plots(se_data, report_list)
+```
+
+```{r}
+#| label: fig-raw-data-boxplot
+#| fig-cap: Raw abundance data boxplot, log2-transformed.
+use_graphs$raw
+```
+
+### Median Normalized Data Boxplot
+
+For each sample, we calculate the median abundance of non-missing features in the sample, and divide the abundances by the median abundance.
+
+```{r}
+#| label: fig-normalized-data-boxplot
+#| fig-cap: Median normalized data boxplot, log2-transformed.
+use_graphs$normalized
+```

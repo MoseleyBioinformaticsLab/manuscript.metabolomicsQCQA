@@ -3,13 +3,51 @@ Data was read in, samples were matched between the sample-subject-factors (SSF) 
 If log-transformed data were detected, they were exponentiated.
 Values $\le 0$ were set to missing for all further calculations.
 
+## Possible Data Value Issues
+
+```{r}
+#| label: tbl-data-issues
+#| tbl-cap: Number of abundances that are negative, missing, or infinite before transformation, as well as the number of metabolite features removed due to having an infinite abundance.
+metadata(se_data)$data_issues |>
+  gt::gt()
+```
+
+## Transformation
+
+Did we log-transform the data before further analysis?
+
+```{r}
+#| label: tbl-transformation
+#| tbl-cap: What transformation was applied, the mean-median ratio calculated, the maximum value observed in the raw data, and how many negative values were present before transformation, if applied.
+metadata(se_data)$transform |>
+  tibble::as_tibble() |>
+  gt::gt() |>
+  gt::fmt_number(columns = mean_median_ratio, decimals = 3)
+```
+
 ## N-Samples by Factors and Features
+
+@tbl-removed-samples lists how many samples were removed prior to further analysis.
+
+```{r}
+#| label: tbl-removed-samples
+#| tbl-cap: Number of samples removed before further analysis for any reason.
+tmp_ssf = get_vardata(se_data)
+factor_types = metadata(se_data)$factor_types
+tmp_ssf |>
+  dplyr::filter(!is.na(removed)) |>
+  dplyr::transmute(Reason = removed) |>
+  dplyr::summarise(`N-Samples-Removed` = dplyr::n(), .by = Reason) |>
+  gt::gt()
+```
+
+@tbl-experimental-factors lists how many samples there are in each subject-sample-factors (SSF) grouping.
 
 ```{r}
 #| label: tbl-experimental-factors
 #| tbl-cap: Number of samples in each group of factors.
+se_data = se_data[, is.na(se_data$removed), drop = FALSE]
 tmp_ssf = get_vardata(se_data)
-factor_types = metadata(se_data)$factor_types
 experimental_design = determine_experimental_design(tmp_ssf, factor_types)
 experimental_design$n_by_factor_factors |>
   add_total_samples_by_factor() |>
@@ -22,6 +60,13 @@ Number of features with a non-missing value in at least one sample: **`{r} nrow(
 
 ### Missing Values as Result of Left Censorship
 
+```{r}
+#| label: get-lc
+lc_info = metadata(se_data)$left_censorship
+lc_value_table = create_lc_value_table(lc_info)
+lc_test_table = create_lc_test_table(lc_info)
+```
+
 For each analysis, we counted the number of missing values ($\le 0$), and determine their percentage.
 Then, we for each sample, we determined the median abundance in the sample, and for each feature that had any missing values across the samples, we count how many of that feature's non-missing values are below the median in the samples.
 If it is below the median, that is considered a success in a binomial test, and the total number of trials is the number of non-missing observations for that feature.
@@ -29,55 +74,17 @@ For missing-at-random features, we expect a 50/50 ratio.
 For missing-not-at-random due to left-censorship, we expect a skewed ratio.
 We aggregate the success and trials across features and test the ratio using a binomial test.
 
-* % Missing Values: `r format(use_pca$left_censorship$perc_missing, digits = 2)`%.
-
-Left censorship test results:
+* % Missing Values: `r format(lc_info$perc_missing, digits = 2)`%.
 
 ```{r}
 #| label: tbl-left-censorship-results
 #| tbl-cap: Number of non-missing values that are below the median for each group (success) vs number of missing (trials).
-#| message: true
-if (!is.null(use_pca$left_censorship[["lc_test"]])) {
-  use_pca$left_censorship$lc_test$values |>
-    dplyr::select(class, trials, success) |>
-    dplyr::transmute(factors = class, trials = trials, success = success) |>
-    gt::gt()
-} else {
-  message("No left-censorship test results.")
-}
-```
-
-* Binomial test result:
-
-```{r}
-#| label: left-censorship-test
-#| message: true
-if (!is.null(use_pca$left_censorship[["lc_test"]])) {
-  use_pca$left_censorship$lc_test$binomial_test
-} else {
-  message("No left-censroship test results.")
-}
-```
-
-### Raw Data Boxplot
-
-```{r}
-#| label: create-qcqa-plots
-use_graphs = create_qcqa_plots(use_pca)
+lc_value_table
 ```
 
 ```{r}
-#| label: fig-raw-data-boxplot
-#| fig-cap: Raw abundance data boxplot, log2-transformed.
-use_graphs$raw
+#| label: tbl-left-censorship-test
+#| tbl-cap: Left-censorship binomial test result.
+lc_test_table
 ```
 
-### Median Normalized Data Boxplot
-
-For each sample, we calculate the median abundance of non-missing features in the sample, and divide the abundances by the median abundance.
-
-```{r}
-#| label: fig-normalized-data-boxplot
-#| fig-cap: Median normalized data boxplot, log2-transformed.
-use_graphs$normalized
-```

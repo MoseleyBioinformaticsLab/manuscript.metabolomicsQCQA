@@ -238,7 +238,7 @@ create_rsd_plot = function(all_rsd) {
   # all_rsd = use_pca$pca_groups$all$rsd$all_rsd
 
   rsd_plot = all_rsd |>
-    ggplot(aes(x = rsd, y = factors_data, color = data, group = factors_data)) +
+    ggplot(aes(x = rsd, y = ssf_data, color = data, group = ssf_data)) +
     geom_sina() +
     geom_boxplot(alpha = 0, color = "black") +
     theme(
@@ -250,22 +250,32 @@ create_rsd_plot = function(all_rsd) {
   rsd_plot
 }
 
-create_rsd_comparison_table = function(all_rsd_median) {
+create_rsd_comparison_table = function(rsd_summary) {
   # all_rsd_median = use_pca$pca_groups$all$rsd$all_rsd_median
-  rsd_compare_table = all_rsd_median |>
+  # rsd_summary = rsd_all
+  rsd_compare_medians = rsd_summary$all_rsd_median |>
     tidyr::pivot_wider(
-      id_cols = factors,
+      id_cols = ssf,
       names_from = data,
       values_from = median
     ) |>
     dplyr::transmute(
-      factors = factors,
+      SSF = ssf,
       raw = r,
       normalized = n,
-      `normalized - raw` = normalized - raw
-    ) |>
+      `raw - normalized` = raw - normalized
+    )
+
+  rsd_diff_medians = rsd_summary$all_rsd_median_diff |>
+    dplyr::transmute(SSF = ssf, `Median(raw - normalized)` = median_rn)
+  out_compare = dplyr::left_join(
+    rsd_compare_medians,
+    rsd_diff_medians,
+    by = "SSF"
+  )
+  rsd_compare_table = out_compare |>
     gt::gt() |>
-    gt::fmt_number(decimals = 2)
+    gt::fmt_number(decimals = 3)
   rsd_compare_table
 }
 

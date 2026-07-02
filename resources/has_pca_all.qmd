@@ -1,0 +1,152 @@
+### RSD Raw and Normalized
+
+For both raw and normalized data, for each feature we calculate the relative-standard-deviation (RSD) (or coefficient of variation, $sd / mean$) within each set of factors.
+We expect the RSD to stay the same or decrease in the normalized data.
+We also expect that the RSD of quality-control samples will be lower than other samples.
+
+```{r}
+#| label: get-rsd
+pca_data = metadata(se_data)$pca_groups
+rsd_all = pca_data$all$rsd
+can_rsd_graph = can_rsd_table = !is.null(rsd_all$all_rsd)
+show_rsd_message = !can_rsd_graph
+```
+
+```{r}
+#| label: fig-rsd-raw-normalized
+#| fig-cap: RSD of raw (r) and normalized (n) measurements by factors.
+#| include: !expr can_rsd_graph
+#| eval: !expr can_rsd_graph
+rsd_graph = create_rsd_plot(rsd_all$all_rsd)
+rsd_graph
+```
+
+```{r}
+#| label: rsd-info
+#| include: !expr show_rsd_message
+#| results: asis
+cat("**No RSD values calculated.**")
+```
+
+```{r}
+#| label: tbl-rsd-raw-normalized
+#| tbl-cap: Median RSDs of raw and normalized measurements by factors.
+#| include: !expr can_rsd_table
+#| eval: !expr can_rsd_table
+rsd_compare_table = create_rsd_comparison_table(
+  rsd_all
+)
+rsd_compare_table
+```
+
+### Numbers of Samples by Type
+
+```{r}
+#| label: tbl-sample-summary
+#| tbl-cap: Number of different types of samples.
+sample_info = get_vardata(se_data)
+tibble::tibble(
+  `Sample Type` = c("Overall", "Experimental", "QC", "Outliers"),
+  N = c(
+    nrow(sample_info),
+    sum(sample_info$experiment_or_qc %in% "experiment"),
+    sum(sample_info$experiment_or_qc %in% "qc"),
+    sum(sample_info$outlier)
+  )
+) |>
+  gt::gt()
+```
+
+### All Samples
+
+
+#### Heatmap
+
+We calculate the information-content-informed Kendall-$\tau$ (ICI-Kt) correlation between all samples.
+Then we use it as a psuedo-distance to cluster the samples via hierarchical clustering, and display the correlations as a heatmap.
+Ideally, we are looking for the samples to group by their factors.
+If they don't, that *may* indicate something is up with that sample.
+
+We can also use the median ICI-Kt within each factor to find possible outlier samples (indicated with white here, and shapes elsewhere).
+
+```{r}
+#| label: fig-all-heatmap
+#| fig-cap: ICI-Kt sample-sample correlation heatmap, with correlation values.
+use_graphs$iterative_plots$all$heatmap
+```
+
+#### Median Correlations
+
+```{r}
+#| label: fig-all-median
+#| fig-cap: Median ICI-Kt sample-sample correlations by sample factors.
+use_graphs$iterative_plots$all$median_ici
+```
+
+#### Group Scores
+
+For each sample, we check if the maximum **between** factor median correlation is higher than the maximum **within** factor median correlation (a *difference*), and then sum those counts (`n_differences`) across all samples and within each factor, and divide by the number of samples (`group_size` to `differences_fraction`).
+Therefore, a **higher** `differences_fraction` score indicates more samples had higher **between** correlations than **within** correlations, and indicates there **may be** issues with the dataset or particular groups of samples (presented in @tbl-all-icikt-scores).
+
+```{r}
+#| label: tbl-all-icikt-scores
+#| tbl-cap: Count (n_differences) and fraction (differences_fraction) of samples where between factors median ICI-Kt was higher than the within factors median ICI-Kt.
+pca_data$all$scores |>
+  create_grouping_scores_table("median-ici")
+```
+
+Using the sample factor ordering from the hierarchical clustering presented in @fig-all-heatmap, we compare the number of consecutive samples with the same factors compared to the ideal number based on the number of samples with each factor summed up across runs of samples (`n_differences`).
+Again, a **higher** `differences_fraction` score indicates more differences in the run lengths, and indicates there **may be** issues with the dataset or samples in particular factors (presented in @tbl-all-rle-scores).
+We do note that higher scores in this table are less concerning than those from *median ICI-Kt*.
+
+
+```{r}
+#| label: tbl-all-rle-scores
+#| tbl-cap: Count (n_differences) and fraction (differences_fraction) of runs of each factors from hierarchical clustering differing from the expected number based on the number of samples in each factor.
+pca_data$all$scores |>
+  create_grouping_scores_table("rle")
+```
+
+#### PCA
+
+```{r}
+#| label: all-pca-variances
+max_ind = "PC2"
+max_group = "PC5"
+all_variances = create_variance_values(
+  pca_data$all$pca$variance,
+  ind = max_ind,
+  group = max_group
+)
+```
+
+For principal components analysis (PCA), any missing values from the normalized abundance values are replaced with zero, and then log-transformed using $\log(x + 1)$, and PCA performed.
+The **sample** scores on PC1 and PC2 are plotted and colored by factors.
+
+::: {#fig-all-pca}
+
+```{r}
+#| label: all-pca
+use_graphs$iterative_plots$all$pca
+```
+
+`{r} all_variances$plot`
+All samples.
+
+:::
+
+In addition, for each principal component up to those accounting for 90% of the variance, we test the sample scores against each of the experimental factors, including the combination of all factors (factors) using ANOVA to allow for the presence of several groups.
+
+::: {#tbl-all-pca-anova}
+
+```{r}
+#| label: all-pca-anova
+pca_data$all$pca$anova |>
+  create_pca_anova_table()
+```
+
+`{r} all_variances$table` 
+All samples.
+
+:::
+
