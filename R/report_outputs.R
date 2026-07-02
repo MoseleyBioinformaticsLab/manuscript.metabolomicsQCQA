@@ -109,6 +109,7 @@ create_report_from_templates = function(
   ))
 
   if (inherits(q_res, "try-error")) {
+    message(analysis_id)
     return(tibble::tibble(
       id = analysis_id,
       file = "none",
