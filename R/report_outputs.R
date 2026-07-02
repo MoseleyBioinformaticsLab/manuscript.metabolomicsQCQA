@@ -86,14 +86,15 @@ create_report_from_templates = function(
     )
     keep_pca = pca_files[report_list$pca]
 
-    pca_text = suppressWarnings(readLines(pca_files[1]))
+    pca_text = suppressWarnings(readLines(keep_pca[1]))
 
     if (length(keep_pca) > 1) {
       for (ipca in seq(2, length(keep_pca))) {
+        # message(ipca)
         pca_text = c(
           pca_text,
           "\n\n",
-          suppressWarnings(readLines(pca_files[ipca]))
+          suppressWarnings(readLines(keep_pca[ipca]))
         )
       }
     }
