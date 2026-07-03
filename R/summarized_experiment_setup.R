@@ -100,6 +100,7 @@ readrds_convert_to_se = function(rds_file, md5_sum, mwtab_raw_files) {
   # id = "AN002880"; rds_file = "parsed_rds/AN002880.rds"; tar_load(mwtab_raw_files); tar_source("R")
   # rds_file = "parsed_rds/AN000627.rds"; tar_load(mwtab_raw_files); tar_source("R")
   # rds_file = "parsed_rds/AN001180.rds"; tar_load(mwtab_raw_files); tar_source("R")
+  # rds_file = "parsed_rds/AN002196.rds"; tar_load(mwtab_raw_files); tar_source("R")
   processed_data = readRDS(rds_file)
   check_md5(processed_data, md5_sum)
 
@@ -389,12 +390,8 @@ clean_ssf_factors = function(ssf) {
   }
 
   for (iid in seq_len(nrow(distinct_ssf_factor))) {
-    ssf$factor = gsub(
-      distinct_ssf_factor$factor[iid],
-      distinct_ssf_factor$clean_numbered[iid],
-      ssf$factor,
-      fixed = TRUE
-    )
+    match_locs = ssf$factor %in% distinct_ssf_factor$factor[iid]
+    ssf$factor[match_locs] = distinct_ssf_factor$clean_numbered[iid]
   }
 
   ssf
