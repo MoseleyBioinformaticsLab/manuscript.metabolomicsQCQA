@@ -99,6 +99,7 @@ readrds_convert_to_se = function(rds_file, md5_sum, mwtab_raw_files) {
   # id = "AN004851"; rds_file = "parsed_rds/AN004851.rds"; tar_source("R")
   # id = "AN002880"; rds_file = "parsed_rds/AN002880.rds"; tar_load(mwtab_raw_files); tar_source("R")
   # rds_file = "parsed_rds/AN000627.rds"; tar_load(mwtab_raw_files); tar_source("R")
+  # rds_file = "parsed_rds/AN001180.rds"; tar_load(mwtab_raw_files); tar_source("R")
   processed_data = readRDS(rds_file)
   check_md5(processed_data, md5_sum)
 
@@ -226,8 +227,7 @@ readrds_convert_to_se = function(rds_file, md5_sum, mwtab_raw_files) {
   }
   factor_type = ssf |>
     dplyr::select(factor, type) |>
-    dplyr::distinct() |>
-    dplyr::mutate(factor = janitor::make_clean_names(factor))
+    dplyr::distinct()
 
   ssf_wide = widen_ssf_json(ssf, id_cols)
 
@@ -383,18 +383,20 @@ clean_ssf_factors = function(ssf) {
       clean_numbered = janitor::make_clean_names(factor, allow_dupes = FALSE)
     )
 
-  replace_now = distinct_ssf_factor |>
-    dplyr::filter(clean_factor != clean_numbered)
-  if (nrow(replace_now) > 0) {
-    for (iid in seq_len(nrow(replace_now))) {
-      ssf$factor = gsub(
-        replace_now$factor[iid],
-        replace_now$clean_numbered[iid],
-        ssf$factor,
-        fixed = TRUE
-      )
-    }
+  if (any(distinct_ssf_factor$clean_numbered %in% "subject")) {
+    loc_subject = which(distinct_ssf_factor$clean_numbered %in% "subject")
+    distinct_ssf_factor$clean_numbered[loc_subject] = "subject_1"
   }
+
+  for (iid in seq_len(nrow(distinct_ssf_factor))) {
+    ssf$factor = gsub(
+      distinct_ssf_factor$factor[iid],
+      distinct_ssf_factor$clean_numbered[iid],
+      ssf$factor,
+      fixed = TRUE
+    )
+  }
+
   ssf
 }
 

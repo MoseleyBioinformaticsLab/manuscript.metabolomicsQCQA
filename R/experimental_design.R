@@ -7,7 +7,7 @@ determine_experimental_design = function(in_ssf, factor_types) {
     ) |>
     dplyr::pull(factor)
   in_ssf = in_ssf |>
-    dplyr::select(!(tidyselect::all_of(extra_vars)))
+    dplyr::select(!(tidyselect::any_of(extra_vars)))
   factor_info = count_possible_factors(in_ssf)
 
   n_rows = nrow(factor_info)
