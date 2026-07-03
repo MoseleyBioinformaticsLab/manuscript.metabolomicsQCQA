@@ -81,6 +81,7 @@ sets_map = tar_map(
     se_negative_info,
     sets_get_negative_information(se_dynamic_range) #7
   ),
+  tar_target(qcqa_reports, sets_create_qcqa_reports(se_pca)),
   tar_target(run, sets_run_qc(se))
 )
 
