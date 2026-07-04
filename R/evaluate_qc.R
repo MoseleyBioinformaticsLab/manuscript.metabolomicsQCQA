@@ -1,4 +1,8 @@
 evaluate_qc = function(se_data) {
+  # get all the metabolomics workbench info out first
+  # the goal here is to have analysis attributes
+  # that are searchable and filterable by consumers
+  # of the qc-qa analysis
   mwtab_info = metadata(se_data)$mwtab
 
   measurement_list = list(
@@ -13,11 +17,22 @@ evaluate_qc = function(se_data) {
   project_list = get_mwtab_project_info(mwtab_info)
   instrument_list = get_mwtab_instrument_chromatography_info(mwtab_info)
   organism_list = get_mwtab_organism_sample(mwtab_info)
-  mwtab_list = c(mwtab_list, instrument_list)
+
+  mwtab_list = c(measurement_list, project_list, instrument_list, organism_list)
+
+  # next is to start looking for red flags in the data
+  # using the various criteria, and fitting them into the
+  # same list / data.frame format that allows us to easily
+  # filter / group / exclude / include different analyses
+
+  # how many experimental samples in each SSF after removing
+  # qc and outliers?
+
+  # ANOVA p-value after removing qc and outliers?
 }
 
 get_mwtab_project_info = function(mwtab_info) {
-  mw_fields = tibble::tibble(field = c("STUDY_ID", "ANALYSIS_ID", "CREATED"))
+  mw_fields = tibble::tibble(field = c("STUDY_ID", "ANALYSIS_ID", "CREATED_ON"))
   project_fields = tibble::tibble(
     field = c("PROJECT_TITLE", "INSTITUTE", "LABORATORY", "DOI")
   )
