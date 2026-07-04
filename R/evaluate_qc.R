@@ -24,12 +24,51 @@ evaluate_qc = function(se_data) {
   # using the various criteria, and fitting them into the
   # same list / data.frame format that allows us to easily
   # filter / group / exclude / include different analyses
+  report_list = check_qc_outputs(se_data)
+  last_step = get_qc(se_data)
+  if (nrow(se_data) == 0 || ncol(se_data) == 0) {
+    data_list = list(
+      n_initial_samples = 0,
+      n_initial_metabolites = 0,
+      n_initial_factor_groups = 0,
+      qc_samples = "no",
+      why = last_step$why
+    )
+  } else {}
 
+  has_qc = if (sum(se_data$experiment_or_qc %in% "qc") > 0) {
+    "yes"
+  } else {
+    "no"
+  }
   # how many experimental samples in each SSF after removing
   # qc and outliers?
 
+  f_types = get_specific_metadata(se_data, "factor_types")
+
   # ANOVA p-value after removing qc and outliers?
+  if (last_step$succeeded %in% "pca") {
+    last_pca = report_list$pca[length(report_list$pca)]
+    pca_res = metadata(se_data)$pca_groups[[last_pca]]
+    best_p = pca_res$pca$anova |>
+      dplyr::mutate(p.adjust = p.adjust(p.value, method = "bonferroni")) |>
+      dplyr::arrange(p.adjust) |>
+      dplyr::slice_head(n = 1) |>
+      dplyr::pull(p.adjust)
+    variances = pca_res$pca$variance
+    n_pc = nrow(variances)
+    if (n_pc < 5) {
+      slice_pc = n_pc
+    } else {
+      slice_pc = 5
+    }
+    var_first_5 = variances |>
+      dplyr::slice_head(n = slice_pc) |>
+      dplyr::slice_tail(n = 1) |>
+      dplyr::pull(cumulative)
+  }
 }
+
 
 get_mwtab_project_info = function(mwtab_info) {
   mw_fields = tibble::tibble(field = c("STUDY_ID", "ANALYSIS_ID", "CREATED_ON"))
@@ -142,4 +181,31 @@ tibble_to_list = function(in_tbl, name_field = "field") {
   out_list = as.list(in_tbl$value)
   names(out_list) = tolower(in_tbl[[name_field]])
   out_list
+}
+
+
+sets_percent_missing = function(se_pca) {
+  # se_pca = tar_read(se_pca_g01); tar_source("R");
+  se_missing = purrr::map(se_pca, get_percent_missing) |>
+    purrr::list_rbind()
+  se_missing
+}
+
+get_percent_missing = function(se_data) {
+  id = metadata(se_data)$qc$id
+  lc_info = metadata(se_data)$left_censorship
+  if (!is.null(lc_info$lc_test)) {
+    p_value = lc_info$lc_test$binomial_test$p.value
+  } else {
+    p_value = NA
+  }
+  if (is.null(lc_info)) {
+    return(tibble::tibble(id = id, missing = NA, p_value = p_value))
+  } else {
+    return(tibble::tibble(
+      id = id,
+      missing = lc_info$perc_missing,
+      p_value = p_value
+    ))
+  }
 }
