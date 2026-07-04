@@ -82,6 +82,7 @@ sets_map = tar_map(
     sets_get_negative_information(se_dynamic_range) #7
   ),
   tar_target(se_percent_missing, sets_percent_missing(se_pca)), #8
+  tar_target(se_median_correlation, sets_median_correlations(se_pca)), #9
   tar_target(qcqa_reports, sets_create_qcqa_reports(se_pca))
 )
 
@@ -122,6 +123,12 @@ sets_neg_test_result_t = tar_target(
 sets_percent_missing_t = tar_combine(
   sets_percent_missing_result,
   sets_map[[8]],
+  command = dplyr::bind_rows(!!!.x)
+)
+
+sets_median_correlation_t = tar_combine(
+  sets_median_correlation_result,
+  sets_map[[9]],
   command = dplyr::bind_rows(!!!.x)
 )
 
@@ -168,6 +175,7 @@ list(
   sets_neg_test_t,
   sets_neg_test_result_t,
   sets_percent_missing_t,
+  sets_median_correlation_t,
   contains_negatives_report_t,
   negatives_testing_report_t,
   mean_median_ratios_report_t

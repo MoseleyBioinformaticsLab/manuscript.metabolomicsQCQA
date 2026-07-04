@@ -209,3 +209,20 @@ get_percent_missing = function(se_data) {
     ))
   }
 }
+
+sets_median_correlations = function(se_pca) {
+  se_median_cor = purrr::map(se_pca, get_median_correlations) |>
+    purrr::list_rbind()
+  se_median_cor
+}
+
+get_median_correlations = function(se_data) {
+  id = metadata(se_data)$qc$id
+  if (!is.null(se_data[["median_ici_correlation"]])) {
+    get_vardata(se_data) |>
+      dplyr::select(sample_id, median_ici_correlation) |>
+      dplyr::mutate(id = id)
+  } else {
+    return(NULL)
+  }
+}
