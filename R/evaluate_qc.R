@@ -1,5 +1,6 @@
 sets_evaluate_qc = function(sets_se) {
   # sets_se = tar_read(se_pca_g01); tar_source("R")
+  # sets_se = tar_read(se_pca_g02); tar_source("R")
   sets_qc = purrr::map(sets_se, \(x) {
     evaluate_qc(x) |> tibble::as_tibble()
   }) |>
@@ -48,6 +49,9 @@ get_mwtab_data_counts = function(se_data) {
       mwtab_n_ssf = ssf_n_size$summary$n_groups
       mwtab_n_ssf_samples = max(ssf_n_size$n_by_factor[["N-Samples"]])
     }
+  } else {
+    mwtab_n_ssf = NA
+    mwtab_n_ssf_samples = NA
   }
 
   out_list =
@@ -84,6 +88,8 @@ evaluate_qc = function(se_data) {
   # of the qc-qa analysis
 
   # se_data = sets_se[[92]]
+  # se_data = sets_se[[123]]
+  # se_data = sets_se[[159]]
 
   mwtab_info = metadata(se_data)$mwtab
 
@@ -267,7 +273,12 @@ get_mwtab_organism_sample = function(mwtab_info) {
 }
 
 tibble_to_list = function(in_tbl, name_field = "field") {
-  out_list = as.list(in_tbl$value)
+  if (is.null(in_tbl$value)) {
+    out_list = rep("NA", nrow(in_tbl)) |> as.list()
+  } else {
+    out_list = as.list(in_tbl$value)
+  }
+
   names(out_list) = tolower(in_tbl[[name_field]])
   out_list
 }
