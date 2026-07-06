@@ -198,5 +198,5 @@ list(
   contains_negatives_report_t,
   negatives_testing_report_t,
   mean_median_ratios_report_t,
-  setting_database_cutoffs_report_t
+  setting_databased_cutoffs_report_t
 )
