@@ -135,7 +135,7 @@ sets_median_correlation_t = tar_combine(
 )
 
 sets_rsd_t = tar_combine(
-  sets_rsd,
+  sets_rsd_result,
   sets_map[[11]],
   command = dplyr::bind_rows(!!!.x)
 )
