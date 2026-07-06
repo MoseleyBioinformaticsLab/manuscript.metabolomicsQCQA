@@ -194,6 +194,7 @@ list(
   sets_percent_missing_t,
   sets_median_correlation_t,
   sets_qc_evaluation_t,
+  sets_rsd_t,
   contains_negatives_report_t,
   negatives_testing_report_t,
   mean_median_ratios_report_t,
