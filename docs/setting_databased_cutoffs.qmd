@@ -32,7 +32,11 @@ knitr::opts_chunk$set(
 ```{r}
 #| label: targets
 targets::tar_source(c("./packages.R", "R"))
-tar_load(c(sets_percent_missing_result, sets_median_correlation_result))
+tar_load(c(
+  sets_percent_missing_result,
+  sets_median_correlation_result,
+  sets_rsd_result
+))
 ```
 
 ## Percent Missing
@@ -108,3 +112,32 @@ min_cor_plot / max_cor_plot
 Looking at @fig-median-cor-max, I think we could evaluate the dataset as a whole, check the maximum observed, and if the maximum observed correlation falls below 0.5, that is something to flag.
 
 ## Relative Standard Deviations
+
+```{r}
+#| label: fig-rsd-all
+#| fig-cap: All raw data median RSD values within subject-sample-factors, after filtering for values <= 3.
+sets_rsd_result |>
+  dplyr::filter(median <= 3) |>
+  ggplot(aes(x = median)) +
+  geom_histogram(bins = 100)
+```
+
+```{r}
+#| label: fig-rsd-max-min
+#| fig-cap: Histogram of minimum and maximum RSD values within experiments, after filtering for values <= 3.
+sets_rsd_summary = sets_rsd_result |>
+  dplyr::summarize(min = min(median), max = max(median), .by = id)
+rsd_min_plot = sets_rsd_summary |>
+  dplyr::filter(min <= 3) |>
+  ggplot(aes(x = min)) +
+  geom_histogram(bins = 100) +
+  labs(subtitle = "Minimum RSD")
+rsd_max_plot = sets_rsd_summary |>
+  dplyr::filter(max <= 3) |>
+  ggplot(aes(x = max)) +
+  geom_histogram(bins = 100) +
+  labs(subtitle = "Maximum RSD")
+rsd_min_plot / rsd_max_plot
+```
+
+Based on @fig-rsd-max-min, I'm not sure what a good cutoff might be.
