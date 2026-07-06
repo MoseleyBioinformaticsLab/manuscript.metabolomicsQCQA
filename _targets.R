@@ -82,7 +82,8 @@ sets_map = tar_map(
     sets_get_negative_information(se_dynamic_range) #7
   ),
   tar_target(se_percent_missing, sets_percent_missing(se_pca)), #8
-  tar_target(se_median_correlation, sets_median_correlations(se_pca)), #9
+  tar_target(se_median_correlation, sets_median_correlations(se_pca)), #9,
+  tar_target(se_qc_eval, sets_evaluate_qc(se_pca)), #10
   tar_target(qcqa_reports, sets_create_qcqa_reports(se_pca))
 )
 
@@ -132,6 +133,12 @@ sets_median_correlation_t = tar_combine(
   command = dplyr::bind_rows(!!!.x)
 )
 
+sets_qc_evaluation_t = tar_combine(
+  sets_qc_evaluation,
+  sets_map[[10]],
+  command = dplyr::bind_rows(!!!.x)
+)
+
 manuscript_t = tar_quarto(
   manuscript,
   "docs/manuscript.qmd",
@@ -176,6 +183,7 @@ list(
   sets_neg_test_result_t,
   sets_percent_missing_t,
   sets_median_correlation_t,
+  sets_qc_evaluation_t,
   contains_negatives_report_t,
   negatives_testing_report_t,
   mean_median_ratios_report_t
