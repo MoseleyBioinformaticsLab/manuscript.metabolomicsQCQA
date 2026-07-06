@@ -1,6 +1,7 @@
 sets_evaluate_qc = function(sets_se) {
   # sets_se = tar_read(se_pca_g01); tar_source("R")
   # sets_se = tar_read(se_pca_g02); tar_source("R")
+  # sets_se = tar_read(se_pca_g20); se_data = sets_se[[194]]; tar_source("R")
   sets_qc = purrr::map(sets_se, \(x) {
     evaluate_qc(x) |> tibble::as_tibble()
   }) |>
@@ -106,7 +107,11 @@ evaluate_qc = function(se_data) {
     measurement_list$data_source = "none"
   }
   project_list = get_mwtab_project_info(mwtab_info)
+
   instrument_list = get_mwtab_instrument_chromatography_info(mwtab_info)
+  if (is.null(instrument_list)) {
+    return(NULL)
+  }
   organism_list = get_mwtab_organism_sample(mwtab_info)
 
   report_list = check_qc_outputs(se_data)
@@ -166,7 +171,9 @@ evaluate_qc = function(se_data) {
 
 
 get_mwtab_project_info = function(mwtab_info) {
-  mw_fields = tibble::tibble(field = c("STUDY_ID", "ANALYSIS_ID", "CREATED_ON"))
+  mw_fields = tibble::tibble(
+    field = c("PROJECT_ID", "STUDY_ID", "ANALYSIS_ID", "CREATED_ON")
+  )
   project_fields = tibble::tibble(
     field = c("PROJECT_TITLE", "INSTITUTE", "LABORATORY", "DOI")
   )
@@ -201,6 +208,10 @@ get_mwtab_instrument_chromatography_info = function(mwtab_info) {
   }
   if (!is.null(mwtab_info$NM)) {
     use_info = mwtab_info$NM
+  }
+
+  if (!exists("use_info")) {
+    return(NULL)
   }
   instr_info = dplyr::left_join(nmr_ms_info_fields, use_info, by = "field")
 
