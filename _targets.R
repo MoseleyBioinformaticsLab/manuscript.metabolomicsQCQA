@@ -84,6 +84,7 @@ sets_map = tar_map(
   tar_target(se_percent_missing, sets_percent_missing(se_pca)), #8
   tar_target(se_median_correlation, sets_median_correlations(se_pca)), #9,
   tar_target(se_qc_eval, sets_evaluate_qc(se_pca)), #10
+  tar_target(se_rsd, sets_rsd(se_pca)), #11
   tar_target(qcqa_reports, sets_create_qcqa_reports(se_pca))
 )
 
@@ -133,6 +134,12 @@ sets_median_correlation_t = tar_combine(
   command = dplyr::bind_rows(!!!.x)
 )
 
+sets_rsd_t = tar_combine(
+  sets_rsd,
+  sets_map[[11]],
+  command = dplyr::bind_rows(!!!.x)
+)
+
 sets_qc_evaluation_t = tar_combine(
   sets_qc_evaluation,
   sets_map[[10]],
@@ -164,6 +171,9 @@ mean_median_ratios_report_t = tar_quarto(
   mean_median_ratios_report,
   "docs/mean_median_ratios_for_logdetection.qmd"
 )
+
+setting_databased_cutoffs_report_t =
+  tar_quarto(setting_databased_cutoffs, "docs/setting_databased_cutoffs.qmd")
 # setup_map = tar_map(
 #   json_all_map[[4]],
 #   tar_target(setup, run_setup)
@@ -186,5 +196,6 @@ list(
   sets_qc_evaluation_t,
   contains_negatives_report_t,
   negatives_testing_report_t,
-  mean_median_ratios_report_t
+  mean_median_ratios_report_t,
+  setting_database_cutoffs_report_t
 )

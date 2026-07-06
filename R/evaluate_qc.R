@@ -76,10 +76,19 @@ get_mwtab_data_counts = function(se_data) {
 
 get_se_data_counts = function(se_data) {
   dyn_range_filtering = metadata(se_data)$dynamic_range_filtering
-  list(
-    summarized_features = dyn_range_filtering$n_features[2],
-    summarized_samples = dyn_range_filtering$n_samples[2]
-  )
+
+  if (is.null(dyn_range_filtering)) {
+    out_list = list(
+      summarized_features = 0,
+      summarized_samples = 0
+    )
+  } else {
+    out_list = list(
+      summarized_features = dyn_range_filtering$n_features[2],
+      summarized_samples = dyn_range_filtering$n_samples[2]
+    )
+  }
+  out_list
 }
 
 evaluate_qc = function(se_data) {
@@ -134,7 +143,7 @@ evaluate_qc = function(se_data) {
   mwtab_data_list = get_mwtab_data_counts(se_data)
 
   c(mwtab_list, mwtab_data_list)
-  # se_data_list = get_se_data_counts(se_data)
+  se_data_list = get_se_data_counts(se_data)
 
   # has_qc = if (sum(se_data$experiment_or_qc %in% "qc") > 0) {
   #   "yes"
@@ -336,4 +345,27 @@ get_median_correlations = function(se_data) {
   } else {
     return(NULL)
   }
+}
+
+sets_rsd = function(se_pca) {
+  se_rsd = purrr::map(se_pca, get_rsd) |>
+    purrr::list_rbind()
+  se_rsd
+}
+
+get_rsd = function(se_data) {
+  id = metadata(se_data)$qc$id
+
+  pca_groups = metadata(se_data)$pca_groups
+  if (is.null(pca_groups)) {
+    return(NULL)
+  }
+  use_rsd = pca_groups$all$rsd$all_rsd_median
+  if (is.null(use_rsd)) {
+    return(NULL)
+  }
+  out_rsd = use_rsd |>
+    dplyr::filter(data %in% "r") |>
+    dplyr::mutate(id = id)
+  out_rsd
 }
