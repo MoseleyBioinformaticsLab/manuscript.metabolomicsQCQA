@@ -1,8 +1,90 @@
+sets_evaluate_qc = function(sets_se) {
+  # sets_se = tar_read(se_pca_g01); tar_source("R")
+  sets_qc = purrr::map(sets_se, \(x) {
+    evaluate_qc(x) |> tibble::as_tibble()
+  }) |>
+    purrr::list_rbind()
+  sets_qc
+}
+
+
+get_ssf_group_sizes = function(ssf_data) {
+  # ssf_data = mwtab_info$SUBJECT_SAMPLE_FACTORS
+  ssf = clean_ssf_factors(ssf_data)
+
+  if (length(unique(ssf$subject)) == 1) {
+    ssf$subject = NULL
+    id_cols = "sample_id"
+  } else {
+    id_cols = c("subject", "sample_id")
+  }
+  factor_type = ssf |>
+    dplyr::select(factor, type) |>
+    dplyr::distinct()
+
+  ssf_wide = widen_ssf_json(ssf, id_cols)
+  use_for_factors = c(id_cols, grab_factor_types(factor_type))
+  ssf_concat = create_ssf_groups_json(
+    ssf_wide |> dplyr::select(tidyselect::all_of(use_for_factors)),
+    id_cols
+  )
+
+  ssf_design = determine_experimental_design(ssf_concat, factor_type)
+  ssf_design
+}
+
+get_mwtab_data_counts = function(se_data) {
+  mwtab_info = metadata(se_data)$mwtab
+
+  sample_filtering = mwtab_info$FILTERED_SAMPLES
+  feature_filtering = mwtab_info$FILTERED_FEATURES
+
+  if (!is.null(mwtab_info$SUBJECT_SAMPLE_FACTORS)) {
+    ssf_n_size = try(get_ssf_group_sizes(mwtab_info$SUBJECT_SAMPLE_FACTORS))
+    if (inherits(ssf_n_size, "try-error")) {
+      mwtab_n_ssf = NA
+      mwtab_n_ssf_samples = NA
+    } else {
+      mwtab_n_ssf = ssf_n_size$summary$n_groups
+      mwtab_n_ssf_samples = max(ssf_n_size$n_by_factor[["N-Samples"]])
+    }
+  }
+
+  out_list =
+    list(
+      mwtab_measurement_features = feature_filtering$original[2],
+      mwtab_matched_features = feature_filtering$kept[2],
+      mwtab_measurement_samples = sample_filtering$original[2],
+      mwtab_matched_samples = sample_filtering$kept[2],
+      mwtab_n_ssf = mwtab_n_ssf,
+      mwtab_n_ssf_samples = mwtab_n_ssf_samples
+    )
+  out_list2 = purrr::map(out_list, \(x) {
+    if (is.null(x)) {
+      return(NA)
+    } else {
+      (return(x))
+    }
+  })
+  out_list2
+}
+
+get_se_data_counts = function(se_data) {
+  dyn_range_filtering = metadata(se_data)$dynamic_range_filtering
+  list(
+    summarized_features = dyn_range_filtering$n_features[2],
+    summarized_samples = dyn_range_filtering$n_samples[2]
+  )
+}
+
 evaluate_qc = function(se_data) {
   # get all the metabolomics workbench info out first
   # the goal here is to have analysis attributes
   # that are searchable and filterable by consumers
   # of the qc-qa analysis
+
+  # se_data = sets_se[[92]]
+
   mwtab_info = metadata(se_data)$mwtab
 
   measurement_list = list(
@@ -14,59 +96,66 @@ evaluate_qc = function(se_data) {
       "no"
     }
   )
+  if (is.null(measurement_list$data_source)) {
+    measurement_list$data_source = "none"
+  }
   project_list = get_mwtab_project_info(mwtab_info)
   instrument_list = get_mwtab_instrument_chromatography_info(mwtab_info)
   organism_list = get_mwtab_organism_sample(mwtab_info)
 
-  mwtab_list = c(measurement_list, project_list, instrument_list, organism_list)
+  report_list = check_qc_outputs(se_data)
+  last_step = get_qc(se_data)
+  internal_id = last_step$id
+
+  mwtab_list = c(
+    list(internal_id = internal_id),
+    measurement_list,
+    project_list,
+    instrument_list,
+    organism_list
+  )
 
   # next is to start looking for red flags in the data
   # using the various criteria, and fitting them into the
   # same list / data.frame format that allows us to easily
   # filter / group / exclude / include different analyses
-  report_list = check_qc_outputs(se_data)
-  last_step = get_qc(se_data)
-  if (nrow(se_data) == 0 || ncol(se_data) == 0) {
-    data_list = list(
-      n_initial_samples = 0,
-      n_initial_metabolites = 0,
-      n_initial_factor_groups = 0,
-      qc_samples = "no",
-      why = last_step$why
-    )
-  } else {}
 
-  has_qc = if (sum(se_data$experiment_or_qc %in% "qc") > 0) {
-    "yes"
-  } else {
-    "no"
-  }
-  # how many experimental samples in each SSF after removing
-  # qc and outliers?
+  mwtab_data_list = get_mwtab_data_counts(se_data)
 
-  f_types = get_specific_metadata(se_data, "factor_types")
+  c(mwtab_list, mwtab_data_list)
+  # se_data_list = get_se_data_counts(se_data)
 
-  # ANOVA p-value after removing qc and outliers?
-  if (last_step$succeeded %in% "pca") {
-    last_pca = report_list$pca[length(report_list$pca)]
-    pca_res = metadata(se_data)$pca_groups[[last_pca]]
-    best_p = pca_res$pca$anova |>
-      dplyr::mutate(p.adjust = p.adjust(p.value, method = "bonferroni")) |>
-      dplyr::arrange(p.adjust) |>
-      dplyr::slice_head(n = 1) |>
-      dplyr::pull(p.adjust)
-    variances = pca_res$pca$variance
-    n_pc = nrow(variances)
-    if (n_pc < 5) {
-      slice_pc = n_pc
-    } else {
-      slice_pc = 5
-    }
-    var_first_5 = variances |>
-      dplyr::slice_head(n = slice_pc) |>
-      dplyr::slice_tail(n = 1) |>
-      dplyr::pull(cumulative)
-  }
+  # has_qc = if (sum(se_data$experiment_or_qc %in% "qc") > 0) {
+  #   "yes"
+  # } else {
+  #   "no"
+  # }
+  # # how many experimental samples in each SSF after removing
+  # # qc and outliers?
+
+  # f_types = get_specific_metadata(se_data, "factor_types")
+
+  # # ANOVA p-value after removing qc and outliers?
+  # if (last_step$succeeded %in% "pca") {
+  #   last_pca = report_list$pca[length(report_list$pca)]
+  #   pca_res = metadata(se_data)$pca_groups[[last_pca]]
+  #   best_p = pca_res$pca$anova |>
+  #     dplyr::mutate(p.adjust = p.adjust(p.value, method = "bonferroni")) |>
+  #     dplyr::arrange(p.adjust) |>
+  #     dplyr::slice_head(n = 1) |>
+  #     dplyr::pull(p.adjust)
+  #   variances = pca_res$pca$variance
+  #   n_pc = nrow(variances)
+  #   if (n_pc < 5) {
+  #     slice_pc = n_pc
+  #   } else {
+  #     slice_pc = 5
+  #   }
+  #   var_first_5 = variances |>
+  #     dplyr::slice_head(n = slice_pc) |>
+  #     dplyr::slice_tail(n = 1) |>
+  #     dplyr::pull(cumulative)
+  # }
 }
 
 
@@ -120,7 +209,7 @@ get_mwtab_instrument_chromatography_info = function(mwtab_info) {
     )
   )
   chrom_data = mwtab_info$CHROMATOGRAPHY
-  if (nrow(chrom_data) == 0) {
+  if (is.null(chrom_data) || nrow(chrom_data) == 0) {
     chrom_info = chrom_fields
     chrom_info$value = "NA"
   } else {
