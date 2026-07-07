@@ -146,6 +146,15 @@ sets_qc_evaluation_t = tar_combine(
   command = dplyr::bind_rows(!!!.x)
 )
 
+data_limits_t = tar_target(
+  data_limits,
+  derive_data_limits(
+    sets_percen_missing_result,
+    sets_median_correlation_result,
+    sets_rsd_result
+  )
+)
+
 manuscript_t = tar_quarto(
   manuscript,
   "docs/manuscript.qmd",
@@ -195,6 +204,7 @@ list(
   sets_median_correlation_t,
   sets_qc_evaluation_t,
   sets_rsd_t,
+  data_limits_t,
   contains_negatives_report_t,
   negatives_testing_report_t,
   mean_median_ratios_report_t,

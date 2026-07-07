@@ -369,3 +369,38 @@ get_rsd = function(se_data) {
     dplyr::mutate(id = id)
   out_rsd
 }
+
+derive_data_limits = function(
+  sets_percent_missing_result,
+  sets_median_correlation_result,
+  sets_rsd_result
+) {
+  # tar_load(c(sets_percent_missing_result, sets_median_correlation_result, sets_rsd_result))
+
+  use_percent_missing = sets_percent_missing_result |>
+    dplyr::filter(!is.na(missing), missing > 0)
+  p_missing_sd = sd(use_percent_missing$missing)
+  p_missing_limits = c(2, 4) * p_missing_sd
+
+  med_cor_summary = sets_median_correlation_result |>
+    dplyr::summarise(
+      max = max(median_ici_correlation, na.rm = TRUE),
+      .by = id
+    ) |>
+    dplyr::filter(!is.infinite(max)) |>
+    dplyr::summarise(median = median(max), sd = sd(max))
+  med_cor_limits = med_cor_summary$median - (c(2, 4) * med_cor_summary$sd)
+
+  rsd_summary = sets_rsd_result |>
+    dplyr::summarise(
+      median_value = median(median, na.rm = TRUE),
+      sd = sd(median, na.rm = TRUE)
+    )
+  rsd_limits = rsd_summary$median_value + (c(2, 4) * rsd_summary$sd)
+
+  list(
+    missing = p_missing_limits,
+    median_correlation = med_cor_limits,
+    rsd = rsd_limits
+  )
+}
