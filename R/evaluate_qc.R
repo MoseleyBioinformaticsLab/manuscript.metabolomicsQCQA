@@ -1,12 +1,245 @@
-sets_evaluate_qc = function(sets_se) {
-  # sets_se = tar_read(se_pca_g01); tar_source("R")
+sets_evaluate_qc = function(sets_se, data_limits) {
+  # sets_se = tar_read(se_pca_g01); tar_source("R"); tar_load(data_limits)
   # sets_se = tar_read(se_pca_g02); tar_source("R")
-  # sets_se = tar_read(se_pca_g20); se_data = sets_se[[194]]; tar_source("R")
+  # sets_se = tar_read(se_pca_g20); se_data = sets_se[[194]]; tar_source("R"); tar_load(data_limits)
   sets_qc = purrr::map(sets_se, \(x) {
-    evaluate_qc(x) |> tibble::as_tibble()
+    evaluate_qc(x, data_limits) |> tibble::as_tibble()
   }) |>
     purrr::list_rbind()
   sets_qc
+}
+
+evaluate_qc = function(se_data, data_limits) {
+  # get all the metabolomics workbench info out first
+  # the goal here is to have analysis attributes
+  # that are searchable and filterable by consumers
+  # of the qc-qa analysis
+
+  # se_data = sets_se[[1]]
+  # se_data = sets_se[[92]]
+  # se_data = sets_se[[123]]
+  # se_data = sets_se[[159]]
+
+  mwtab_info = metadata(se_data)$mwtab
+
+  measurement_list = list(
+    measurement_type = mwtab_info$MEASUREMENT_TYPE,
+    data_source = mwtab_info$DATASOURCE,
+    raw_data_available = if (!is.null(mwtab_info$RAW_DATA)) {
+      "yes"
+    } else {
+      "no"
+    }
+  )
+  if (is.null(measurement_list$data_source)) {
+    measurement_list$data_source = "none"
+  }
+  project_list = get_mwtab_project_info(mwtab_info)
+
+  instrument_list = get_mwtab_instrument_chromatography_info(mwtab_info)
+  if (is.null(instrument_list)) {
+    return(NULL)
+  }
+  organism_list = get_mwtab_organism_sample(mwtab_info)
+
+  report_list = check_qc_outputs(se_data)
+  last_step = get_qc(se_data)
+  internal_id = last_step$id
+
+  mwtab_list = c(
+    list(internal_id = internal_id),
+    measurement_list,
+    project_list,
+    instrument_list,
+    organism_list
+  )
+
+  # next is to start looking for red flags in the data
+  # using the various criteria, and fitting them into the
+  # same list / data.frame format that allows us to easily
+  # filter / group / exclude / include different analyses
+
+  mwtab_data_list = get_mwtab_data_counts(se_data)
+
+  mwtab_list = c(mwtab_list, mwtab_data_list)
+  use_defaults = FALSE
+  if (
+    mwtab_data_list$mwtab_matched_features == 0 ||
+      mwtab_data_list$mwtab_matched_samples == 0
+  ) {
+    use_defaults = TRUE
+  }
+  se_data_list = get_se_data_counts_status(se_data, use_defaults)
+
+  qc_status_list = check_qc_samples(se_data, use_defaults)
+
+  percent_missing_list = check_percent_missing(
+    se_data,
+    data_limits$missing,
+    use_defaults
+  )
+
+  median_correlations_list = check_median_correlations(
+    se_data,
+    data_limits$median_correlation,
+    use_defaults
+  )
+
+  rsd_list = check_rsd_values(
+    se_data,
+    data_limits$rsd,
+    use_defaults
+  )
+
+  # # how many experimental samples in each SSF after removing
+  # # qc and outliers?
+
+  # f_types = get_specific_metadata(se_data, "factor_types")
+
+  # # ANOVA p-value after removing qc and outliers?
+  # if (last_step$succeeded %in% "pca") {
+  #   last_pca = report_list$pca[length(report_list$pca)]
+  #   pca_res = metadata(se_data)$pca_groups[[last_pca]]
+  #   best_p = pca_res$pca$anova |>
+  #     dplyr::mutate(p.adjust = p.adjust(p.value, method = "bonferroni")) |>
+  #     dplyr::arrange(p.adjust) |>
+  #     dplyr::slice_head(n = 1) |>
+  #     dplyr::pull(p.adjust)
+  #   variances = pca_res$pca$variance
+  #   n_pc = nrow(variances)
+  #   if (n_pc < 5) {
+  #     slice_pc = n_pc
+  #   } else {
+  #     slice_pc = 5
+  #   }
+  #   var_first_5 = variances |>
+  #     dplyr::slice_head(n = slice_pc) |>
+  #     dplyr::slice_tail(n = 1) |>
+  #     dplyr::pull(cumulative)
+  # }
+}
+
+check_pca = function(se_data, default = FALSE) {
+  pca_data = metadata(se_data)$pca_groups
+  last_run = check_qc_outputs(se_data)
+
+  pca_index = last_run$pca[length(last_run$pca)]
+  pca_data_use = pca_data[[pca_index]]
+
+  pca_variance = pca_data_use$pca$variance
+
+  pca_90 = which(pca_variance$cumulative > 0.9) |> min()
+}
+
+check_rsd_values = function(se_data, rsd_limits, default = FALSE) {
+  # rsd_limits = data_limits$rsd; default = FALSE
+  if (default) {
+    return(list(
+      rsd = NA,
+      rsd_status = "red"
+    ))
+  }
+  pca_data = metadata(se_data)$pca_groups
+  last_run = check_qc_outputs(se_data)
+
+  pca_index = last_run$pca[length(last_run$pca)]
+  pca_data_use = pca_data[[pca_index]]
+
+  rsd_use = pca_data_use$rsd$all_rsd_median |>
+    dplyr::filter(data %in% "r") |>
+    dplyr::pull(median) |>
+    max(na.rm = TRUE)
+
+  list(
+    rsd = rsd_use,
+    rsd_status = dplyr::case_when(
+      rsd_use <= rsd_limits[1] ~ "green",
+      dplyr::between(rsd_use, rsd_limits[1], rsd_limits[2]) ~ "yellow",
+      rsd_use >= rsd_limits[2] ~ "red"
+    )
+  )
+}
+
+check_median_correlations = function(
+  se_data,
+  correlation_limits,
+  default = FALSE
+) {
+  if (default) {
+    return(list(
+      max_median_correlation = NA,
+      max_median_correlation_status = "red"
+    ))
+  }
+  # correlation_limits = data_limits$median_correlation; default = FALSE
+  cor_info = se_data$median_ici_correlation
+  max_median_correlation = max(cor_info, na.rm = TRUE)
+  max_median_correlation_status = dplyr::case_when(
+    max_median_correlation > correlation_limits[1] ~ "green",
+    dplyr::between(
+      max_median_correlation,
+      correlation_limits[2],
+      correlation_limits[1]
+    ) ~ "yellow",
+    max_median_correlation < correlation_limits[2] ~ "red"
+  )
+  list(
+    max_median_correlation = max_median_correlation,
+    max_median_correlation_status = max_median_correlation_status
+  )
+}
+
+check_percent_missing = function(se_data, percent_limits, default = FALSE) {
+  # percent_limits = data_limits$missing; default = FALSE
+  if (!default) {
+    lc_info = metadata(se_data)$left_censorship
+  } else {
+    percent_list = list(percent_missing = NA, percent_missing_status = "red")
+  }
+
+  if (is.null(lc_info)) {
+    default = TRUE
+  }
+  if (default) {
+    percent_list = list(percent_missing = NA, percent_missing_status = "red")
+    lc_test_list = list(
+      left_censorship_test = NA,
+      left_censorship_test_status = "red"
+    )
+    return(c(percent_list, lc_test_list))
+  }
+  percent_missing = lc_info$perc_missing
+  percent_missing_status = dplyr::case_when(
+    percent_missing <= percent_limits[1] ~ "green",
+    percent_limits[1] < percent_missing &&
+      percent_missing < percent_limits[2] ~ "yellow",
+    percent_missing >= percent_limits[2] ~ "red"
+  )
+
+  percent_list = list(
+    percent_missing = percent_missing,
+    percent_missing_status = percent_missing_status
+  )
+  lc_test = lc_info$lc_test$binomial_test
+  if (is.null(lc_test)) {
+    default = TRUE
+  }
+  if (default) {
+    lc_test_list = list(
+      left_censorship_test = NA,
+      left_censorship_test_status = "red"
+    )
+    return(c(percent_list, lc_test_list))
+  }
+  lc_test_list = list(
+    left_censorship_test = lc_test$p.value,
+    left_censorship_test_status = dplyr::case_when(
+      percent_missing > 10 && left_censorship_test <= 0.05 ~ "green",
+      percent_missing > 10 && left_censorship_test > 0.05 ~ "yellow",
+      TRUE ~ "green"
+    )
+  )
+  c(percent_list, lc_test_list)
 }
 
 
@@ -74,110 +307,69 @@ get_mwtab_data_counts = function(se_data) {
   out_list2
 }
 
-get_se_data_counts = function(se_data) {
+get_se_data_counts_status = function(se_data, default = FALSE) {
+  if (default) {
+    return(list(
+      summarized_features = 0,
+      summarized_features_status = "red",
+      summarized_samples = 0,
+      summarized_samples_status = "red"
+    ))
+  }
+
   dyn_range_filtering = metadata(se_data)$dynamic_range_filtering
 
   if (is.null(dyn_range_filtering)) {
-    out_list = list(
-      summarized_features = 0,
-      summarized_samples = 0
-    )
+    summarized_features = 0
+    summarized_samples = 0
   } else {
-    out_list = list(
-      summarized_features = dyn_range_filtering$n_features[2],
-      summarized_samples = dyn_range_filtering$n_samples[2]
-    )
+    summarized_features = dyn_range_filtering$n_features[2]
+    summarized_samples = dyn_range_filtering$n_samples[2]
   }
-  out_list
+
+  if (summarized_samples < 3) {
+    n_samples_status = "red"
+  } else if (dplyr::between(summarized_samples, 3, 5)) {
+    n_samples_status = "yellow"
+  } else if (summarized_samples > 5) {
+    n_samples_status = "green"
+  }
+
+  if (summarized_features < 10) {
+    n_features_status = "red"
+  } else if (dplyr::between(summarized_features, 10, 30)) {
+    n_features_status = "yellow"
+  } else if (summarized_features > 30) {
+    n_features_status = "green"
+  }
+  list(
+    summarized_features = summarized_features,
+    summarized_features_status = n_features_status,
+    summarized_samples = summarized_samples,
+    summarized_samples_status = n_samples_status
+  )
 }
 
-evaluate_qc = function(se_data) {
-  # get all the metabolomics workbench info out first
-  # the goal here is to have analysis attributes
-  # that are searchable and filterable by consumers
-  # of the qc-qa analysis
 
-  # se_data = sets_se[[92]]
-  # se_data = sets_se[[123]]
-  # se_data = sets_se[[159]]
-
-  mwtab_info = metadata(se_data)$mwtab
-
-  measurement_list = list(
-    measurement_type = mwtab_info$MEASUREMENT_TYPE,
-    data_source = mwtab_info$DATASOURCE,
-    raw_data_available = if (!is.null(mwtab_info$RAW_DATA)) {
-      "yes"
+check_qc_samples = function(se_data, default = FALSE) {
+  if (default) {
+    out_list = list(has_qc_samples = "no", has_qc_samples_status = "red")
+    return(out_list)
+  }
+  has_qc = if (sum(se_data$experiment_or_qc %in% "qc") > 0) {
+    "yes"
+  } else {
+    "no"
+  }
+  list(
+    has_qc_samples = has_qc,
+    has_qc_samples_status = if (has_qc %in% "yes") {
+      "green"
     } else {
-      "no"
+      "yellow"
     }
   )
-  if (is.null(measurement_list$data_source)) {
-    measurement_list$data_source = "none"
-  }
-  project_list = get_mwtab_project_info(mwtab_info)
-
-  instrument_list = get_mwtab_instrument_chromatography_info(mwtab_info)
-  if (is.null(instrument_list)) {
-    return(NULL)
-  }
-  organism_list = get_mwtab_organism_sample(mwtab_info)
-
-  report_list = check_qc_outputs(se_data)
-  last_step = get_qc(se_data)
-  internal_id = last_step$id
-
-  mwtab_list = c(
-    list(internal_id = internal_id),
-    measurement_list,
-    project_list,
-    instrument_list,
-    organism_list
-  )
-
-  # next is to start looking for red flags in the data
-  # using the various criteria, and fitting them into the
-  # same list / data.frame format that allows us to easily
-  # filter / group / exclude / include different analyses
-
-  mwtab_data_list = get_mwtab_data_counts(se_data)
-
-  c(mwtab_list, mwtab_data_list)
-  se_data_list = get_se_data_counts(se_data)
-
-  # has_qc = if (sum(se_data$experiment_or_qc %in% "qc") > 0) {
-  #   "yes"
-  # } else {
-  #   "no"
-  # }
-  # # how many experimental samples in each SSF after removing
-  # # qc and outliers?
-
-  # f_types = get_specific_metadata(se_data, "factor_types")
-
-  # # ANOVA p-value after removing qc and outliers?
-  # if (last_step$succeeded %in% "pca") {
-  #   last_pca = report_list$pca[length(report_list$pca)]
-  #   pca_res = metadata(se_data)$pca_groups[[last_pca]]
-  #   best_p = pca_res$pca$anova |>
-  #     dplyr::mutate(p.adjust = p.adjust(p.value, method = "bonferroni")) |>
-  #     dplyr::arrange(p.adjust) |>
-  #     dplyr::slice_head(n = 1) |>
-  #     dplyr::pull(p.adjust)
-  #   variances = pca_res$pca$variance
-  #   n_pc = nrow(variances)
-  #   if (n_pc < 5) {
-  #     slice_pc = n_pc
-  #   } else {
-  #     slice_pc = 5
-  #   }
-  #   var_first_5 = variances |>
-  #     dplyr::slice_head(n = slice_pc) |>
-  #     dplyr::slice_tail(n = 1) |>
-  #     dplyr::pull(cumulative)
-  # }
 }
-
 
 get_mwtab_project_info = function(mwtab_info) {
   mw_fields = tibble::tibble(
