@@ -149,7 +149,7 @@ sets_qc_evaluation_t = tar_combine(
 data_limits_t = tar_target(
   data_limits,
   derive_data_limits(
-    sets_percen_missing_result,
+    sets_percent_missing_result,
     sets_median_correlation_result,
     sets_rsd_result
   )
