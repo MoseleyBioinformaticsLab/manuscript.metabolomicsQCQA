@@ -83,7 +83,7 @@ sets_map = tar_map(
   ),
   tar_target(se_percent_missing, sets_percent_missing(se_pca)), #8
   tar_target(se_median_correlation, sets_median_correlations(se_pca)), #9,
-  tar_target(se_qc_eval, sets_evaluate_qc(se_pca)), #10
+  tar_target(se_qc_eval, sets_evaluate_qc(se_pca, data_limits)), #10
   tar_target(se_rsd, sets_rsd(se_pca)), #11
   tar_target(qcqa_reports, sets_create_qcqa_reports(se_pca))
 )
