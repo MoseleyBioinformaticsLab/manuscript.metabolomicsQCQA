@@ -69,21 +69,43 @@ evaluate_qc = function(se_data, data_limits) {
   ) {
     use_defaults = TRUE
   }
+
+  if (!("se" %in% report_list$steps)) {
+    use_defaults = TRUE
+  }
+
   se_data_list = get_se_data_counts_status(se_data, use_defaults)
+
+  n_samples_list = get_n_samples_ssf(se_data, use_defaults)
 
   qc_status_list = check_qc_samples(se_data, use_defaults)
 
-  percent_missing_list = check_percent_missing(
-    se_data,
-    data_limits$missing,
-    use_defaults
-  )
+  if (!is.null(metadata(se_data)$left_censorship)) {
+    percent_missing_list = check_percent_missing(
+      se_data,
+      data_limits$missing,
+      FALSE
+    )
+  } else {
+    percent_missing_list = check_percent_missing(
+      se_data,
+      data_limits$missing,
+      TRUE
+    )
+  }
 
+  if (!("correlation" %in% report_list$steps)) {
+    use_defaults = TRUE
+  }
   median_correlations_list = check_median_correlations(
     se_data,
     data_limits$median_correlation,
     use_defaults
   )
+
+  if (!("pca" %in% report_list$steps)) {
+    use_defaults = TRUE
+  }
 
   rsd_list = check_rsd_values(
     se_data,
@@ -117,6 +139,55 @@ evaluate_qc = function(se_data, data_limits) {
   #     dplyr::slice_tail(n = 1) |>
   #     dplyr::pull(cumulative)
   # }
+}
+
+get_n_samples_ssf = function(se_data, default = FALSE) {
+  if (default) {
+    out_n = tibble::tibble(ssf = "NA", `N-Samples` = NA)
+    return(list(
+      n_samples_ssf = out_n,
+      n_sample_status = "red",
+      n_ssf_status = "red"
+    ))
+  }
+  factor_types = metadata(se_data)$factor_types
+  se_data = se_data[, is.na(se_data$removed), drop = FALSE]
+
+  if (!is.null(se_data$outlier)) {
+    se_data = se_data[, !se_data$outlier, drop = FALSE]
+  }
+  if (!is.null(se_data$experiment_or_qc)) {
+    se_data = se_data[,
+      se_data$experiment_or_qc %in% "experiment",
+      drop = FALSE
+    ]
+  }
+  ssf_info = get_vardata(se_data)
+  ssf_n = determine_experimental_design(ssf_info, factor_types)
+  out_n = ssf_n$n_by_factor_factors
+
+  n_has_5 = out_n$`N-Samples` >= 5
+  n_has_3 = out_n$`N-Samples` >= 3
+
+  n_sample_status = dplyr::case_when(
+    !all(n_has_3) ~ "red",
+    !all(n_has_5) && all(n_has_3) ~ "yellow",
+    all(n_has_5) ~ "green"
+  )
+
+  n_ssf_status = dplyr::case_when(
+    nrow(out_n) >= 20 ~ "red",
+    dplyr::between(nrow(out_n), 10, 20) ~ "yellow",
+    nrow(out_n) == 1 ~ "yellow",
+    nrow(out_n) < 10 ~ "green"
+  )
+
+  out_list = list(
+    n_samples_ssf = out_n,
+    n_sample_status = n_sample_status,
+    n_ssf_status = n_ssf_status
+  )
+  out_list
 }
 
 check_pca = function(se_data, default = FALSE) {
