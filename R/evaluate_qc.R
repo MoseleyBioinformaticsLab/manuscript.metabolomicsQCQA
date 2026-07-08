@@ -2,7 +2,7 @@ sets_evaluate_qc = function(sets_se, data_limits) {
   # sets_se = tar_read(se_pca_g01); tar_source("R"); tar_load(data_limits)
   # sets_se = tar_read(se_pca_g02); tar_source("R")
   # sets_se = tar_read(se_pca_g20); se_data = sets_se[[194]]; tar_source("R"); tar_load(data_limits)
-  sets_qc = furrr::future_map(sets_se, \(x) {
+  sets_qc = purrr::map(sets_se, \(x) {
     evaluate_qc(x, data_limits) |> tibble::as_tibble()
   }) |>
     purrr::list_rbind()
