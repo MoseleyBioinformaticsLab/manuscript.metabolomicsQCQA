@@ -20,6 +20,7 @@ evaluate_qc = function(se_data, data_limits) {
   # se_data = sets_se[[123]]
   # se_data = sets_se[[159]]
 
+  use_defaults = FALSE
   mwtab_info = metadata(se_data)$mwtab
 
   measurement_list = list(
@@ -62,10 +63,17 @@ evaluate_qc = function(se_data, data_limits) {
   mwtab_data_list = get_mwtab_data_counts(se_data)
 
   mwtab_list = c(mwtab_list, mwtab_data_list)
-  use_defaults = FALSE
+  mwtab_features_zero_or_missing = is.na(
+    mwtab_data_list$mwtab_matched_features
+  ) ||
+    (mwtab_data_list$mwtab_matched_features == 0)
+  mwtab_samples_zero_or_missing = is.na(
+    mwtab_data_list$mwtab_matched_samples
+  ) ||
+    (mwtab_data_list$mwtab_matched_samples == 0)
   if (
-    mwtab_data_list$mwtab_matched_features == 0 ||
-      mwtab_data_list$mwtab_matched_samples == 0
+    mwtab_features_zero_or_missing ||
+      mwtab_samples_zero_or_missing
   ) {
     use_defaults = TRUE
   }
@@ -113,39 +121,26 @@ evaluate_qc = function(se_data, data_limits) {
     use_defaults
   )
 
-  # # how many experimental samples in each SSF after removing
-  # # qc and outliers?
+  pca_list = check_pca(se_data, use_defaults)
 
-  # f_types = get_specific_metadata(se_data, "factor_types")
-
-  # # ANOVA p-value after removing qc and outliers?
-  # if (last_step$succeeded %in% "pca") {
-  #   last_pca = report_list$pca[length(report_list$pca)]
-  #   pca_res = metadata(se_data)$pca_groups[[last_pca]]
-  #   best_p = pca_res$pca$anova |>
-  #     dplyr::mutate(p.adjust = p.adjust(p.value, method = "bonferroni")) |>
-  #     dplyr::arrange(p.adjust) |>
-  #     dplyr::slice_head(n = 1) |>
-  #     dplyr::pull(p.adjust)
-  #   variances = pca_res$pca$variance
-  #   n_pc = nrow(variances)
-  #   if (n_pc < 5) {
-  #     slice_pc = n_pc
-  #   } else {
-  #     slice_pc = 5
-  #   }
-  #   var_first_5 = variances |>
-  #     dplyr::slice_head(n = slice_pc) |>
-  #     dplyr::slice_tail(n = 1) |>
-  #     dplyr::pull(cumulative)
-  # }
+  data_list = c(
+    se_data_list,
+    n_samples_list,
+    qc_status_list,
+    percent_missing_list,
+    median_correlations_list,
+    rsd_list,
+    pca_list
+  )
+  return(c(mwtab_list, data_list))
 }
 
 get_n_samples_ssf = function(se_data, default = FALSE) {
   if (default) {
     out_n = tibble::tibble(ssf = "NA", `N-Samples` = NA)
     return(list(
-      n_samples_ssf = out_n,
+      n_samples_ssf = "NA",
+      n_ssf_n = NA,
       n_sample_status = "red",
       n_ssf_status = "red"
     ))
@@ -183,7 +178,8 @@ get_n_samples_ssf = function(se_data, default = FALSE) {
   )
 
   out_list = list(
-    n_samples_ssf = out_n,
+    n_samples_ssf = paste0(out_n$`N-Samples`, collapse = ":"),
+    n_ssf_n = nrow(out_n),
     n_sample_status = n_sample_status,
     n_ssf_status = n_ssf_status
   )
@@ -191,6 +187,15 @@ get_n_samples_ssf = function(se_data, default = FALSE) {
 }
 
 check_pca = function(se_data, default = FALSE) {
+  if (default) {
+    return(list(
+      pca_pc_index_90 = NA,
+      pca_pc_index_90_status = "red",
+      pca_anova_pvalue = NA,
+      pca_anova_pvalue_PC = "NA",
+      pca_anova_pvalue_status = "red"
+    ))
+  }
   pca_data = metadata(se_data)$pca_groups
   last_run = check_qc_outputs(se_data)
 
@@ -199,7 +204,35 @@ check_pca = function(se_data, default = FALSE) {
 
   pca_variance = pca_data_use$pca$variance
 
-  pca_90 = which(pca_variance$cumulative > 0.9) |> min()
+  pca_pc_index_90 = which(pca_variance$cumulative > 0.9) |> min()
+  pca_pc_index_90_status = dplyr::case_when(
+    pca_pc_index_90 < 10 ~ "green",
+    dplyr::between(pca_pc_index_90, 10, 30) ~ "yellow",
+    TRUE ~ "red"
+  )
+  pca_anova = pca_data_use$pca$anova |>
+    dplyr::mutate(p.adjust = p.adjust(p.value, method = "bonferroni")) |>
+    dplyr::filter(
+      PC %in% c("PC1", "PC2", "PC3", "PC4", "PC5")
+    )
+  pca_anova_pvalue = pca_anova |>
+    dplyr::arrange(p.adjust) |>
+    dplyr::slice_head(n = 1)
+
+  pca_anova_pvalue_status = dplyr::case_when(
+    pca_anova_pvalue$p.adjust > 0.05 ~ "red",
+    pca_anova_pvalue$p.adjust <= 0.05 &&
+      (pca_anova_pvalue$PC %in% c("PC4", "PC5")) ~ "yellow",
+    pca_anova_pvalue$p.adjust <= 0.05 &&
+      (pca_anova_pvalue$PC %in% c("PC1", "PC2", "PC3")) ~ "green",
+  )
+  return(list(
+    pca_pc_index_90 = pca_pc_index_90,
+    pca_pc_index_90_status = pca_pc_index_90_status,
+    pca_anova_pvalue = pca_anova_pvalue$p.adjust,
+    pca_anova_pvalue_PC = pca_anova_pvalue$PC,
+    pca_anova_pvalue_status = pca_anova_pvalue_status
+  ))
 }
 
 check_rsd_values = function(se_data, rsd_limits, default = FALSE) {
@@ -216,6 +249,9 @@ check_rsd_values = function(se_data, rsd_limits, default = FALSE) {
   pca_index = last_run$pca[length(last_run$pca)]
   pca_data_use = pca_data[[pca_index]]
 
+  if (is.null(pca_data_use$rsd$all_rsd)) {
+    return(list(rsd = NA, rsd_status = "red"))
+  }
   rsd_use = pca_data_use$rsd$all_rsd_median |>
     dplyr::filter(data %in% "r") |>
     dplyr::pull(median) |>
@@ -266,6 +302,7 @@ check_percent_missing = function(se_data, percent_limits, default = FALSE) {
     lc_info = metadata(se_data)$left_censorship
   } else {
     percent_list = list(percent_missing = NA, percent_missing_status = "red")
+    lc_info = NULL
   }
 
   if (is.null(lc_info)) {
@@ -305,8 +342,8 @@ check_percent_missing = function(se_data, percent_limits, default = FALSE) {
   lc_test_list = list(
     left_censorship_test = lc_test$p.value,
     left_censorship_test_status = dplyr::case_when(
-      percent_missing > 10 && left_censorship_test <= 0.05 ~ "green",
-      percent_missing > 10 && left_censorship_test > 0.05 ~ "yellow",
+      percent_missing > 10 && lc_test$p.value <= 0.05 ~ "green",
+      percent_missing > 10 && lc_test$p.value > 0.05 ~ "yellow",
       TRUE ~ "green"
     )
   )
