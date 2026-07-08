@@ -2,7 +2,7 @@ sets_evaluate_qc = function(sets_se, data_limits) {
   # sets_se = tar_read(se_pca_g01); tar_source("R"); tar_load(data_limits)
   # sets_se = tar_read(se_pca_g02); tar_source("R")
   # sets_se = tar_read(se_pca_g20); se_data = sets_se[[194]]; tar_source("R"); tar_load(data_limits)
-  sets_qc = purrr::map(sets_se, \(x) {
+  sets_qc = furrr::future_map(sets_se, \(x) {
     evaluate_qc(x, data_limits) |> tibble::as_tibble()
   }) |>
     purrr::list_rbind()
@@ -47,6 +47,11 @@ evaluate_qc = function(se_data, data_limits) {
   last_step = get_qc(se_data)
   internal_id = last_step$id
 
+  analysis_list = list(
+    completed_steps = paste0(report_list$steps, collapse = "; "),
+    failed_steps = report_list$failed[["last"]],
+    failed_why = report_list$failed[["why"]]
+  )
   mwtab_list = c(
     list(internal_id = internal_id),
     measurement_list,
@@ -132,7 +137,7 @@ evaluate_qc = function(se_data, data_limits) {
     rsd_list,
     pca_list
   )
-  return(c(mwtab_list, data_list))
+  return(c(mwtab_list, data_list, analysis_list))
 }
 
 get_n_samples_ssf = function(se_data, default = FALSE) {
