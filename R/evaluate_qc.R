@@ -127,6 +127,7 @@ evaluate_qc = function(se_data, data_limits) {
   )
 
   pca_list = check_pca(se_data, use_defaults)
+  score_list = get_scores(se_data, use_defaults)
 
   data_list = c(
     se_data_list,
@@ -135,9 +136,95 @@ evaluate_qc = function(se_data, data_limits) {
     percent_missing_list,
     median_correlations_list,
     rsd_list,
-    pca_list
+    pca_list,
+    score_list
   )
   return(c(mwtab_list, data_list, analysis_list))
+}
+
+get_scores = function(se_data, default = FALSE) {
+  if (default) {
+    return(list(score_diff_summary = "NA", score_diff_status = "red"))
+  }
+  pca_data = metadata(se_data)$pca_groups
+  last_run = check_qc_outputs(se_data)
+
+  pca_index = last_run$pca[length(last_run$pca)]
+  pca_data_use = pca_data[[pca_index]]
+
+  ssf_scores = pca_data_use$scores
+
+  ssf_noall = ssf_scores |>
+    dplyr::filter(!ssf %in% "all")
+
+  ssf_scores_wide = ssf_noall |>
+    dplyr::select(-differences_fraction) |>
+    tidyr::pivot_wider(names_from = "method", values_from = "n_differences")
+
+  ssf_scores_wide = ssf_scores_wide |>
+    dplyr::mutate(
+      rle_frac = rle / group_size,
+      rle_status = dplyr::case_when(
+        (group_size <= 5) & (rle > 2) ~ "red",
+        (group_size <= 5) & (rle > 1) ~ "yellow",
+        (group_size <= 5) & (rle == 0) ~ "green",
+        (group_size <= 10) & (rle > 4) ~ "red",
+        (group_size <= 10) & (rle > 2) ~ "yellow",
+        (group_size <= 10) & (rle <= 1) ~ "green",
+        (group_size > 10) & (rle_frac > 0.5) ~ "red",
+        (group_size > 10) & (rle_frac > 0.25) ~ "yellow",
+        (group_size > 10) & (rle_frac < 0.25) ~ "green"
+      ),
+      ici_frac = `median-ici` / group_size,
+      ici_status = dplyr::case_when(
+        (group_size <= 5) & (rle > 1) ~ "red",
+        (group_size <= 5) & (rle > 0) ~ "yellow",
+        (group_size <= 5) & (rle == 0) ~ "green",
+        (group_size <= 10) & (rle > 3) ~ "red",
+        (group_size <= 10) & (rle > 2) ~ "yellow",
+        (group_size <= 10) & (rle <= 1) ~ "green",
+        (group_size > 10) & (ici_frac > 0.3) ~ "red",
+        (group_size > 10) & (rle_frac > 0.1) ~ "yellow",
+        (group_size > 10) & (rle_frac < 0.1) ~ "green"
+      ),
+    )
+
+  ssf_summaries = ssf_scores_wide |>
+    dplyr::summarise(
+      ici_red = sum(ici_status %in% "red") / nrow(ssf_scores_wide),
+      ici_yellow = sum(ici_status %in% "yellow") / nrow(ssf_scores_wide),
+      ici_green = sum(ici_status %in% "green") / nrow(ssf_scores_wide),
+      rle_red = sum(rle_status %in% "red") / nrow(ssf_scores_wide),
+      rle_yellow = sum(rle_status %in% "yellow") / nrow(ssf_scores_wide),
+      rle_green = sum(rle_status %in% "green") / nrow(ssf_scores_wide)
+    )
+
+  ssf_status = dplyr::case_when(
+    ssf_summaries$ici_red > 0.5 ~ "red",
+    ssf_summaries$ici_yellow > 0.5 ~ "yellow",
+    ssf_summaries$ici_green > 0.75 & ssf_summaries$rle_yellow < 0.5 ~ "green",
+    ssf_summaries$ici_green > 0.75 & ssf_summaries$rle_green > 0.5 ~ "green",
+    ssf_summaries$ici_green > 0.75 & ssf_summaries$rle_red > 0.5 ~ "yellow",
+  )
+  list(
+    score_diff_summary = paste0(
+      "icikt: ",
+      paste0(
+        ssf_scores_wide$`median-ici`,
+        "/",
+        ssf_scores_wide$group_size,
+        collapse = ";"
+      ),
+      "; rle: ",
+      paste0(
+        ssf_scores_wide$rle,
+        "/",
+        ssf_scores_wide$group_size,
+        collapse = ";"
+      )
+    ),
+    score_diff_status = ssf_status
+  )
 }
 
 get_n_samples_ssf = function(se_data, default = FALSE) {
@@ -708,4 +795,33 @@ derive_data_limits = function(
     median_correlation = med_cor_limits,
     rsd = rsd_limits
   )
+}
+
+create_review_list = function(sets_qc_evaluation) {
+  # tar_load(sets_qc_evaluation)
+  interesting_failures = list(failed_steps = c("create_se", "correlation"))
+
+  review_data = purrr::imap(interesting_failures, \(x, icol) {
+    message(x)
+    message(icol)
+    tmp_column = sets_qc_evaluation[[icol]]
+    out_match = purrr::map(x, \(in_step) {
+      sets_qc_evaluation[["internal_id"]][tmp_column %in% in_step]
+    }) |>
+      purrr::list_c() |>
+      unique()
+  }) |>
+    purrr::list_c() |>
+    unique()
+  out_qc = sets_qc_evaluation |>
+    dplyr::filter(internal_id %in% review_data) |>
+    dplyr::select(
+      internal_id,
+      analysis_id,
+      study_id,
+      project_id,
+      failed_steps,
+      failed_why
+    ) |>
+    dplyr::arrange(failed_steps, failed_why)
 }

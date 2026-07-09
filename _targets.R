@@ -183,6 +183,11 @@ mean_median_ratios_report_t = tar_quarto(
 
 setting_databased_cutoffs_report_t =
   tar_quarto(setting_databased_cutoffs, "docs/setting_databased_cutoffs.qmd")
+
+iecm2026_abstract_t = tar_quarto(
+  iecm2026_abstract,
+  "docs/iecm2026_abstract.qmd"
+)
 # setup_map = tar_map(
 #   json_all_map[[4]],
 #   tar_target(setup, run_setup)
@@ -208,5 +213,6 @@ list(
   contains_negatives_report_t,
   negatives_testing_report_t,
   mean_median_ratios_report_t,
-  setting_databased_cutoffs_report_t
+  setting_databased_cutoffs_report_t,
+  iecm2026_abstract_t
 )

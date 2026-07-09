@@ -1,0 +1,82 @@
+---
+title: "Quality-control and quality-assessment of a metabolomics data repository."
+author: Robert M Flight, P Travis Thompson, Hunter NB Moseley
+date: last-modified
+format: docx
+---
+
+```{r}
+#| label: knitr-chunks
+#| echo: false
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = TRUE,
+  warning = FALSE,
+  fig.width = 14,
+  fig.height = 12,
+  dev = "ragg_png",
+  dpi = 150
+)
+```
+
+```{r}
+#| label: load-targets
+#| message: false
+#| warning: false
+library(targets)
+tar_source(c("packages.R", "R"))
+tar_load(sets_qc_evaluation)
+```
+
+
+```{r}
+#| label: summarize_steps
+summary_qc = sets_qc_evaluation |>
+  dplyr::select(completed_steps, failed_steps, failed_why) |>
+  dplyr::summarize(
+    n = dplyr::n(),
+    perc = n / 6103,
+    .by = c(completed_steps, failed_steps, failed_why)
+  ) |>
+  dplyr::arrange(completed_steps, failed_steps, failed_why)
+
+n_completed = summary_qc |>
+  dplyr::filter(completed_steps %in% "se; dynamic_range; correlation; pca") |>
+  dplyr::pull(n)
+perc_completed = summary_qc |>
+  dplyr::filter(completed_steps %in% "se; dynamic_range; correlation; pca") |>
+  dplyr::pull(perc)
+perc_display = paste0(format(perc_completed * 100, digits = 2), "%")
+```
+
+## Introduction
+
+Depositing processed and ideally raw -omics data in a data repository has become the norm in genomics, transcriptomics and metabolomics, and is frequently required for publication and by grant funders.
+However, no repository wide assessment of data quality has ever been carried out.
+Our previous experience in working with the Metabolomics Workbench data, as well as in analyzing a variety of transcriptomics and metabolomics datasets, makes us well suited to attempt a repository wide assessment of the analyses available in the Metabolomics Workbench. 
+
+## Methods
+
+6105 analyses were downloaded from the Metabolomics Workbench in November of 2025, as well as any ancillary data files (available as STUDYID_ANALYSISID.txt if present).
+Minor repairs to downloaded files were made to make them more amenable to analysis.
+The MWTAB JSON file format was used as it made parsing the files easier to implement.
+
+For each analysis, we attempted to:
+
+* convert it to a summarized experiment object holding abundances and sample metadata;
+* detect if any quality-control samples are included in the sample list;
+* evaluate if the data were already log-transformed and needed to be exponentiated;
+* count the number of metabolite features and useable samples in each group of subject-sample-factors (SSF);
+* calculate information-content-informed Kendall-$\tau$ (ICI-Kt) correlation between all samples;
+* calculate the relative standard deviations (RSD) of metabolite features within each SSF group;
+* perform principal component analysis (PCA) and calculate an analysis of variance (ANOVA) of the sample principal component scores and SSF groups.
+
+For each of the results of each step, we also attempt to assign a color grade indicating **possible** quality-control and quality-assurance (QC/QA) concerns for a given analysis, providing a score of "red" (think twice before using), "yellow" (probably OK), and "green" (looks good).
+
+## Results
+
+Of the 6103 analyses that could be reasonable parsed, `{r} n_completed` (`{r} perc_display`) were able to go through all the steps to PCA.
+Of those xxx had a status of **green** across all the various QC/QA concerns evaluated.
+
+## Conclusions
+
