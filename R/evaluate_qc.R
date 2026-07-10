@@ -89,6 +89,7 @@ evaluate_qc = function(se_data, data_limits) {
 
   se_data_list = get_se_data_counts_status(se_data, use_defaults)
 
+  se_samples_removed_list = get_samples_removed(se_data, use_defaults)
   n_samples_list = get_n_samples_ssf(se_data, use_defaults)
 
   qc_status_list = check_qc_samples(se_data, use_defaults)
@@ -131,6 +132,7 @@ evaluate_qc = function(se_data, data_limits) {
 
   data_list = c(
     se_data_list,
+    se_samples_removed_list,
     n_samples_list,
     qc_status_list,
     percent_missing_list,
