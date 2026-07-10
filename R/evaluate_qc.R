@@ -531,9 +531,9 @@ get_se_data_counts_status = function(se_data, default = FALSE) {
   if (default) {
     return(list(
       summarized_features = 0,
-      summarized_features_status = "red",
+      summarized_features_status = "none",
       summarized_samples = 0,
-      summarized_samples_status = "red"
+      summarized_samples_status = "none"
     ))
   }
 
@@ -548,19 +548,19 @@ get_se_data_counts_status = function(se_data, default = FALSE) {
   }
 
   if (summarized_samples < 3) {
-    n_samples_status = "red"
-  } else if (dplyr::between(summarized_samples, 3, 5)) {
-    n_samples_status = "yellow"
-  } else if (summarized_samples > 5) {
-    n_samples_status = "green"
+    n_samples_status = "low"
+  } else if (dplyr::between(summarized_samples, 3, 10)) {
+    n_samples_status = "medium"
+  } else if (summarized_samples > 10) {
+    n_samples_status = "high"
   }
 
   if (summarized_features < 10) {
-    n_features_status = "red"
+    n_features_status = "low"
   } else if (dplyr::between(summarized_features, 10, 30)) {
-    n_features_status = "yellow"
+    n_features_status = "medium"
   } else if (summarized_features > 30) {
-    n_features_status = "green"
+    n_features_status = "high"
   }
   list(
     summarized_features = summarized_features,
