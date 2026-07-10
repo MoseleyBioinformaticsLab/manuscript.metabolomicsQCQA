@@ -142,6 +142,24 @@ evaluate_qc = function(se_data, data_limits) {
   return(c(mwtab_list, data_list, analysis_list))
 }
 
+get_samples_removed = function(se_data, default = FALSE) {
+  if (default) {
+    return(list(removed_samples = "None"))
+  }
+  removed_samples = se_data$removed
+  if (sum(!is.na(removed_samples)) == 0) {
+    return(list(removed_samples = "None"))
+  }
+  removed_reasons = removed_samples[!is.na(removed_samples)]
+  split_reasons = split(removed_reasons, removed_reasons)
+  n_reasons = purrr::map(split_reasons, length)
+  reasons_string = purrr::imap(n_reasons, \(n_x, id_x) {
+    paste0(id_x, ": ", n_x)
+  }) |>
+    paste0(collapse = "; ")
+  return(list(removed_samples = reasons_string))
+}
+
 get_scores = function(se_data, default = FALSE) {
   if (default) {
     return(list(score_diff_summary = "NA", score_diff_status = "red"))
