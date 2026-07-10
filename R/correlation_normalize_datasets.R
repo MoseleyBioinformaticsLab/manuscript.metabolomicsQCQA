@@ -97,7 +97,9 @@ check_na_cor_single_value = function(se_data) {
   expect_na = length(problem_samples) * (n_samples - 1)
 
   if (!(nrow(verify_na) == expect_na)) {
-    warn_string = "Number of correlation NA doesn't seem quite right."
+    metadata(
+      se_data
+    )$qc$warnings = "Number of correlation NA doesn't seem quite right."
   }
 
   raw_data = assays(se_data)$raw[, problem_samples, drop = FALSE]
@@ -129,7 +131,7 @@ check_na_cor_single_value = function(se_data) {
       "correlation"
     )
     metadata(se_data)$qc$do_next = "stop"
-    metadata(se_data)$qc$why = "NA correlations"
+    metadata(se_data)$qc$why = "too few samples due to NA correlations"
   } else {
     metadata(se_data)$qc = add_step(
       metadata(se_data)$qc,
