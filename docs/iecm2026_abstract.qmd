@@ -63,7 +63,7 @@ The MWTAB JSON file format was used as it made parsing the files easier to imple
 
 For each analysis, we attempted to:
 
-* convert it to a summarized experiment object holding abundances and sample metadata;
+* convert it to a summarized experiment R object holding metabolite abundances and sample metadata;
 * detect if any quality-control samples are included in the sample list;
 * evaluate if the data were already log-transformed and needed to be exponentiated;
 * count the number of metabolite features and useable samples in each group of subject-sample-factors (SSF);

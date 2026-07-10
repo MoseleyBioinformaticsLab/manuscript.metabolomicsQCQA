@@ -1,8 +1,9 @@
 sets_create_qcqa_reports = function(
   pca_sets,
+  sets_qc_evaluation,
   save_loc = "qcqa_reports"
 ) {
-  # pca_sets = tar_read(se_pca_g01); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE
+  # pca_sets = tar_read(se_pca_g01); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_evaluation)
 
   sets_tmp_files = purrr::map(names(pca_sets), \(in_id) {
     paste0(tempfile(paste0(in_id, "_")), c(".rds", ".qmd"))
@@ -13,6 +14,7 @@ sets_create_qcqa_reports = function(
     sets_tmp_files,
     create_report_from_templates,
     save_loc,
+    sets_qc_evaluation,
     quiet = TRUE
   )
   out_reports
@@ -21,11 +23,19 @@ create_report_from_templates = function(
   se_data,
   in_tmp_files,
   save_loc = "qcqa_reports",
+  sets_qc_evaluation,
   quiet = TRUE
 ) {
-  # se_data = pca_sets[[1]]; in_tmp_files = sets_tmp_files[[1]]; quiet = FALSE; tar_source("R")
+  # se_data = pca_sets[[1]]; in_tmp_files = sets_tmp_files[[1]]; quiet = FALSE; tar_source("R");
   analysis_id = get_specific_metadata(se_data, "qc")$id
   # message(analysis_id)
+  summary_info = sets_qc_evaluation[
+    sets_qc_evaluation$internal_id %in% analysis_id,
+    ,
+    drop = FALSE
+  ]
+  metadata(se_data)$summary = summary_info
+  se_data = add_scores_metadata(se_data)
   mwtab_info = get_specific_metadata(se_data, "mwtab")
   report_text = suppressWarnings(readLines("resources/has_mwtab.qmd"))
   title_text = glue::glue("title: QC/QA Report for MW {analysis_id}")
@@ -383,4 +393,48 @@ bind_analysis_related_tables = function(mwtab_data) {
     analysis_data = dplyr::bind_rows(analysis_data, mwtab_data$CHROMATOGRAPHY)
   }
   analysis_data
+}
+
+add_scores_metadata = function(se_data) {
+  report_list = check_qc_outputs(se_data)
+  if (is.null(report_list$pca)) {
+    return(se_data)
+  }
+  pca_data = metadata(se_data)$pca_groups
+  pca_index = report_list$pca[length(report_list$pca)]
+  order_data = pca_data[[pca_index]]$order$diff_median_ici
+
+  if (is.null(order_data)) {
+    return(se_data)
+  }
+
+  index_tibble = tibble::tibble(sample_id = se_data$sample_id)
+  order_added = dplyr::left_join(
+    index_tibble,
+    order_data[, c("sample_id", "within_icikt", "between_icikt", "w_b_better")],
+    by = "sample_id"
+  )
+  colData(se_data) = cbind(colData(se_data), order_added[, -1, drop = FALSE])
+  return(se_data)
+}
+
+
+transform_summary_to_useful_table = function(summary_info) {
+  summary_text = purrr::imap(summary_info, \(x, id) {
+    if (
+      inherits(x, "numeric") &&
+        (id %in% c("left_censorship_test", "pca_anova_pvalue"))
+    ) {
+      format(x, digits = 3, scientific = TRUE)
+    } else if (inherits(x, "numeric")) {
+      format(x, digits = 3)
+    } else {
+      x
+    }
+  })
+  out_table = tibble::tibble(
+    Descriptor = names(summary_text),
+    Value = unlist(summary_text)
+  )
+  return(out_table)
 }

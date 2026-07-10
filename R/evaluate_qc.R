@@ -797,7 +797,7 @@ derive_data_limits = function(
   )
 }
 
-create_review_list = function(sets_qc_evaluation) {
+create_review_list = function(sets_qc_evaluation, mwtab_datasets) {
   # tar_load(sets_qc_evaluation)
   interesting_failures = list(failed_steps = c("create_se", "correlation"))
 
@@ -824,4 +824,17 @@ create_review_list = function(sets_qc_evaluation) {
       failed_why
     ) |>
     dplyr::arrange(failed_steps, failed_why)
+  mwtab_datasets$json = fs::path_file(mwtab_datasets$file)
+  out_qc = dplyr::left_join(
+    out_qc,
+    mwtab_datasets[, c("id", "json")],
+    by = c("internal_id" = "id")
+  )
+  write.table(
+    out_qc,
+    file = "outputs/weird_issues_2026-07-09.txt",
+    sep = "\t",
+    row.names = FALSE,
+    col.names = TRUE
+  )
 }

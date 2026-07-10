@@ -76,6 +76,70 @@ count_missingness_testleftcensored = function(raw_matrix, ssf_wide) {
   out_res
 }
 
+check_na_cor_single_value = function(se_data) {
+  se_cor = metadata(se_data)$icikt
+  se_cor_df = se_cor$cor
+  if (!any(is.na(se_cor_df$raw))) {
+    return(se_data)
+  }
+
+  cor_matrix = ICIKendallTau::long_df_2_cor_matrix(se_cor_df)
+  na_cor = se_cor_df |>
+    dplyr::filter(is.na(cor))
+  all_na_cor = MatrixGenerics::colSums(is.na(cor_matrix))
+  n_samples = ncol(cor_matrix)
+  problem_samples = which(all_na_cor >= (n_samples - 1)) |> names()
+
+  verify_na = se_cor_df |>
+    dplyr::filter((s1 %in% problem_samples) | (s2 %in% problem_samples)) |>
+    dplyr::filter(!(s1 == s2))
+
+  expect_na = length(problem_samples) * (n_samples - 1)
+
+  if (!(nrow(verify_na) == expect_na)) {
+    warn_string = "Number of correlation NA doesn't seem quite right."
+  }
+
+  raw_data = assays(se_data)$raw[, problem_samples, drop = FALSE]
+  n_unique = apply(raw_data, 2, \(x) {
+    tmp_x = x[!is.na(x)]
+    length(unique(tmp_x))
+  })
+  removal_message = purrr::map(n_unique, \(n_values) {
+    if (n_values == 1) {
+      "NA ICI-Kt correlations, 1 unique value in sample."
+    } else {
+      "NA ICI-Kt correlations, multiple values in sample."
+    }
+  }) |>
+    purrr::list_c()
+  names(removal_message) = names(n_unique)
+
+  removed_vector = se_data$removed
+  names(removed_vector) = se_data$sample_id
+  removed_vector[names(removal_message)] = removal_message
+  se_data$removed = removed_vector
+
+  n_keep = sum(is.na(se_data$removed))
+
+  if (n_keep < 3) {
+    metadata(se_data)$qc = add_step(
+      metadata(se_data)$qc,
+      "failed",
+      "correlation"
+    )
+    metadata(se_data)$qc$do_next = "stop"
+    metadata(se_data)$qc$why = "NA correlations"
+  } else {
+    metadata(se_data)$qc = add_step(
+      metadata(se_data)$qc,
+      "succeeded",
+      "correlation"
+    )
+  }
+  return(se_data)
+}
+
 do_correlation = function(se_data) {
   if (metadata(se_data) |> check_isstop()) {
     return(se_data)
@@ -109,24 +173,12 @@ do_correlation = function(se_data) {
   plan(multicore, workers = n_cores)
 
   metadata(se_data)$icikt = se_ici
-  # if we encounter any NA values in the correlation,
-  # we make sure we don't try PCA.
-  if (any(is.na(se_ici$cor$raw))) {
-    metadata(se_data)$qc = add_step(
-      metadata(se_data)$qc,
-      "failed",
-      "correlation"
-    )
-    metadata(se_data)$qc$do_next = "stop"
-    metadata(se_data)$qc$why = "NA correlations"
-  } else {
-    metadata(se_data)$qc = add_step(
-      metadata(se_data)$qc,
-      "succeeded",
-      "correlation"
-    )
-  }
 
+  # here we check for NA correlations, why they may have happened, and
+  # decide if we are continuing or stopping due to having < 3 samples
+  # that can still be used, instead of just stopping due to blanket
+  # NA correlation.
+  se_data = check_na_cor_single_value(se_data)
   se_data
 }
 

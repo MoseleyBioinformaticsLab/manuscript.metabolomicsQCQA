@@ -74,6 +74,20 @@ tar_source(c("packages.R", "R"))
 report_list = check_qc_outputs(se_data)
 ```
 
+## Overall QC/QA Summary
+
+::: {.callout-tip title = "Summary Table (click me to see the summary)" collapse = "true"}
+
+
+```{r}
+#| label: tbl-qc-qa-summary
+#| tbl-cap: Overall results summary table.
+summary_table = transform_summary_to_useful_table(metadata(se_data)$summary)
+gt::gt(summary_table)
+```
+
+:::
+
 ## Metabolomics Workbench Information
 
 ```{r}
