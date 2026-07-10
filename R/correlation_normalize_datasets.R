@@ -3,6 +3,7 @@ sets_calculate_correlations_pca = function(sets_se) {
   # sets_se = tar_read(se_dynamic_range_g02); tar_source("R"); sets_se = sets_se[1:60];
   # sets_se = tar_read(se_dynamic_range_g09); tar_source("R");
   # message("Running correlations ...")
+  # sets_se = tar_read(se_dynamic_range_g20); tar_source("R")
   p_cor = progressr::progressor(length(sets_se))
   n_set = seq_along(sets_se)
   cor_sets = purrr::map2(
@@ -94,6 +95,10 @@ check_na_cor_single_value = function(se_data) {
     dplyr::filter((s1 %in% problem_samples) | (s2 %in% problem_samples)) |>
     dplyr::filter(!(s1 == s2))
 
+  se_cor_df = se_cor_df |>
+    dplyr::filter(!((s1 %in% problem_samples) | (s2 %in% problem_samples)))
+  metadata(se_data)$icikt$cor = se_cor_df
+
   expect_na = length(problem_samples) * (n_samples - 1)
 
   if (!(nrow(verify_na) == expect_na)) {
@@ -131,7 +136,7 @@ check_na_cor_single_value = function(se_data) {
       "correlation"
     )
     metadata(se_data)$qc$do_next = "stop"
-    metadata(se_data)$qc$why = "too few samples due to NA correlations"
+    metadata(se_data)$qc$why = "too few samples due to NA correlationsq"
   } else {
     metadata(se_data)$qc = add_step(
       metadata(se_data)$qc,
