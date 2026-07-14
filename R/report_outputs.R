@@ -438,3 +438,15 @@ transform_summary_to_useful_table = function(summary_info) {
   )
   return(out_table)
 }
+
+gt_sample_metadata = function(sample_metadata) {
+  out_gt = sample_metadata |>
+    gt::gt()
+  out_gt = out_gt |>
+    gt::fmt_engineering(c(value_min, value_max, dynamic_range), decimals = 2) |>
+    gt::fmt_number(
+      c(median_ici_correlation, score, within_icikt, between_icikt),
+      n_sigfig = 2
+    )
+  out_gt
+}

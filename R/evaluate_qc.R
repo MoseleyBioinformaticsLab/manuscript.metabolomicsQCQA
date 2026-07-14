@@ -858,3 +858,70 @@ create_review_list = function(sets_qc_evaluation, mwtab_datasets) {
     col.names = TRUE
   )
 }
+
+summarize_qc_results_table = function(sets_qc_evaluation, group_none = FALSE) {
+  n_qc = nrow(sets_qc_evaluation)
+  qc_summary = sets_qc_evaluation |>
+    dplyr::select(completed_steps, failed_steps, failed_why) |>
+    dplyr::summarize(
+      n = dplyr::n(),
+      perc = n / n_qc,
+      perc_display = paste0(format(perc * 100, digits = 2), "%"),
+      .by = c(completed_steps, failed_steps, failed_why)
+    ) |>
+    dplyr::arrange(completed_steps, failed_steps, failed_why)
+
+  qc_none = sets_qc_evaluation |>
+    dplyr::filter(failed_steps %in% "create_se") |>
+    dplyr::select(completed_steps, failed_steps) |>
+    dplyr::summarise(
+      n = dplyr::n(),
+      perc = n / n_qc,
+      perc_display = paste0(format(perc * 100, digits = 2), "%"),
+      .by = c(completed_steps)
+    )
+
+  dplyr::bind_rows(qc_summary, qc_none)
+}
+
+find_green_analyses = function(sets_qc_evaluation) {
+  status_cols = grep("status$", names(sets_qc_evaluation), value = TRUE)
+  status_cols = grep(
+    "^summarized|^has_qc",
+    status_cols,
+    invert = TRUE,
+    value = TRUE
+  )
+
+  green_status = yellow_status = rep(TRUE, nrow(sets_qc_evaluation))
+
+  for (istatus in status_cols) {
+    green_status = green_status &
+      (sets_qc_evaluation[[istatus]] %in% c("green"))
+    yellow_status = yellow_status &
+      (sets_qc_evaluation[[istatus]] %in% c("yellow", "green"))
+  }
+  overall_status = rep("red", nrow(sets_qc_evaluation))
+  overall_status[yellow_status] = "yellow"
+  overall_status[green_status] = "green"
+  sets_qc_evaluation$overall_status = overall_status
+  sets_qc_evaluation
+}
+
+summarize_status = function(overall_status) {
+  n_qc = nrow(overall_status)
+  color_summary = overall_status |>
+    dplyr::select(internal_id, overall_status) |>
+    dplyr::summarize(
+      n = dplyr::n(),
+      perc = n / n_qc,
+      perc_display = paste0(format(perc * 100, digits = 2), "%"),
+      .by = c(overall_status)
+    ) |>
+    dplyr::arrange(overall_status)
+}
+
+format_in_sentence = function(n_tibble) {
+  n_tibble |>
+    glue::glue_data("{n} ({perc_display})")
+}
