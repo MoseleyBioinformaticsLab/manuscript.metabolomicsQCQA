@@ -35,7 +35,8 @@ targets::tar_source(c("./packages.R", "R"))
 tar_load(c(
   sets_percent_missing_result,
   sets_median_correlation_result,
-  sets_rsd_result
+  sets_rsd_result,
+  sets_pc_number_result
 ))
 ```
 
@@ -177,4 +178,15 @@ rsd_cutoff_plot =
     color = "red"
   )
 rsd_cutoff_plot
+```
+
+## PC That Captures 90% of Cumulative Variance
+
+```{r}
+#| label: fig-pca-all
+#| fig-cap: PC number that represents cumulative 90% of variance, as a fraction of all the PCs calculated.
+
+sets_pc_number_result |>
+  ggplot(aes(x = fraction_90)) +
+  geom_histogram(bins = 100)
 ```
