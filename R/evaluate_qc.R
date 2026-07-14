@@ -282,7 +282,7 @@ get_n_samples_ssf = function(se_data, default = FALSE) {
     all(n_has_5) ~ "green"
   )
 
-  n_ssf_status = dplyr::case_when(
+  ssf_metadata_status = dplyr::case_when(
     nrow(out_n) >= 20 ~ "red",
     dplyr::between(nrow(out_n), 10, 20) ~ "yellow",
     nrow(out_n) == 1 ~ "yellow",
@@ -293,7 +293,7 @@ get_n_samples_ssf = function(se_data, default = FALSE) {
     n_samples_ssf = paste0(out_n$`N-Samples`, collapse = ":"),
     n_ssf_n = nrow(out_n),
     n_sample_status = n_sample_status,
-    n_ssf_status = n_ssf_status
+    ssf_metadata_status = ssf_metadata_status
   )
   out_list
 }
