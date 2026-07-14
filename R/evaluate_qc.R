@@ -197,15 +197,15 @@ get_scores = function(se_data, default = FALSE) {
       ),
       ici_frac = `median-ici` / group_size,
       ici_status = dplyr::case_when(
-        (group_size <= 5) & (rle > 1) ~ "red",
-        (group_size <= 5) & (rle > 0) ~ "yellow",
-        (group_size <= 5) & (rle == 0) ~ "green",
-        (group_size <= 10) & (rle > 3) ~ "red",
-        (group_size <= 10) & (rle > 2) ~ "yellow",
-        (group_size <= 10) & (rle <= 1) ~ "green",
+        (group_size <= 5) & (`median-ici` > 1) ~ "red",
+        (group_size <= 5) & (`median-ici` > 0) ~ "yellow",
+        (group_size <= 5) & (`median-ici` == 0) ~ "green",
+        (group_size <= 10) & (`median-ici` > 3) ~ "red",
+        (group_size <= 10) & (`median-ici` > 2) ~ "yellow",
+        (group_size <= 10) & (`median-ici` <= 1) ~ "green",
         (group_size > 10) & (ici_frac > 0.3) ~ "red",
-        (group_size > 10) & (rle_frac > 0.1) ~ "yellow",
-        (group_size > 10) & (rle_frac < 0.1) ~ "green"
+        (group_size > 10) & (ici_frac > 0.1) ~ "yellow",
+        (group_size > 10) & (ici_frac < 0.1) ~ "green"
       ),
     )
 
@@ -805,7 +805,8 @@ get_pc_90 = function(se_data) {
 derive_data_limits = function(
   sets_percent_missing_result,
   sets_median_correlation_result,
-  sets_rsd_result
+  sets_rsd_result,
+  sets_pc_number_result
 ) {
   # tar_load(c(sets_percent_missing_result, sets_median_correlation_result, sets_rsd_result))
 

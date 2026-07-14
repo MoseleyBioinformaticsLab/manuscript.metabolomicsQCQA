@@ -158,7 +158,8 @@ data_limits_t = tar_target(
   derive_data_limits(
     sets_percent_missing_result,
     sets_median_correlation_result,
-    sets_rsd_result
+    sets_rsd_result,
+    sets_pc_number_result
   )
 )
 
