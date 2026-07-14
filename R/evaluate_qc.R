@@ -782,6 +782,26 @@ get_rsd = function(se_data) {
   out_rsd
 }
 
+sets_get_pc = function(se_pca) {
+  sets_pc = purrr::map(se_pca, get_pc_90) |>
+    purrr::list_rbind()
+  sets_pc
+}
+
+get_pc_90 = function(se_data) {
+  id = metadata(se_data)$qc$id
+
+  pca_groups = metadata(se_data)$pca_groups
+  if (is.null(pca_groups)) {
+    return(NULL)
+  }
+  use_pca = pca_groups$all$pca$variance
+  pc_90 = min(which(use_pca$cumulative > 0.9))
+  n_samples = ncol(se_data)
+  tibble::tibble(analysis_id = id, pc_90 = pc_90, n_samples = n_samples)
+}
+
+
 derive_data_limits = function(
   sets_percent_missing_result,
   sets_median_correlation_result,
