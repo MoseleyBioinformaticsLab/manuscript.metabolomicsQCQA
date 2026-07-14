@@ -1,9 +1,12 @@
 ---
-title: "Quality-control and quality-assessment of a metabolomics data repository."
-author: Robert M Flight, P Travis Thompson, Hunter NB Moseley
-date: last-modified
 format: docx
 ---
+
+## Quality-Control and Quality-Assessment of Metabolomics Workbench
+
+**Robert M Flight\*, P Travis Thompson, Hunter NB Moseley**
+
+University of Kentucky, Lexington, KY, USA
 
 ```{r}
 #| label: knitr-chunks
@@ -31,39 +34,37 @@ tar_load(sets_qc_evaluation)
 
 ```{r}
 #| label: summarize_steps
-summary_qc = sets_qc_evaluation |>
-  dplyr::select(completed_steps, failed_steps, failed_why) |>
-  dplyr::summarize(
-    n = dplyr::n(),
-    perc = n / 6103,
-    .by = c(completed_steps, failed_steps, failed_why)
-  ) |>
-  dplyr::arrange(completed_steps, failed_steps, failed_why)
+summary_qc = summarize_qc_results_table(sets_qc_evaluation)
+n_parsed = nrow(sets_qc_evaluation)
 
 n_completed = summary_qc |>
-  dplyr::filter(completed_steps %in% "se; dynamic_range; correlation; pca") |>
-  dplyr::pull(n)
-perc_completed = summary_qc |>
-  dplyr::filter(completed_steps %in% "se; dynamic_range; correlation; pca") |>
-  dplyr::pull(perc)
-perc_display = paste0(format(perc_completed * 100, digits = 2), "%")
+  dplyr::filter(completed_steps %in% "se; dynamic_range; correlation; pca")
+
+n_no_se = summary_qc |>
+  dplyr::filter(is.na(failed_why) & completed_steps %in% "none")
+
+n_few = summary_qc |>
+  dplyr::filter(failed_steps %in% "none", failed_why %in% "too few samples")
+
+overall_status = find_green_analyses(sets_qc_evaluation)
+n_overall = summarize_status(overall_status)
+n_green = n_overall |> dplyr::filter(overall_status %in% "green")
+n_yellow = n_overall |> dplyr::filter(overall_status %in% "yellow")
+n_red = n_overall |> dplyr::filter(overall_status %in% "red")
 ```
 
-## Introduction
+**Introduction:** Depositing processed and ideally raw -omics data in a data repository has become the norm in genomics, transcriptomics and metabolomics, and is frequently required by grant funders and journals.
+But the quality of the data deposited in public omics repositories is not uniform, limiting its reuse in large meta-analyses. 
+To our knowledge, no repository wide assessment of data quality has ever been carried out for metabolomics.
+Here we present a comprehensive evaluation of data quality across all publicly available datasets in Metabolomics Workbench.
 
-Depositing processed and ideally raw -omics data in a data repository has become the norm in genomics, transcriptomics and metabolomics, and is frequently required for publication and by grant funders.
-However, no repository wide assessment of data quality has ever been carried out.
-Our previous experience in working with the Metabolomics Workbench data, as well as in analyzing a variety of transcriptomics and metabolomics datasets, makes us well suited to attempt a repository wide assessment of the analyses available in the Metabolomics Workbench. 
-
-## Methods
-
-6105 analyses were downloaded from the Metabolomics Workbench in November of 2025, as well as any ancillary data files (available as STUDYID_ANALYSISID.txt if present).
-Minor repairs to downloaded files were made to make them more amenable to analysis.
+**Methods:** 6105 analyses were downloaded from the Metabolomics Workbench in November of 2025, as well as any available ancillary data files.
+Repairs to downloaded files were made to make them more amenable to analysis.
 The MWTAB JSON file format was used as it made parsing the files easier to implement.
 
 For each analysis, we attempted to:
 
-* convert it to a summarized experiment R object holding metabolite abundances and sample metadata;
+* convert it to a summarized experiment R object containing individual metabolite metadata, abundances, and sample metadata;
 * detect if any quality-control samples are included in the sample list;
 * evaluate if the data were already log-transformed and needed to be exponentiated;
 * count the number of metabolite features and useable samples in each group of subject-sample-factors (SSF);
@@ -71,12 +72,7 @@ For each analysis, we attempted to:
 * calculate the relative standard deviations (RSD) of metabolite features within each SSF group;
 * perform principal component analysis (PCA) and calculate an analysis of variance (ANOVA) of the sample principal component scores and SSF groups.
 
-For each of the results of each step, we also attempt to assign a color grade indicating **possible** quality-control and quality-assurance (QC/QA) concerns for a given analysis, providing a score of "red" (think twice before using), "yellow" (probably OK), and "green" (looks good).
+For the results of each step, we also attempt to assign a color-based data quality grade indicating **possible** quality-control and quality-assurance (QC/QA) concerns for a given analysis, providing a score of **red** (think twice before using), **yellow** (probably OK), and **green** (looks good on the metric measured).
 
-## Results
-
-Of the 6103 analyses that could be reasonable parsed, `{r} n_completed` (`{r} perc_display`) were able to go through all the steps to PCA.
-Of those xxx had a status of **green** across all the various QC/QA concerns evaluated.
-
-## Conclusions
-
+**Results:** Of the `{r} n_parsed` datasets that could be parsed, `{r} format_in_sentence(n_no_se)` could not be coerced into a summarized experiment object for various reasons; `{r} format_in_sentence(n_few)` had $\lt 3$ samples, and therefore could not undergo correlation, PCA, or RSD calculations; and `{r} format_in_sentence(n_completed)` were able to go through all steps to PCA.
+In those that made it through PCA, `{r} format_in_sentence(n_green)` had all **green** statuses; `{r} format_in_sentence(n_yellow)` had one or more **yellow** statuses; and `{r} format_in_sentence(n_red)` had one or more **red** statuses across the QC/QA evaluations.
