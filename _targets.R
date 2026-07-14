@@ -141,6 +141,12 @@ sets_rsd_t = tar_combine(
   command = dplyr::bind_rows(!!!.x)
 )
 
+sets_pc_number_t = tar_combine(
+  sets_pc_number_result,
+  sets_map[[12]],
+  command = dplyr::bind_rows(!!!.x)
+)
+
 sets_qc_evaluation_t = tar_combine(
   sets_qc_evaluation,
   sets_map[[10]],
@@ -210,6 +216,7 @@ list(
   sets_median_correlation_t,
   sets_qc_evaluation_t,
   sets_rsd_t,
+  sets_pc_number_t,
   data_limits_t,
   contains_negatives_report_t,
   negatives_testing_report_t,
