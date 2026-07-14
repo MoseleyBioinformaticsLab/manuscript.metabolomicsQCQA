@@ -373,8 +373,8 @@ check_rsd_values = function(se_data, rsd_limits, default = FALSE) {
     rsd = rsd_use,
     rsd_status = dplyr::case_when(
       rsd_use <= rsd_limits[1] ~ "green",
-      dplyr::between(rsd_use, rsd_limits[1], rsd_limits[2]) ~ "yellow",
-      rsd_use >= rsd_limits[2] ~ "red"
+      rsd_use < rsd_limits[1] && rsd_use <= rsd_limits[2] ~ "yellow",
+      rsd_use > rsd_limits[2] ~ "red"
     )
   )
 }
@@ -394,12 +394,9 @@ check_median_correlations = function(
   cor_info = se_data$median_ici_correlation
   max_median_correlation = max(cor_info, na.rm = TRUE)
   max_median_correlation_status = dplyr::case_when(
-    max_median_correlation > correlation_limits[1] ~ "green",
-    dplyr::between(
-      max_median_correlation,
-      correlation_limits[2],
-      correlation_limits[1]
-    ) ~ "yellow",
+    max_median_correlation >= correlation_limits[1] ~ "green",
+    max_median_correlation < correlation_limits[1] &&
+      max_median_correlation >= correlation_limits[2] ~ "yellow",
     max_median_correlation < correlation_limits[2] ~ "red"
   )
   list(
@@ -432,8 +429,8 @@ check_percent_missing = function(se_data, percent_limits, default = FALSE) {
   percent_missing_status = dplyr::case_when(
     percent_missing <= percent_limits[1] ~ "green",
     percent_limits[1] < percent_missing &&
-      percent_missing < percent_limits[2] ~ "yellow",
-    percent_missing >= percent_limits[2] ~ "red"
+      percent_missing <= percent_limits[2] ~ "yellow",
+    percent_missing > percent_limits[2] ~ "red"
   )
 
   percent_list = list(
@@ -547,21 +544,17 @@ get_se_data_counts_status = function(se_data, default = FALSE) {
     summarized_samples = dyn_range_filtering$n_samples[2]
   }
 
-  if (summarized_samples < 3) {
-    n_samples_status = "low"
-  } else if (dplyr::between(summarized_samples, 3, 10)) {
-    n_samples_status = "medium"
-  } else if (summarized_samples > 10) {
-    n_samples_status = "high"
-  }
+  n_samples_status = dplyr::case_when(
+    summarized_samples <= 3 ~ "low",
+    dplyr::between(summarized_samples, 4, 9) ~ "medium",
+    summarized_samples >= 10 ~ "high"
+  )
 
-  if (summarized_features < 10) {
-    n_features_status = "low"
-  } else if (dplyr::between(summarized_features, 10, 30)) {
-    n_features_status = "medium"
-  } else if (summarized_features > 30) {
-    n_features_status = "high"
-  }
+  n_features_status = dplyr::case_when(
+    summarized_features <= 9 ~ "low",
+    dplyr::between(summarized_features, 10, 29) ~ "medium",
+    summarized_features >= 30 ~ "high"
+  )
   list(
     summarized_features = summarized_features,
     summarized_features_status = n_features_status,
@@ -792,13 +785,20 @@ get_pc_90 = function(se_data) {
   id = metadata(se_data)$qc$id
 
   pca_groups = metadata(se_data)$pca_groups
+
   if (is.null(pca_groups)) {
     return(NULL)
   }
-  use_pca = pca_groups$all$pca$variance
+  last_id = check_qc_outputs(se_data)
+  pc_index = last_id$pca[length(last_id$pca)]
+  use_pca = pca_groups[[pc_index]]$pca$variance
   pc_90 = min(which(use_pca$cumulative > 0.9))
-  n_samples = ncol(se_data)
-  tibble::tibble(analysis_id = id, pc_90 = pc_90, n_samples = n_samples)
+  tibble::tibble(
+    analysis_id = id,
+    pc_90 = pc_90,
+    n_pc = nrow(use_pca),
+    fraction_90 = pc_90 / nrow(use_pca)
+  )
 }
 
 
