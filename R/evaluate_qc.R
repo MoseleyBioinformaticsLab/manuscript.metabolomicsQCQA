@@ -838,7 +838,8 @@ derive_data_limits = function(
   pc_summary = use_pc_number |>
     dplyr::summarise(median_value = 1, sd = sd(pc_log))
 
-  pc_limits = 10^(pc_summary$median_value + (c(2, 4) * pc_summary$sd))
+  pc_limits = 10^(pc_summary$median_value + (c(2, 4) * pc_summary$sd)) |>
+    floor()
   list(
     missing = p_missing_limits,
     median_correlation = med_cor_limits,
