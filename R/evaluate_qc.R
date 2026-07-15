@@ -127,7 +127,7 @@ evaluate_qc = function(se_data, data_limits) {
     use_defaults
   )
 
-  pca_list = check_pca(se_data, use_defaults)
+  pca_list = check_pca(se_data, data_limits$pca, use_defaults)
   score_list = get_scores(se_data, use_defaults)
 
   data_list = c(
@@ -298,7 +298,8 @@ get_n_samples_ssf = function(se_data, default = FALSE) {
   out_list
 }
 
-check_pca = function(se_data, default = FALSE) {
+check_pca = function(se_data, pca_limits, default = FALSE) {
+  # pca_limits = data_limits$pca
   if (default) {
     return(list(
       pca_pc_index_90 = NA,
@@ -318,25 +319,29 @@ check_pca = function(se_data, default = FALSE) {
 
   pca_pc_index_90 = which(pca_variance$cumulative > 0.9) |> min()
   pca_pc_index_90_status = dplyr::case_when(
-    pca_pc_index_90 < 10 ~ "green",
-    dplyr::between(pca_pc_index_90, 10, 30) ~ "yellow",
-    TRUE ~ "red"
+    pca_pc_index_90 <= pca_limits[1] ~ "green",
+    pca_pc_index_90 > pca_limits[1] &&
+      pca_pc_index_90 <= pca_limits[2] ~ "yellow",
+    pca_pc_index_90 > pca_limits[2] ~ "red"
   )
   pca_anova = pca_data_use$pca$anova |>
-    dplyr::mutate(p.adjust = p.adjust(p.value, method = "bonferroni")) |>
-    dplyr::filter(
-      PC %in% c("PC1", "PC2", "PC3", "PC4", "PC5")
-    )
+    dplyr::mutate(p.adjust = p.adjust(p.value, method = "bonferroni"))
+
   pca_anova_pvalue = pca_anova |>
     dplyr::arrange(p.adjust) |>
     dplyr::slice_head(n = 1)
 
+  pca_anova_perc = pca_variance |>
+    dplyr::filter(pc %in% pca_anova_pvalue$PC) |>
+    dplyr::pull(percent)
   pca_anova_pvalue_status = dplyr::case_when(
     pca_anova_pvalue$p.adjust > 0.05 ~ "red",
     pca_anova_pvalue$p.adjust <= 0.05 &&
-      (pca_anova_pvalue$PC %in% c("PC4", "PC5")) ~ "yellow",
+      (pca_anova_perc >= 0.05) ~ "green",
     pca_anova_pvalue$p.adjust <= 0.05 &&
-      (pca_anova_pvalue$PC %in% c("PC1", "PC2", "PC3")) ~ "green",
+      (pca_anova_perc >= 0.01 && pca_anova_perc < 0.05) ~ "yellow",
+    pca_anova_pvalue$p.adjust <= 0.05 &&
+      (pca_anova_perc < 0.01) ~ "red",
   )
   return(list(
     pca_pc_index_90 = pca_pc_index_90,
