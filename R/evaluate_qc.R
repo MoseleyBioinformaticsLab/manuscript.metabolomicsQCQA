@@ -831,10 +831,19 @@ derive_data_limits = function(
     )
   rsd_limits = rsd_summary$median_value + (c(2, 4) * rsd_summary$sd)
 
+  use_pc_number = sets_pc_number_result |>
+    dplyr::mutate(pc_log = log10(pc_90)) |>
+    dplyr::filter(!is.infinite(pc_90), pc_log >= 1)
+
+  pc_summary = use_pc_number |>
+    dplyr::summarise(median_value = 1, sd = sd(pc_log))
+
+  pc_limits = 10^(pc_summary$median_value + (c(2, 4) * pc_summary$sd))
   list(
     missing = p_missing_limits,
     median_correlation = med_cor_limits,
-    rsd = rsd_limits
+    rsd = rsd_limits,
+    pca = pc_limits
   )
 }
 
