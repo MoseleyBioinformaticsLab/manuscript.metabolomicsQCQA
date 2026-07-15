@@ -282,7 +282,7 @@ get_n_samples_ssf = function(se_data, default = FALSE) {
 
   n_sample_status = dplyr::case_when(
     !all(n_has_3) ~ "red",
-    !all(n_has_5) && all(n_has_3) ~ "yellow",
+    !all(n_has_5) & all(n_has_3) ~ "yellow",
     all(n_has_5) ~ "green"
   )
 
@@ -324,7 +324,7 @@ check_pca = function(se_data, pca_limits, default = FALSE) {
   pca_pc_index_90 = which(pca_variance$cumulative > 0.9) |> min()
   pca_pc_index_90_status = dplyr::case_when(
     pca_pc_index_90 <= pca_limits[1] ~ "green",
-    pca_pc_index_90 > pca_limits[1] &&
+    pca_pc_index_90 > pca_limits[1] &
       pca_pc_index_90 <= pca_limits[2] ~ "yellow",
     pca_pc_index_90 > pca_limits[2] ~ "red"
   )
@@ -340,11 +340,11 @@ check_pca = function(se_data, pca_limits, default = FALSE) {
     dplyr::pull(percent)
   pca_anova_pvalue_status = dplyr::case_when(
     pca_anova_pvalue$p.adjust > 0.05 ~ "red",
-    pca_anova_pvalue$p.adjust <= 0.05 &&
+    pca_anova_pvalue$p.adjust <= 0.05 &
       (pca_anova_perc >= 0.05) ~ "green",
-    pca_anova_pvalue$p.adjust <= 0.05 &&
-      (pca_anova_perc >= 0.01 && pca_anova_perc < 0.05) ~ "yellow",
-    pca_anova_pvalue$p.adjust <= 0.05 &&
+    pca_anova_pvalue$p.adjust <= 0.05 &
+      (pca_anova_perc >= 0.01 & pca_anova_perc < 0.05) ~ "yellow",
+    pca_anova_pvalue$p.adjust <= 0.05 &
       (pca_anova_perc < 0.01) ~ "red",
   )
   return(list(
@@ -382,7 +382,7 @@ check_rsd_values = function(se_data, rsd_limits, default = FALSE) {
     rsd = rsd_use,
     rsd_status = dplyr::case_when(
       rsd_use <= rsd_limits[1] ~ "green",
-      rsd_use < rsd_limits[1] && rsd_use <= rsd_limits[2] ~ "yellow",
+      rsd_limits[1] < rsd_use & rsd_use <= rsd_limits[2] ~ "yellow",
       rsd_use > rsd_limits[2] ~ "red"
     )
   )
@@ -404,7 +404,7 @@ check_median_correlations = function(
   max_median_correlation = max(cor_info, na.rm = TRUE)
   max_median_correlation_status = dplyr::case_when(
     max_median_correlation >= correlation_limits[1] ~ "green",
-    max_median_correlation < correlation_limits[1] &&
+    max_median_correlation < correlation_limits[1] &
       max_median_correlation >= correlation_limits[2] ~ "yellow",
     max_median_correlation < correlation_limits[2] ~ "red"
   )
@@ -437,7 +437,7 @@ check_percent_missing = function(se_data, percent_limits, default = FALSE) {
   percent_missing = lc_info$perc_missing
   percent_missing_status = dplyr::case_when(
     percent_missing <= percent_limits[1] ~ "green",
-    percent_limits[1] < percent_missing &&
+    percent_limits[1] < percent_missing &
       percent_missing <= percent_limits[2] ~ "yellow",
     percent_missing > percent_limits[2] ~ "red"
   )
@@ -466,8 +466,8 @@ check_percent_missing = function(se_data, percent_limits, default = FALSE) {
   lc_test_list = list(
     left_censorship_test = lc_test$p.value,
     left_censorship_test_status = dplyr::case_when(
-      percent_missing > 10 && lc_test$p.value <= 0.05 ~ "green",
-      percent_missing > 10 && lc_test$p.value > 0.05 ~ "yellow",
+      percent_missing > 10 & lc_test$p.value <= 0.05 ~ "green",
+      percent_missing > 10 & lc_test$p.value > 0.05 ~ "yellow",
       TRUE ~ "green"
     )
   )
