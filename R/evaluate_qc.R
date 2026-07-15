@@ -254,7 +254,7 @@ get_n_samples_ssf = function(se_data, default = FALSE) {
       n_samples_ssf = "NA",
       n_ssf_n = NA,
       n_sample_status = "red",
-      n_ssf_status = "red"
+      ssf_metadata_status = "red"
     ))
   }
   factor_types = metadata(se_data)$factor_types
