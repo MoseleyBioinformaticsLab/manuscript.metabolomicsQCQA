@@ -182,11 +182,90 @@ rsd_cutoff_plot
 
 ## PC That Captures 90% of Cumulative Variance
 
+In @fig-pca-all, the log transformed PC-90 looks almost normal(ish).
+What would the cutoffs be if we used this log-distribution to calculate a mean and SD??
+
 ```{r}
 #| label: fig-pca-all
-#| fig-cap: PC number that represents cumulative 90% of variance, as a fraction of all the PCs calculated.
+#| fig-cap: PC number that represents cumulative 90% of variance, as a fraction of all the PCs calculated (left); as raw PC number (right), and log10(PC-N) (bottom). 
 
-sets_pc_number_result |>
+fraction_plot = sets_pc_number_result |>
   ggplot(aes(x = fraction_90)) +
-  geom_histogram(bins = 100)
+  geom_histogram(bins = 50)
+pc_plot = sets_pc_number_result |>
+  ggplot(aes(x = pc_90)) +
+  geom_histogram(bins = 50)
+pc_log_plot = sets_pc_number_result |>
+  ggplot(aes(x = log10(pc_90))) +
+  geom_histogram(bins = 50)
+(fraction_plot | pc_plot) / pc_log_plot
+```
+
+The only issue is, the mean, median and mode don't capture the central location that the eye does.
+So I'm going with **0.5**.
+
+```{r}
+#| label: fig-pca-cutoffs
+#| fig-cap: Distribution and cutoffs if using a mode of 0.5.
+sets_pc_number_result = sets_pc_number_result |>
+  dplyr::filter(!is.infinite(pc_90)) |>
+  dplyr::mutate(log_pc = log10(pc_90))
+pc_summary_rmf = sets_pc_number_result |>
+  dplyr::summarise(
+    log_mode = 0.5,
+    log_sd = sd(log_pc),
+    sd_2 = log_mode + 2 * log_sd,
+    sd_4 = log_mode + 4 * log_sd
+  ) |>
+  tidyr::pivot_longer(
+    tidyselect::everything(),
+    names_to = "measure",
+    values_to = "value"
+  )
+pc_log_plot +
+  geom_vline(xintercept = pc_summary_rmf$value[1], color = "blue") +
+  geom_vline(xintercept = pc_summary_rmf$value[c(3, 4)], color = "red")
+```
+
+The cutoffs in normal values would correspond to:
+
+```{r}
+#| label: tbl-pca-cutoffs
+#| fig-cap: Values if using mode of 0.5
+pc_summary_rmf |>
+  dplyr::mutate(value_raw = 10^value) |>
+  gt::gt() |>
+  gt::fmt_number(decimals = 2)
+```
+
+
+```{r}
+#| label: fig-pca-cutoffs-real
+#| fig-cap: Distribution and cutoffs if using the median as in all other datasets.
+pc_summary = sets_pc_number_result |>
+  dplyr::summarise(
+    log_median = median(log_pc),
+    log_sd = sd(log_pc),
+    sd_2 = log_median + 2 * log_sd,
+    sd_4 = log_median + 4 * log_sd
+  ) |>
+  tidyr::pivot_longer(
+    tidyselect::everything(),
+    names_to = "measure",
+    values_to = "value"
+  )
+pc_log_plot +
+  geom_vline(xintercept = pc_summary$value[1], color = "blue") +
+  geom_vline(xintercept = pc_summary$value[c(3, 4)], color = "red")
+```
+
+The cutoffs in normal values would correspond to:
+
+```{r}
+#| label: tbl-pca-cutoffs-real
+#| fig-cap: Values if using actual median.
+pc_summary |>
+  dplyr::mutate(value_raw = 10^value) |>
+  gt::gt() |>
+  gt::fmt_number(decimals = 2)
 ```

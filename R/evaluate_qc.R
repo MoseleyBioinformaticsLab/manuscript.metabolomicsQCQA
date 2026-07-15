@@ -946,3 +946,9 @@ format_in_sentence = function(n_tibble) {
   n_tibble |>
     glue::glue_data("{n} ({perc_display})")
 }
+
+calculate_mode = function(values) {
+  density_estimate = stats::density(values)
+  mode_value = density_estimate$x[which.max(density_estimate$y)]
+  mode_value
+}
