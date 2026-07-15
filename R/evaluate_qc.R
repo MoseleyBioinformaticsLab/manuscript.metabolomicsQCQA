@@ -443,8 +443,14 @@ check_percent_missing = function(se_data, percent_limits, default = FALSE) {
     percent_missing_status = percent_missing_status
   )
   lc_test = lc_info$lc_test$binomial_test
-  if (is.null(lc_test)) {
+  if (is.null(lc_test) && percent_missing > 0) {
     default = TRUE
+  } else {
+    lc_test_list = list(
+      left_censorship_test = NA,
+      left_censorship_test_status = "green"
+    )
+    return(c(percent_list, lc_test_list))
   }
   if (default) {
     lc_test_list = list(
