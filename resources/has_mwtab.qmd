@@ -160,6 +160,20 @@ mwtab_meta$SUBJECT |>
   gt::tab_options(column_labels.hidden = TRUE)
 ```
 
+### Collection
+
+```{r}
+#| label: tbl-mw-collection
+#| tbl-cap: Metabolomics workbench sample-prep and collection blocks.
+collection_table = dplyr::bind_rows(
+  mwtab_meta$SAMPLEPREP,
+  mwtab_meta$COLLECTION
+)
+collection_table |>
+  gt::gt() |>
+  gt::tab_options(column_labels.hidden = TRUE)
+```
+
 ### Sample Factors
 
 ```{r}

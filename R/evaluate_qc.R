@@ -220,11 +220,11 @@ get_scores = function(se_data, default = FALSE) {
     )
 
   ssf_status = dplyr::case_when(
-    ssf_summaries$ici_red > 0.5 ~ "red",
-    ssf_summaries$ici_yellow > 0.5 ~ "yellow",
-    ssf_summaries$ici_green > 0.75 & ssf_summaries$rle_yellow < 0.5 ~ "green",
-    ssf_summaries$ici_green > 0.75 & ssf_summaries$rle_green > 0.5 ~ "green",
-    ssf_summaries$ici_green > 0.75 & ssf_summaries$rle_red > 0.5 ~ "yellow",
+    ssf_summaries$ici_red >= 0.5 ~ "red",
+    ssf_summaries$ici_yellow >= 0.5 ~ "yellow",
+    ssf_summaries$ici_green >= 0.75 & ssf_summaries$rle_yellow <= 0.5 ~ "green",
+    ssf_summaries$ici_green >= 0.75 & ssf_summaries$rle_green >= 0.5 ~ "green",
+    ssf_summaries$ici_green >= 0.75 & ssf_summaries$rle_red >= 0.5 ~ "yellow",
   )
   list(
     score_diff_summary = paste0(
