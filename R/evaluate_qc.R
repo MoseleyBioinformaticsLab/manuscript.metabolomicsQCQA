@@ -83,7 +83,11 @@ evaluate_qc = function(se_data, data_limits) {
     use_defaults = TRUE
   }
 
-  if (!("se" %in% report_list$steps)) {
+  if (
+    !("se" %in% report_list$steps) ||
+      (nrow(se_data) == 0) ||
+      (ncol(se_data) == 0)
+  ) {
     use_defaults = TRUE
   }
 
@@ -94,7 +98,7 @@ evaluate_qc = function(se_data, data_limits) {
 
   qc_status_list = check_qc_samples(se_data, use_defaults)
 
-  if (!is.null(metadata(se_data)$left_censorship)) {
+  if (!is.null(metadata(se_data)$left_censorship[["lc_test"]])) {
     percent_missing_list = check_percent_missing(
       se_data,
       data_limits$missing,
@@ -443,7 +447,7 @@ check_percent_missing = function(se_data, percent_limits, default = FALSE) {
     percent_missing_status = percent_missing_status
   )
   lc_test = lc_info$lc_test$binomial_test
-  if (is.null(lc_test) && percent_missing > 0) {
+  if (is.null(lc_test) && (!is.na(percent_missing) && (percent_missing > 0))) {
     default = TRUE
   } else {
     lc_test_list = list(
