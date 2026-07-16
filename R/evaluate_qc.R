@@ -980,11 +980,11 @@ find_green_analyses = function(sets_qc_evaluation) {
 
   for (istatus in status_cols) {
     green_status = green_status &
-      (sets_qc_evaluation[[istatus]] %in% c("green"))
+      (not_gray[[istatus]] %in% c("green"))
     yellow_status = yellow_status &
-      (sets_qc_evaluation[[istatus]] %in% c("yellow", "green"))
+      (not_gray[[istatus]] %in% c("yellow", "green"))
   }
-  overall_status = rep("red", nrow(sets_qc_evaluation))
+  overall_status = rep("red", nrow(not_gray))
   overall_status[yellow_status] = "yellow"
   overall_status[green_status] = "green"
   not_gray$overall_status = overall_status
