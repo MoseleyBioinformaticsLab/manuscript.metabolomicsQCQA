@@ -101,6 +101,8 @@ readrds_convert_to_se = function(rds_file, md5_sum, mwtab_raw_files) {
   # rds_file = "parsed_rds/AN000627.rds"; tar_load(mwtab_raw_files); tar_source("R")
   # rds_file = "parsed_rds/AN001180.rds"; tar_load(mwtab_raw_files); tar_source("R")
   # rds_file = "parsed_rds/AN002196.rds"; tar_load(mwtab_raw_files); tar_source("R")
+  # rds_file = "parsed_rds/AN002298.rds"; tar_load(mwtab_raw_files); tar_source("R")
+  # rds_file = "parsed_rds/AN001558.rds"; tar_source("R")
   processed_data = readRDS(rds_file)
   check_md5(processed_data, md5_sum)
 
@@ -373,9 +375,9 @@ grab_factor_types = function(
 #'   other after janitor::make_clean_names, for example
 #'   "Raw file name" and "RAW_FILE_NAME", and makes them
 #'   not duplicated.
-clean_ssf_factors = function(ssf) {
+clean_ssf_factors = function(ssf_data) {
   sample_factor = tibble::tibble(factor = "sample_id", type = "weird")
-  distinct_ssf_factor = dplyr::bind_rows(sample_factor, ssf) |>
+  distinct_ssf_factor = dplyr::bind_rows(sample_factor, ssf_data) |>
     dplyr::select(factor, type) |>
     dplyr::distinct() |>
     dplyr::arrange(dplyr::desc(type)) |>
@@ -389,12 +391,42 @@ clean_ssf_factors = function(ssf) {
     distinct_ssf_factor$clean_numbered[loc_subject] = "subject_1"
   }
 
-  for (iid in seq_len(nrow(distinct_ssf_factor))) {
-    match_locs = ssf$factor %in% distinct_ssf_factor$factor[iid]
-    ssf$factor[match_locs] = distinct_ssf_factor$clean_numbered[iid]
+  for (irow in seq_len(nrow(distinct_ssf_factor))) {
+    check_clean = distinct_ssf_factor$clean_numbered[irow]
+    check_rows = rep(FALSE, nrow(distinct_ssf_factor))
+    check_rows[
+      (distinct_ssf_factor$type %in% distinct_ssf_factor$type[irow])
+    ] = TRUE
+    check_rows[irow] = FALSE
+    if (any(check_clean %in% distinct_ssf_factor$factor[check_rows])) {
+      split_under = stringr::str_split(check_clean, "_")[[1]]
+      replace_val = "asd"
+      split_rep = split_under
+      split_rep[length(split_rep)] = replace_val
+
+      new_clean = paste0(split_rep, collapse = "_")
+
+      if (!any(new_clean %in% distinct_ssf_factor$factor[check_rows])) {
+        distinct_ssf_factor$clean_numbered[irow] = new_clean
+      } else {
+        split_rep[length(split_rep)] = "z100"
+        new_clean = paste0(split_rep, collapse = "_")
+        if (!any(new_clean %in% distinct_ssf_factors$factor[check_rows])) {
+          distinct_ssf_factors$clean_numbered[irow] = new_clean
+        } else {
+          warning("Coulnd't create a clean_factor that doesn't already exist.")
+        }
+      }
+    }
   }
 
-  ssf
+  for (iid in seq_len(nrow(distinct_ssf_factor))) {
+    match_locs = (ssf_data$factor %in% distinct_ssf_factor$factor[iid]) &
+      (ssf_data$type %in% distinct_ssf_factor$type[iid])
+    ssf_data$factor[match_locs] = distinct_ssf_factor$clean_numbered[iid]
+  }
+
+  ssf_data
 }
 
 intersect_samples = function(abundance_data, sample_ids) {
