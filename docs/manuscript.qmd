@@ -62,3 +62,122 @@ One common element of normally distributed data is that the mean and median of t
 
 We calculated the mean-median-ratio (MMR) across all 5904 datasets that created a summarized experiment object, as well as the number of negative values, the maximum observed abundance, and the dynamic range (maximum / minimum values).
 The dynamic range calculated in the presence of negative values involves first adding the absolute value of the minimum value, + 1, to transform all values to be positive, and subsequently calcuating the ratio of the maximum and minimum of the transformed values.
+
+### Quality Control Cutoffs
+
+#### Metadata Issues
+
+Number of SSF Groups (can indicate missing sample metadata): 
+  
+  * N SSF > 20 ~ red;
+  * 10 < N SSF < 20 ~ yellow;
+  * N SSF = 1 ~ yellow;
+  * N SSF < 10 ~ green
+
+
+#### Number of Features and Samples
+
+n-features:
+
+  * n <= 9 ~ low; 
+  * 10 <= n <= 29 ~ medium; 
+  * n >= 30 ~ high
+
+n-samples: 
+
+  * n <= 3 ~ low; 
+  * 3 < n < 10 ~ medium; 
+  * n >= 10 ~ high
+
+#### Number of Samples in Subject Sample Factors and Number of Subject Sample Factor Groups
+
+Number of samples within each SSF:
+  
+  * all SSF have <= 2 samples ~ red;
+  * 3 <= all SSF <= 4 ~ yellow;
+  * all SSF >= 5 samples ~ green;
+ 
+
+#### Quality Control Samples
+
+* Has none ~ yellow;
+* Has some ~ green
+
+
+#### Percent Missing and Left-Censorship
+
+* percent missing <= 2 x SD ~ green;
+* 2 x SD < percent missing < 4 x SD limit ~ yellow;
+* percent missing > 4 x SD limit ~ red
+* percent missing > 10% & lc test p-value <= 0.05 ~ green (can we replace % missing with X number of features missing);
+* percent missing > 10% & lc test p-value > 0.05 ~ yellow;
+
+#### Maximum Observed Median RSD
+
+* RSD <= median + 2 x SD ~ green;
+* median + 2 x SD < RSD < median + 4 x SD ~ yellow;
+* RSD > median + 4 x SD ~ red
+
+#### Median Correlations
+
+* Max Med ICI-Kt > median(Max med) - 2 SD ~ green;
+* median(Max med) - 4 SD < Max Med ICI-Kt < median(Max med) - 2 SD ~ yellow;
+* Max Med ICI-Kt < median(Max med) - 4 SD ~ red 
+
+#### PCA Scores
+
+PC that accounts for 90% of variance, we took all the values from the analyses present, log10-transformed the values, and considered only those with a log10(PC-90) >= 1.
+This results in a one sided distribution that is roughly log-normal, that we can calculate the standard deviation of.
+We assume a median of 1, and then calculate the standard deviation.
+To get actual cutoffs, we convert the values to raw space and floor them to the nearest integer.
+
+  * PC-90 <= median + 2 SD ~ green ; 
+  * median + 2 SD < PC-90 <= median + 4 SD ~ yellow; 
+  * PC-90 > median + 4 SD ~ red.
+
+ANOVA p-adjusted: 
+
+  * p-adjust <= 0.05 && PC-perc >= 5% ~ green; 
+  * p-adjust <= 0.05 && 1% <= PC-perc < 5% ~ yellow;
+  * p-adjust <= 0.05 && PC-perc < 1% ~ red;
+  * p-adjusted > 0.05 ~ red.
+
+#### Median Within vs Inter SSF ICI-Kt
+
+SSF group size <= 5:
+
+  * Inter better == 0 ~ green;
+  * 0 < Inter better <= 1 ~ yellow;
+  * Inter better > 1 ~ red;
+
+SSF group size <= 10:
+
+  * Inter better <= 1 ~ green;
+  * 1 < Inter better <= 3 ~ yellow;
+  * Inter better > 3 ~ red;
+
+SSF group size > 10:
+
+  * Inter better fraction <= 0.1 ~ green;
+  * 0.1 < Inter better fraction <= 0.3 ~ yellow;
+  * Inter better fraction > 0.3 ~ red;
+
+  #### Number of Sample Group Sizes by Hiearchical Clustering Compared to Actual
+
+  SSF group size <= 5:
+
+  * size difference == 0 ~ green;
+  * 0 < size difference < 2 ~ yellow;
+  * size difference > 2 ~ red;
+
+SSF group size <= 10:
+
+  * size difference <= 1 ~ green;
+  * 1 < size difference <= 4 ~ yellow;
+  * size difference > 4 ~ red;
+
+SSF group size > 10:
+
+  * size fraction <= 0.25 ~ green;
+  * size fraction > 0.25 ~ yellow;
+  * size fraction > 0.5 ~ red;
