@@ -59,10 +59,10 @@ But the quality of the data deposited in public omics repositories is not unifor
 To our knowledge, no repository wide assessment of data quality has ever been carried out for metabolomics.
 Here we present a comprehensive evaluation of data quality across all publicly available datasets in Metabolomics Workbench.
 
-**Methods:** 6105 analyses were downloaded from the Metabolomics Workbench in November of 2025, as well as any available ancillary data files.
-Repairs to downloaded files were made to make them more amenable to analysis, and converted to the MWTAB JSON file format.
+**Methods:** 6105 datasets (analysis files) were downloaded from the Metabolomics Workbench in November of 2025, as well as any available ancillary data files.
+Harmonizations and repairs were made to downloaded analysis files and then converted to the MWTAB JSON file format to enable systemic analysis.
 
-For each analysis, we attempted to:
+For each dataset, we attempted to:
 
 * convert to a summarized experiment R object containing individual metabolite metadata, abundances, and sample metadata;
 * detect any quality-control samples;
@@ -72,8 +72,8 @@ For each analysis, we attempted to:
 * calculate the relative standard deviations (RSD) of metabolite features within each SSF group;
 * perform principal component analysis (PCA) and calculate an analysis of variance (ANOVA) of the sample PC scores and SSF groups.
 
-For each step, we also attempt to assign a color-based data quality grade indicating **possible** quality-control and quality-assurance (QC/QA) concerns for a given analysis: **red**, think twice before using; **yellow**, probably OK; and **green**,  looks good for that step.
-In addition, we generate an HTML QC/QA report for each of the analyses, with plots and tables where appropriate to demonstrate the QC/QA concerns.
+For each step, we also attempt to assign a color-based data quality grade indicating **possible** quality-control and quality-assurance (QC/QA) concerns for a given dataset: **red**, think twice before using; **yellow**, probably OK; and **green**,  looks good for that step.
+In addition, we generate an HTML QC/QA report for each of the datasets, with plots and tables where appropriate to demonstrate the QC/QA concerns.
 
 **Results:** Of the `{r} n_parsed` datasets that could be parsed, `{r} format_in_sentence(n_no_se)` could not be coerced into a summarized experiment object for various reasons; `{r} format_in_sentence(n_few)` had $\lt 3$ samples, and therefore could not undergo correlation, PCA, or RSD calculations; and `{r} format_in_sentence(n_completed)` were able to go through all steps to PCA.
 In those that made it through PCA, `{r} format_in_sentence(n_gray)` had either a single SSF, or every sample was in it's own SSF, making them inappropriate for differential analyses (either case/control or some kind of ANOVA), while `{r} format_in_sentence(n_green)` had all **green** statuses; `{r} format_in_sentence(n_yellow)` had one or more **yellow** statuses; and `{r} format_in_sentence(n_red)` had one or more **red** statuses across the QC/QA evaluations.
