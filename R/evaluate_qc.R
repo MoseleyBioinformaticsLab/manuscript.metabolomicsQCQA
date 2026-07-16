@@ -185,7 +185,26 @@ get_scores = function(se_data, default = FALSE) {
     dplyr::select(-differences_fraction) |>
     tidyr::pivot_wider(names_from = "method", values_from = "n_differences")
 
-  ssf_scores_wide = ssf_scores_wide |>
+  # we should do the scores for each method separately, and report them
+  # separately.
+  ssf_scores_ici = ssf_scores_wide |>
+    dplyr::mutate(
+      ici_frac = `median-ici` / group_size,
+      ici_status = dplyr::case_when(
+        (group_size <= 5) & (`median-ici` > 1) ~ "red",
+        (group_size <= 5) & (`median-ici` > 0) ~ "yellow",
+        (group_size <= 5) & (`median-ici` == 0) ~ "green",
+        (group_size <= 10) & (`median-ici` > 3) ~ "red",
+        (group_size <= 10) & (`median-ici` >= 2) ~ "yellow",
+        (group_size <= 10) & (`median-ici` <= 1) ~ "green",
+        (group_size > 10) & (ici_frac > 0.3) ~ "red",
+        (group_size > 10) & (ici_frac > 0.1) ~ "yellow",
+        (group_size > 10) & (ici_frac <= 0.1) ~ "green",
+        is.na(`median-ici`) ~ "gray"
+      )
+    )
+
+  ssf_scores_rle = ssf_scores_wide |>
     dplyr::mutate(
       rle_frac = rle / group_size,
       rle_status = dplyr::case_when(
@@ -197,57 +216,64 @@ get_scores = function(se_data, default = FALSE) {
         (group_size <= 10) & (rle <= 1) ~ "green",
         (group_size > 10) & (rle_frac > 0.5) ~ "red",
         (group_size > 10) & (rle_frac > 0.25) ~ "yellow",
-        (group_size > 10) & (rle_frac <= 0.25) ~ "green"
-      ),
-      ici_frac = `median-ici` / group_size,
-      ici_status = dplyr::case_when(
-        (group_size <= 5) & (`median-ici` > 1) ~ "red",
-        (group_size <= 5) & (`median-ici` > 0) ~ "yellow",
-        (group_size <= 5) & (`median-ici` == 0) ~ "green",
-        (group_size <= 10) & (`median-ici` > 3) ~ "red",
-        (group_size <= 10) & (`median-ici` >= 2) ~ "yellow",
-        (group_size <= 10) & (`median-ici` <= 1) ~ "green",
-        (group_size > 10) & (ici_frac > 0.3) ~ "red",
-        (group_size > 10) & (ici_frac > 0.1) ~ "yellow",
-        (group_size > 10) & (ici_frac <= 0.1) ~ "green"
-      ),
-    )
-
-  ssf_summaries = ssf_scores_wide |>
-    dplyr::summarise(
-      ici_red = sum(ici_status %in% "red") / nrow(ssf_scores_wide),
-      ici_yellow = sum(ici_status %in% "yellow") / nrow(ssf_scores_wide),
-      ici_green = sum(ici_status %in% "green") / nrow(ssf_scores_wide),
-      rle_red = sum(rle_status %in% "red") / nrow(ssf_scores_wide),
-      rle_yellow = sum(rle_status %in% "yellow") / nrow(ssf_scores_wide),
-      rle_green = sum(rle_status %in% "green") / nrow(ssf_scores_wide)
-    )
-
-  ssf_status = dplyr::case_when(
-    ssf_summaries$ici_red >= 0.5 ~ "red",
-    ssf_summaries$ici_yellow >= 0.5 ~ "yellow",
-    ssf_summaries$ici_green >= 0.75 & ssf_summaries$rle_yellow <= 0.5 ~ "green",
-    ssf_summaries$ici_green >= 0.75 & ssf_summaries$rle_green >= 0.5 ~ "green",
-    ssf_summaries$ici_green >= 0.75 & ssf_summaries$rle_red >= 0.5 ~ "yellow",
-  )
-  list(
-    score_diff_summary = paste0(
-      "icikt: ",
-      paste0(
-        ssf_scores_wide$`median-ici`,
-        "/",
-        ssf_scores_wide$group_size,
-        collapse = ";"
-      ),
-      "; rle: ",
-      paste0(
-        ssf_scores_wide$rle,
-        "/",
-        ssf_scores_wide$group_size,
-        collapse = ";"
+        (group_size > 10) & (rle_frac <= 0.25) ~ "green",
+        is.na(rle) ~ "gray"
       )
+    )
+
+  ssf_summaries_ici = ssf_scores_ici |>
+    dplyr::summarise(
+      red = sum(ici_status %in% "red") / dplyr::n(),
+      yellow = sum(ici_status %in% "yellow") / dplyr::n(),
+      green = sum(ici_status %in% "green") / dplyr::n(),
+      gray = sum(ici_status %in% "gray") / dplyr::n()
+    )
+  ssf_summaries_rle = ssf_scores_rle |>
+    dplyr::summarize(
+      red = sum(rle_status %in% "red") /
+        dplyr::n(),
+      yellow = sum(rle_status %in% "yellow") / dplyr::n(),
+      green = sum(rle_status %in% "green") / dplyr::n(),
+      gray = sum(rle_status %in% "gray") / dplyr::n()
+    )
+
+  calculate_overall_score = function(in_summary_score) {
+    # in_summary_score = ssf_summaries_ici
+    if (in_summary_score$gray >= 0.8) {
+      return("gray")
+    }
+    nogray_score = in_summary_score |>
+      dplyr::select(-gray)
+    out_score = nogray_score |>
+      dplyr::mutate(
+        status = dplyr::case_when(
+          red > yellow & red > green ~ "red",
+          yellow > red & yellow > green ~ "yellow",
+          green > red & green > yellow ~ "green",
+          TRUE ~ "yellow"
+        )
+      )
+    out_score$status
+  }
+
+  ici_status = calculate_overall_score(ssf_summaries_ici)
+  rle_status = calculate_overall_score(ssf_summaries_rle)
+
+  list(
+    score_icikt_summary = paste0(
+      ssf_scores_wide$`median-ici`,
+      "/",
+      ssf_scores_wide$group_size,
+      collapse = ";"
     ),
-    score_diff_status = ssf_status
+    score_icikt_status = ici_status,
+    score_rle_summary = paste0(
+      ssf_scores_wide$rle,
+      "/",
+      ssf_scores_wide$group_size,
+      collapse = ";"
+    ),
+    score_rle_status = rle_status
   )
 }
 
@@ -346,6 +372,7 @@ check_pca = function(se_data, pca_limits, default = FALSE) {
       (pca_anova_perc >= 0.01 & pca_anova_perc < 0.05) ~ "yellow",
     pca_anova_pvalue$p.adjust <= 0.05 &
       (pca_anova_perc < 0.01) ~ "red",
+    is.na(pca_anova_pvalue$p.adjust) ~ "gray"
   )
   return(list(
     pca_pc_index_90 = pca_pc_index_90,
@@ -976,4 +1003,14 @@ calculate_mode = function(values) {
   density_estimate = stats::density(values)
   mode_value = density_estimate$x[which.max(density_estimate$y)]
   mode_value
+}
+
+check_statuses_for_na = function(sets_qc) {
+  status_cols = grep("status$", names(sets_qc), value = TRUE)
+  for (istatus in status_cols) {
+    n_na = sum(is.na(sets_qc[[istatus]]))
+    if (n_na > 0) {
+      message(glue::glue("NA found in {istatus}."))
+    }
+  }
 }
