@@ -168,7 +168,12 @@ get_samples_removed = function(se_data, default = FALSE) {
 
 get_scores = function(se_data, default = FALSE) {
   if (default) {
-    return(list(score_diff_summary = "NA", score_diff_status = "red"))
+    return(list(
+      score_icikt_summary = "NA",
+      score_icikt_status = "red",
+      score_rle_summary = "NA",
+      score_rle_status = "red"
+    ))
   }
   pca_data = metadata(se_data)$pca_groups
   last_run = check_qc_outputs(se_data)
@@ -960,13 +965,18 @@ summarize_qc_results_table = function(sets_qc_evaluation, group_none = FALSE) {
 find_green_analyses = function(sets_qc_evaluation) {
   status_cols = grep("status$", names(sets_qc_evaluation), value = TRUE)
   status_cols = grep(
-    "^summarized|^has_qc",
+    "^summarized|^has_qc|^score_icikt|^score_rle|^ssf_metadata",
     status_cols,
     invert = TRUE,
     value = TRUE
   )
 
-  green_status = yellow_status = rep(TRUE, nrow(sets_qc_evaluation))
+  gray_sets = sets_qc_evaluation |>
+    dplyr::filter(pca_anova_pvalue_status %in% "gray") |>
+    dplyr::mutate(overall_status = "gray")
+  not_gray = sets_qc_evaluation |>
+    dplyr::filter(!(pca_anova_pvalue_status %in% "gray"))
+  green_status = yellow_status = rep(TRUE, nrow(not_gray))
 
   for (istatus in status_cols) {
     green_status = green_status &
@@ -977,8 +987,8 @@ find_green_analyses = function(sets_qc_evaluation) {
   overall_status = rep("red", nrow(sets_qc_evaluation))
   overall_status[yellow_status] = "yellow"
   overall_status[green_status] = "green"
-  sets_qc_evaluation$overall_status = overall_status
-  sets_qc_evaluation
+  not_gray$overall_status = overall_status
+  dplyr::bind_rows(gray_sets, not_gray)
 }
 
 summarize_status = function(overall_status) {
