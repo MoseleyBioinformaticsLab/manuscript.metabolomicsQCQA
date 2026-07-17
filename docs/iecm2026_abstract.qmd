@@ -54,26 +54,24 @@ n_red = n_overall |> dplyr::filter(overall_status %in% "red")
 n_gray = n_overall |> dplyr::filter(overall_status %in% "gray")
 ```
 
-**Introduction:** Depositing processed and ideally raw -omics data in a data repository has become the norm in genomics, transcriptomics and metabolomics, and is frequently required by grant funders and journals.
-But the quality of the data deposited in public omics repositories is not uniform, limiting its reuse in large meta-analyses. 
-To our knowledge, no repository wide assessment of data quality has ever been carried out for metabolomics.
+**Introduction:** While depositing omics data into public repositories is frequently required by grant funders and journals, the quality of deposited data is not uniform, limiting its reuse in large meta-analyses.
 Here we present a comprehensive evaluation of data quality across all publicly available datasets in Metabolomics Workbench.
 
-**Methods:** 6105 datasets (analysis files) were downloaded from the Metabolomics Workbench in November of 2025, as well as any available ancillary data files.
-Harmonizations and repairs were made to downloaded analysis files and then converted to the MWTAB JSON file format to enable systemic analysis.
+**Methods:** We downloaded 6105 datasets (analysis and ancillary data files) from  Metabolomics Workbench in November of 2025.
+Needed harmonizations and repairs were made to downloaded analysis files.
 
 For each dataset, we attempted to:
 
 * convert to a summarized experiment R object containing individual metabolite metadata, abundances, and sample metadata;
 * detect any quality-control samples;
-* determine if the data were already log-transformed and needed to be exponentiated;
-* count the number of present metabolite features and usable samples in each group of subject-sample-factors (SSF);
-* calculate information-content-informed Kendall-$\tau$ (ICI-Kt) correlations between all samples;
-* calculate the relative standard deviations (RSD) of metabolite features within each SSF group;
-* perform principal component analysis (PCA) and calculate an analysis of variance (ANOVA) of the sample PC scores and SSF groups.
+* determine if the data were already log-transformed;
+* evaluate the number of metabolite features and usable samples in each group of subject-sample-factors (SSF);
+* calculate sample-sample information-content-informed Kendall-$\tau$ (ICI-Kt) correlations;
+* calculate the relative standard deviations (RSD) within each SSF group;
+* perform principal component analysis (PCA) and calculate an analysis of variance (ANOVA) for  sample PC scores based on SSF groups.
 
-For each step, we also attempt to assign a color-based data quality grade indicating **possible** quality-control and quality-assurance (QC/QA) concerns for a given dataset: **red**, think twice before using; **yellow**, probably OK; and **green**,  looks good for that step.
-In addition, we generate an HTML QC/QA report for each of the datasets, with plots and tables where appropriate to demonstrate the QC/QA concerns.
+For each successful step, we assigned a color-based data quality grade for a given dataset: **red**, think twice before using; **yellow**, probably OK; and **green**,  looks good for that step.
+In addition, we generated an HTML QC/QA report for each of the datasets.
 
 **Results:** Of the `{r} n_parsed` datasets that could be parsed, `{r} format_in_sentence(n_no_se)` could not be coerced into a summarized experiment object for various reasons; `{r} format_in_sentence(n_few)` had $\lt 3$ samples, and therefore could not undergo correlation, PCA, or RSD calculations; and `{r} format_in_sentence(n_completed)` were able to go through all steps to PCA.
-In those that made it through PCA, `{r} format_in_sentence(n_gray)` had either a single SSF, or every sample was in it's own SSF, making them inappropriate for differential analyses (either case/control or some kind of ANOVA), while `{r} format_in_sentence(n_green)` had all **green** statuses; `{r} format_in_sentence(n_yellow)` had one or more **yellow** statuses; and `{r} format_in_sentence(n_red)` had one or more **red** statuses across the QC/QA evaluations.
+For successful PCA, `{r} format_in_sentence(n_gray)` had either a single SSF, or every sample was its own SSF, making them inappropriate for differential analyses, while `{r} format_in_sentence(n_green)` had all **green** statuses; `{r} format_in_sentence(n_yellow)` had one or more **yellow** statuses; and `{r} format_in_sentence(n_red)` had one or more **red** statuses across the QC/QA evaluations.
