@@ -52,7 +52,9 @@ check_convert_character_matrix = function(raw_matrix) {
       raw_matrix,
       2,
       \(x) {
-        stringr::str_replace(x, "\\<|\\>", "-")
+        y = stringr::str_replace_all(x, "\\<|\\>", "-")
+        z = stringr::str_replace_all(y, "\\.E", "E")
+        z
       },
       simplify = TRUE
     )
@@ -103,6 +105,7 @@ readrds_convert_to_se = function(rds_file, md5_sum, mwtab_raw_files) {
   # rds_file = "parsed_rds/AN002196.rds"; tar_load(mwtab_raw_files); tar_source("R")
   # rds_file = "parsed_rds/AN002298.rds"; tar_load(mwtab_raw_files); tar_source("R")
   # rds_file = "parsed_rds/AN001558.rds"; tar_load(mwtab_raw_files); tar_source("R")
+  # rds_file = "parsed_rds/AN005958.rds"; tar_load(mwtab_raw_files); tar_source("R")
   processed_data = readRDS(rds_file)
   check_md5(processed_data, md5_sum)
 

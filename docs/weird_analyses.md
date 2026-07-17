@@ -37,3 +37,5 @@
   * Has no measurements in the mwtab, and no ancillary data.
 * AN004749:
   * Has all same values, or missing.
+* AN005958:
+  * Has ".E" instead of just "E" to denote the exponent, which had to be corrected.
