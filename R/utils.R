@@ -176,6 +176,46 @@ fix_sample_ids = function(raw_ids) {
   #   "Tsu-0_W+N+_P3ID34_b",
   #   "Tsu-0_W+N+_P3ID34_c"
   # )
+  # tar_source("R")
+  # raw_ids = c(
+  #   "Metabolite",
+  #   "4T1-1_R7+",
+  #   "4T1-15_R11+",
+  #   "4T1-19_R15+",
+  #   "4T1-27_R18+",
+  #   "CTL-1_R23+",
+  #   "CTL-5_R2+",
+  #   "CTL-9_R1+",
+  #   "CTL-3_R6+",
+  #   "CTL-7_R3+",
+  #   "CTL-11_R21+",
+  #   "4T1-17_R4+",
+  #   "4T1-21_R22+",
+  #   "4T1-25_R16+",
+  #   "CTL-4_R20+",
+  #   "CTL-8_R13+",
+  #   "CTL-12_R14+"
+  # )
+
+  # raw_ids = c(
+  #   "Metabolite",
+  #   "4T1-1_R7-",
+  #   "4T1-15_R11-",
+  #   "4T1-19_R15-",
+  #   "4T1-27_R18-",
+  #   "CTL-1_R23-",
+  #   "CTL-5_R2-",
+  #   "CTL-9_R1-",
+  #   "CTL-3_R6-",
+  #   "CTL-7_R3-",
+  #   "CTL-11_R21-",
+  #   "4T1-17_R4-",
+  #   "4T1-21_R22-",
+  #   "4T1-25_R16-",
+  #   "CTL-4_R20-",
+  #   "CTL-8_R13-",
+  #   "CTL-12_R14-"
+  # )
 
   plus_locs = stringr::str_locate_all(raw_ids, "\\+")
 
@@ -188,9 +228,10 @@ fix_sample_ids = function(raw_ids) {
     if (any(plus_diff != 0)) {
       stop("There are multiple plus signs in a row! Stopping.")
     }
-    plus_all = plus_all[, 1] |> sort()
+    plus_all = plus_all[, 1]
   }
 
+  nchar_all = nchar(raw_ids)
   minus_locs = stringr::str_locate_all(raw_ids, "\\-")
   has_minus = purrr::map_lgl(minus_locs, \(x) {
     nrow(x) > 0
@@ -201,16 +242,17 @@ fix_sample_ids = function(raw_ids) {
     if (any(minus_diff != 0)) {
       stop("There are multiple minus signs in a row! Stopping.")
     }
-    minus_all = minus_all[, 1] |> sort()
+    minus_all = minus_all[, 1]
   }
+
+  plus_rle = rle(sort(plus_all)) |> rle_2_df() |> dplyr::filter(length >= 2)
+  minus_rle = rle(sort(minus_all)) |> rle_2_df() |> dplyr::filter(length >= 2)
+  match_locs = dplyr::inner_join(plus_rle, minus_rle, by = "value")
 
   # this is the most pain in the butt problem, there are + and - that match
   # up with each other, and you only want to replace them with something when
   # they actually match up.
-  if (any(has_plus) && any(has_minus)) {
-    plus_rle = rle(plus_all) |> rle_2_df() |> dplyr::filter(length >= 2)
-    minus_rle = rle(minus_all) |> rle_2_df() |> dplyr::filter(length >= 2)
-    match_locs = dplyr::inner_join(plus_rle, minus_rle, by = "value")
+  if (nrow(match_locs) > 0) {
     seq_index = seq_len(length(raw_ids))
 
     new_ids = purrr::map_chr(seq_index, \(in_index) {
@@ -221,9 +263,9 @@ fix_sample_ids = function(raw_ids) {
         match_locs$value
       )
     })
-  } else if (any(has_plus) && !any(has_minus)) {
+  } else if (any(has_plus)) {
     new_ids = gsub("\\+", "_p_", raw_ids)
-  } else if (!any(has_plus) && any(has_minus)) {
+  } else if (any(has_minus)) {
     new_ids = gsub("\\-$", "_m_", raw_ids)
   } else {
     new_ids = raw_ids
