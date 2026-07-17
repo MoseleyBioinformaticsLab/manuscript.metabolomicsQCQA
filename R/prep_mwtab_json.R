@@ -142,6 +142,7 @@ parse_json_save = function(mwtab_file, id, ancillary_path, save_path) {
   # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN004188%2Fmwtab%2Ftxt.txt.json"
   # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000112%2Fmwtab%2Ftxt.txt.json"; ancillary_path = "mwtab/ancillary/"
   # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN003915%2Fmwtab%2Ftxt.txt.json"; ancillary_path = "mwtab/ancillary"; tar_source("R")
+  # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN002713%2Fmwtab%2Ftxt.txt.json"; ancillary_path = "mwtab/ancillary"; tar_source("R")
   mwtab_list = jsonlite::fromJSON(mwtab_file, simplifyVector = FALSE)
 
   parsed_data = purrr::imap(mwtab_list, \(block, block_id) {
@@ -335,12 +336,27 @@ check_and_parse_ancillary_json = function(
     "metabolite"
   )
 
+  common_not_met = c(
+    "mz_xml",
+    "mzxml",
+    "xml",
+    "mz_ml",
+    "mzml"
+  )
+
   is_metabolite_name = purrr::map(common_met_fields, \(x) {
     grep(x, names(ancillary_data), value = TRUE)
   }) |>
     purrr::list_c() |>
     unique()
 
+  is_not_metabolite = purrr::map(common_not_met, \(x) {
+    grep(x, is_metabolite_name, value = TRUE)
+  }) |>
+    purrr::list_c() |>
+    unique()
+
+  is_metabolite_name = base::setdiff(is_metabolite_name, is_not_metabolite)
   if (length(is_metabolite_name) > 0) {
     metabolite_data = ancillary_data[, is_metabolite_name]
     sample_ids = base::setdiff(names(ancillary_data), is_metabolite_name)
