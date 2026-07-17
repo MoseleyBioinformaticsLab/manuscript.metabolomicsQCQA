@@ -146,6 +146,9 @@ parse_json_save = function(mwtab_file, id, ancillary_path, save_path) {
   # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN002792%2Fmwtab%2Ftxt.txt.json";ancillary_path = "mwtab/ancillary"; tar_source("R")
   # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN003159%2Fmwtab%2Ftxt.txt.json"; ancillary_path = "mwtab/ancillary"; tar_source("R")
   # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN003350%2Fmwtab%2Ftxt.txt.json"; ancillary_path = "mwtab/ancillary"; tar_source("R")
+  # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN005090%2Fmwtab%2Ftxt.txt.json" ; ancillary_path = "mwtab/ancillary"; tar_source("R")
+  # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN003606%2Fmwtab%2Ftxt.txt.json"; ancillary_path = "mwtab/ancillary"; tar_source("R")
+  # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN005021%2Fmwtab%2Ftxt.txt.json"; ancillary_path = "mwtab/ancillary"; tar_source("R")
   mwtab_list = jsonlite::fromJSON(mwtab_file, simplifyVector = FALSE)
 
   parsed_data = purrr::imap(mwtab_list, \(block, block_id) {
@@ -586,8 +589,9 @@ parse_factors_json = function(factor_data) {
     return(NULL)
   }
   null_subject = factor_df[["subject"]] == "-"
-  if (any(factor_df$factor %in% "sample_id")) {
-    return(NULL)
+  if (any(factor_df$factor %in% c("sample_id", "SAMPLE_ID"))) {
+    is_sample_id = factor_df$factor %in% c("sample_id", "SAMPLE_ID")
+    factor_df$factor[is_sample_id] = "sample_id_1"
   }
 
   factor_df = factor_df |>
