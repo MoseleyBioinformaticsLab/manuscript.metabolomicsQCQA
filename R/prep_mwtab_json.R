@@ -143,6 +143,9 @@ parse_json_save = function(mwtab_file, id, ancillary_path, save_path) {
   # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000112%2Fmwtab%2Ftxt.txt.json"; ancillary_path = "mwtab/ancillary/"
   # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN003915%2Fmwtab%2Ftxt.txt.json"; ancillary_path = "mwtab/ancillary"; tar_source("R")
   # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN002713%2Fmwtab%2Ftxt.txt.json"; ancillary_path = "mwtab/ancillary"; tar_source("R")
+  # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN002792%2Fmwtab%2Ftxt.txt.json";ancillary_path = "mwtab/ancillary"; tar_source("R")
+  # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN003159%2Fmwtab%2Ftxt.txt.json"; ancillary_path = "mwtab/ancillary"; tar_source("R")
+  # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN003350%2Fmwtab%2Ftxt.txt.json"; ancillary_path = "mwtab/ancillary"; tar_source("R")
   mwtab_list = jsonlite::fromJSON(mwtab_file, simplifyVector = FALSE)
 
   parsed_data = purrr::imap(mwtab_list, \(block, block_id) {
@@ -333,7 +336,8 @@ check_and_parse_ancillary_json = function(
     "reactome",
     "chebi",
     "che_bi",
-    "metabolite"
+    "metabolite",
+    "mass_rt"
   )
 
   common_not_met = c(
@@ -341,7 +345,9 @@ check_and_parse_ancillary_json = function(
     "mzxml",
     "xml",
     "mz_ml",
-    "mzml"
+    "mzml",
+    "mzdata",
+    "mz_data"
   )
 
   is_metabolite_name = purrr::map(common_met_fields, \(x) {
@@ -410,7 +416,7 @@ parse_nmr_data_json = function(nmr_data) {
 
   nmr_df_1 = try(tibble::as_tibble(
     nmr_data$Data[[1]],
-    .name_repair = "minimal"
+    .name_repair = create_new_sample_ids
   ))
   if (inherits(nmr_df_1, "try-error")) {
     return(NULL)
@@ -498,7 +504,7 @@ parse_ms_data_json = function(ms_data) {
   # ms_data = mwtab_list$MS_METABOLITE_DATA
 
   ms_df_1 = try(
-    tibble::as_tibble(ms_data$Data[[1]], .name_repair = "minimal")
+    tibble::as_tibble(ms_data$Data[[1]], .name_repair = create_new_sample_ids)
   )
   if (inherits(ms_df_1, "try-error")) {
     return(NULL)

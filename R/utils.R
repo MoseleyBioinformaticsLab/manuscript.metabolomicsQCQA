@@ -245,9 +245,16 @@ fix_sample_ids = function(raw_ids) {
     minus_all = minus_all[, 1]
   }
 
-  plus_rle = rle(sort(plus_all)) |> rle_2_df() |> dplyr::filter(length >= 2)
-  minus_rle = rle(sort(minus_all)) |> rle_2_df() |> dplyr::filter(length >= 2)
-  match_locs = dplyr::inner_join(plus_rle, minus_rle, by = "value")
+  if (any(has_plus) && any(has_minus)) {
+    plus_rle = rle(sort(plus_all)) |> rle_2_df() |> dplyr::filter(length >= 2)
+    minus_rle = rle(sort(minus_all)) |> rle_2_df() |> dplyr::filter(length >= 2)
+    match_locs = dplyr::inner_join(plus_rle, minus_rle, by = "value")
+  } else {
+    match_locs = tibble::tibble(
+      value = vector("integer"),
+      length = vector("integer")
+    )
+  }
 
   # this is the most pain in the butt problem, there are + and - that match
   # up with each other, and you only want to replace them with something when
@@ -264,7 +271,7 @@ fix_sample_ids = function(raw_ids) {
       )
     })
   } else if (any(has_plus)) {
-    new_ids = gsub("\\+", "_p_", raw_ids)
+    new_ids = gsub("\\+$", "_p_", raw_ids)
   } else if (any(has_minus)) {
     new_ids = gsub("\\-$", "_m_", raw_ids)
   } else {
