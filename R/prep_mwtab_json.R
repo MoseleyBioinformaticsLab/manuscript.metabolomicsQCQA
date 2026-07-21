@@ -6,6 +6,7 @@ extract_mwtab_ids = function(mwtab_files) {
     }),
     file = mwtab_files
   )
+
   mwtab_df
 }
 
