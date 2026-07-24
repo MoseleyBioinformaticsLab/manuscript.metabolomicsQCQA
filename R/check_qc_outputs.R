@@ -58,3 +58,16 @@ check_qc_outputs = function(se_data) {
   }
   return(report_list)
 }
+
+find_weird_red_status = function(sets_qc_evaluation) {
+  red_lc = sets_qc_evaluation |>
+    dplyr::filter(
+      completed_steps %in% "se; dynamic_range; correlation; pca",
+      !pca_anova_pvalue_status %in% "gray"
+    ) |>
+    dplyr::filter(
+      left_censorship_test_status %in% "red",
+      pca_anova_pvalue_status %in% "green"
+    )
+  red_lc
+}

@@ -98,19 +98,11 @@ evaluate_qc = function(se_data, data_limits) {
 
   qc_status_list = check_qc_samples(se_data, use_defaults)
 
-  if (!is.null(metadata(se_data)$left_censorship[["lc_test"]])) {
-    percent_missing_list = check_percent_missing(
-      se_data,
-      data_limits$missing,
-      FALSE
-    )
-  } else {
-    percent_missing_list = check_percent_missing(
-      se_data,
-      data_limits$missing,
-      TRUE
-    )
-  }
+  percent_missing_list = check_percent_missing(
+    se_data,
+    data_limits$missing,
+    use_defaults
+  )
 
   if (!("correlation" %in% report_list$steps)) {
     use_defaults = TRUE
@@ -452,20 +444,17 @@ check_percent_missing = function(se_data, percent_limits, default = FALSE) {
     lc_info = metadata(se_data)$left_censorship
   } else {
     percent_list = list(percent_missing = NA, percent_missing_status = "red")
-    lc_info = NULL
-  }
-
-  if (is.null(lc_info)) {
-    default = TRUE
-  }
-  if (default) {
-    percent_list = list(percent_missing = NA, percent_missing_status = "red")
     lc_test_list = list(
       left_censorship_test = NA,
       left_censorship_test_status = "red"
     )
     return(c(percent_list, lc_test_list))
   }
+
+  if (is.null(lc_info) || is.na(lc_info$perc_missing)) {
+    return(check_percent_missing(se_data, percent_limits, default = TRUE))
+  }
+
   percent_missing = lc_info$perc_missing
   percent_missing_status = dplyr::case_when(
     percent_missing <= percent_limits[1] ~ "green",
@@ -479,30 +468,28 @@ check_percent_missing = function(se_data, percent_limits, default = FALSE) {
     percent_missing_status = percent_missing_status
   )
   lc_test = lc_info$lc_test$binomial_test
-  if (is.null(lc_test) && (!is.na(percent_missing) && (percent_missing > 0))) {
-    default = TRUE
-  } else {
-    lc_test_list = list(
-      left_censorship_test = NA,
-      left_censorship_test_status = "green"
-    )
-    return(c(percent_list, lc_test_list))
-  }
-  if (default) {
+
+  if (is.null(lc_test) && (percent_missing > 0)) {
     lc_test_list = list(
       left_censorship_test = NA,
       left_censorship_test_status = "red"
     )
-    return(c(percent_list, lc_test_list))
-  }
-  lc_test_list = list(
-    left_censorship_test = lc_test$p.value,
-    left_censorship_test_status = dplyr::case_when(
-      percent_missing > 10 & lc_test$p.value <= 0.05 ~ "green",
-      percent_missing > 10 & lc_test$p.value > 0.05 ~ "yellow",
-      TRUE ~ "green"
+  } else if (!is.null(lc_test)) {
+    lc_test_list = list(
+      left_censorship_test = lc_test$p.value,
+      left_censorship_test_status = dplyr::case_when(
+        percent_missing > 10 & lc_test$p.value <= 0.05 ~ "green",
+        percent_missing > 10 & lc_test$p.value > 0.05 ~ "yellow",
+        TRUE ~ "green"
+      )
     )
-  )
+  } else if (is.null(lc_test) && (percent_missing == 0)) {
+    lc_test_list = list(
+      left_censorship_test = NA,
+      left_censorship_test_status = "green"
+    )
+  }
+
   c(percent_list, lc_test_list)
 }
 
