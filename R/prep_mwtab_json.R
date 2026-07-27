@@ -261,7 +261,7 @@ check_and_parse_ancillary_json = function(
   }
 
   ancillary_data = readr::read_delim(
-    match_file,
+    ancillary_just_file,
     delim = "\t",
     show_col_types = FALSE,
     name_repair = create_new_sample_ids
