@@ -20,17 +20,26 @@ if (!fs::file_exists(group_sets_file)) {
   }
 }
 
-json_files = fs::dir_ls(
-  "mwtab/repaired/json_2025-11-12"
+repaired_files = fs::dir_ls(
+  "mwtab/2026-07-21/mwtab_repaired_json",
+  regexp = "json"
 )
 
-mwtab_datasets = extract_mwtab_ids(json_files)
+repaired_datasets_t = tar_target(
+  repaired_datasets,
+  extract_mwtab_ids(repaired_files)
+)
 
-ancillary_path = "mwtab/ancillary/"
-save_path = "parsed_rds"
+ancillary_files = fs::dir_ls(
+  "mwtab/2026-07-21/mwtab_results_files/",
+  regexp = "txt"
+)
+ancillary_datasets_t = tar_target(
+  ancillary_datasets,
+  extract_mwtab_ids(ancillary_files)
+)
+save_path = "parsed_rds_2026-07-21"
 
-# library(mirai)
-# daemons(3)
 library(furrr)
 plan(multicore, workers = 10)
 
@@ -38,7 +47,7 @@ plan(multicore, workers = 10)
 # gets created properly.
 processed_t = tar_target(
   processed,
-  process_mwtab(mwtab_datasets, ancillary_path, save_path)
+  process_mwtab(repaired_datasets, ancillary_datasets, save_path)
 )
 processed_group_t = tar_target(
   processed_group,
@@ -202,6 +211,8 @@ iecm2026_abstract_t = tar_quarto(
 # )
 
 list(
+  repaired_datasets_t,
+  ancillary_datasets_t,
   mwtab_ftp_file_t,
   mwtab_raw_files_t,
   processed_t,

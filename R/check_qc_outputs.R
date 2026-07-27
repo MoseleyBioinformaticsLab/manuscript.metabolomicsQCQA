@@ -71,3 +71,20 @@ find_weird_red_status = function(sets_qc_evaluation) {
     )
   red_lc
 }
+
+summarize_by_red = function(sets_qc_evaluation) {
+  out_summary = sets_qc_evaluation |>
+    dplyr::filter(completed_steps %in% "se; dynamic_range; correlation; pca") |>
+    dplyr::summarise(
+      N = dplyr::n(),
+      .by = c(
+        pca_anova_pvalue_status,
+        pca_pc_index_90_status,
+        rsd_status,
+        max_median_correlation_status,
+        left_censorship_test_status,
+        percent_missing_status
+      )
+    )
+  out_summary
+}

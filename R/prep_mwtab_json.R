@@ -11,7 +11,7 @@ extract_mwtab_ids = function(mwtab_files) {
 }
 
 
-process_mwtab = function(mwtab_datasets, ancillary_path, save_path) {
+process_mwtab = function(mwtab_datasets, ancillary_datasets, save_path) {
   processed_results = furrr::future_map2(
     mwtab_datasets$file,
     mwtab_datasets$id,
@@ -19,7 +19,7 @@ process_mwtab = function(mwtab_datasets, ancillary_path, save_path) {
       parse_json_save(
         x,
         y,
-        ancillary_path = ancillary_path,
+        ancillary_datasets = ancillary_datasets,
         save_path = save_path
       )
     }
@@ -30,7 +30,7 @@ process_mwtab = function(mwtab_datasets, ancillary_path, save_path) {
 
 bind_group_processed = function(
   processed,
-  n_group = 30,
+  size_group = 200,
   save_file = "resources/group_sets.rds"
 ) {
   # processed = tar_read(processed); n_group = 30; save_file = "resources/group_sets.rds"
@@ -45,12 +45,13 @@ bind_group_processed = function(
     tibble::tibble(id = id, file = in_p$file, md5 = in_p$md5)
   }) |>
     purrr::list_rbind()
+  n_group = ceiling(nrow(processed_df) / size_group)
   processed_group = processed_df |>
     dplyr::mutate(
       group = paste0(
         "g",
         stringr::str_pad(
-          sample(seq(1, n_group), dplyr::n(), replace = TRUE),
+          sample(seq_len(n_group), dplyr::n(), replace = TRUE),
           width = 2,
           side = "left",
           pad = "0"
@@ -67,7 +68,7 @@ bind_group_processed = function(
   nested_sets
 }
 
-parse_json_save = function(mwtab_file, id, ancillary_path, save_path) {
+parse_json_save = function(mwtab_file, id, ancillary_datasets, save_path) {
   #mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000032%2Fmwtab%2Ftxt.txt.json"  # MS file
   # mwtab_file = "data/repaired/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000693%2Fmwtab%2Ftxt.txt"  # NMR file
 
@@ -196,7 +197,10 @@ parse_json_save = function(mwtab_file, id, ancillary_path, save_path) {
     parsed_data$MEASUREMENT_TYPE = "NMR"
     parsed_data$DATASOURCE = "mwtab"
   } else {
-    parsed_data = check_and_parse_ancillary_json(parsed_data, ancillary_path)
+    parsed_data = check_and_parse_ancillary_json(
+      parsed_data,
+      ancillary_datasets
+    )
   }
 
   parsed_digest = digest::digest(parsed_data, algo = "md5")
@@ -236,7 +240,7 @@ convert_lgl_to_dbl = function(data_df) {
 
 check_and_parse_ancillary_json = function(
   parsed_data,
-  ancillary_path = "/big_data/data/MetabolomicsWorkbench/ancillary/"
+  ancillary_datasets
 ) {
   # parsed_data = tar_read(processed_AN000111)
   # ancillary_path = "/big_data/data/rmflight_icikt_poster_iecm/data/ancillary/"
@@ -246,22 +250,13 @@ check_and_parse_ancillary_json = function(
   if (!is.null(parsed_data$NM)) {
     parsed_data$MEASUREMENT_TYPE = "NMR"
   }
-  results_file = character(0)
 
-  results_file = create_results_txt(parsed_data[["METABOLOMICS WORKBENCH"]])
-
-  if (length(results_file) == 0) {
-    return(parsed_data)
-  }
-
-  ancillary_files = fs::dir_ls(ancillary_path, recurse = TRUE)
-  ancillary_just_file = fs::path_file(ancillary_files)
-  names(ancillary_files) = ancillary_just_file
-
-  match_file = ancillary_files[results_file]
+  ancillary_just_file = ancillary_datasets |>
+    dplyr::filter(id %in% parsed_data$ID) |>
+    dplyr::pull(file)
 
   # can't find a match, just return early
-  if (is.na(match_file)) {
+  if (length(ancillary_just_file) == 0) {
     return(parsed_data)
   }
 
