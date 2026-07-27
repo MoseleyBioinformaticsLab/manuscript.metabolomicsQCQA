@@ -22,7 +22,8 @@ process_mwtab = function(mwtab_datasets, ancillary_datasets, save_path) {
         ancillary_datasets = ancillary_datasets,
         save_path = save_path
       )
-    }
+    },
+    .progress = TRUE
   )
   processed_results
 }
@@ -69,7 +70,7 @@ bind_group_processed = function(
 }
 
 parse_json_save = function(mwtab_file, id, ancillary_datasets, save_path) {
-  message(id)
+  # message(id)
   #mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000032%2Fmwtab%2Ftxt.txt.json"  # MS file
   # mwtab_file = "data/repaired/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000693%2Fmwtab%2Ftxt.txt"  # NMR file
 
