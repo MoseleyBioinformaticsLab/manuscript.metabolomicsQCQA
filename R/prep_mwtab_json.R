@@ -6,13 +6,13 @@ extract_mwtab_ids = function(mwtab_files) {
     }),
     file = mwtab_files
   )
-
+  mwtab_df$size = as.numeric(fs::file_size(mwtab_files)) / 1e6
   mwtab_df
 }
 
 
 process_mwtab = function(mwtab_datasets, ancillary_datasets, save_path) {
-  processed_results = purrr::map2(
+  processed_results = furrr::future_map2(
     mwtab_datasets$file,
     mwtab_datasets$id,
     \(x, y) {
@@ -70,7 +70,7 @@ bind_group_processed = function(
 }
 
 parse_json_save = function(mwtab_file, id, ancillary_datasets, save_path) {
-  # message(id)
+  # qmessage(id)
   #mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000032%2Fmwtab%2Ftxt.txt.json"  # MS file
   # mwtab_file = "data/repaired/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN000693%2Fmwtab%2Ftxt.txt"  # NMR file
 
@@ -153,6 +153,7 @@ parse_json_save = function(mwtab_file, id, ancillary_datasets, save_path) {
   # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN005090%2Fmwtab%2Ftxt.txt.json" ; ancillary_path = "mwtab/ancillary"; tar_source("R")
   # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN003606%2Fmwtab%2Ftxt.txt.json"; ancillary_path = "mwtab/ancillary"; tar_source("R")
   # mwtab_file = "mwtab/repaired/json_2025-11-12/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN005021%2Fmwtab%2Ftxt.txt.json"; ancillary_path = "mwtab/ancillary"; tar_source("R")
+  # mwtab_file = "mwtab/2026-07-21/mwtab_repaired_json/https:%2F%2Fwww_metabolomicsworkbench_org%2Frest%2Fstudy%2Fanalysis_id%2FAN003755%2Fmwtab%2Ftxt.txt.json"; id = "AN003755"; tar_load(ancillary_datasets); tar_source("R")
   mwtab_list = jsonlite::fromJSON(mwtab_file, simplifyVector = FALSE)
 
   parsed_data = purrr::imap(mwtab_list, \(block, block_id) {
@@ -253,29 +254,30 @@ check_and_parse_ancillary_json = function(
     parsed_data$MEASUREMENT_TYPE = "NMR"
   }
 
-  ancillary_just_file = ancillary_datasets |>
-    dplyr::filter(id %in% parsed_data$ID) |>
-    dplyr::pull(file)
+  ancillary_match = ancillary_datasets |>
+    dplyr::filter(id %in% parsed_data$ID)
 
   # can't find a match, just return early
-  if (length(ancillary_just_file) == 0) {
+  if (nrow(ancillary_match) == 0) {
     return(parsed_data)
   }
 
-  ancillary_data = readr::read_delim(
-    ancillary_just_file,
-    delim = "\t",
-    show_col_types = FALSE,
-    name_repair = create_new_sample_ids
-  )
-
-  check_character = function(data_df) {
-    col_types = readr::spec(data_df)
-    is_character = purrr::map_lgl(col_types$cols, \(x) {
-      any(grepl("character", class(x)))
-    })
-    names(is_character) = colnames(data_df)
-    is_character
+  if (ancillary_match$size[1] < 100) {
+    ancillary_data = readr::read_delim(
+      ancillary_match$file[1],
+      delim = "\t",
+      show_col_types = FALSE,
+      name_repair = create_new_sample_ids
+    )
+  } else {
+    ancillary_data = read.table(
+      ancillary_match$file[1],
+      sep = "\t",
+      header = TRUE,
+      check.names = FALSE
+    )
+    names(ancillary_data) = create_new_sample_ids(names(ancillary_data))
+    ancillary_data = tibble::as_tibble(ancillary_data)
   }
 
   check_character_2 = function(data_df) {
@@ -338,7 +340,8 @@ check_and_parse_ancillary_json = function(
     "chebi",
     "che_bi",
     "metabolite",
-    "mass_rt"
+    "mass_rt",
+    "rt_mass"
   )
 
   common_not_met = c(
@@ -365,7 +368,7 @@ check_and_parse_ancillary_json = function(
 
   is_metabolite_name = base::setdiff(is_metabolite_name, is_not_metabolite)
   if (length(is_metabolite_name) > 0) {
-    metabolite_data = ancillary_data[, is_metabolite_name]
+    metabolite_data = ancillary_data[, is_metabolite_name, drop = FALSE]
     sample_ids = base::setdiff(names(ancillary_data), is_metabolite_name)
     ancillary_checked = ancillary_data[, sample_ids]
 
