@@ -316,10 +316,15 @@ get_n_samples_ssf = function(se_data, default = FALSE) {
     nrow(out_n) < 10 ~ "green"
   )
 
+  mode_n = rle(sort(out_n$`N-Samples`)) |>
+    rle_2_df() |>
+    dplyr::arrange(dplyr::desc(length))
+
   out_list = list(
     n_samples_ssf = paste0(out_n$`N-Samples`, collapse = ":"),
     n_ssf_n = nrow(out_n),
     n_sample_status = n_sample_status,
+    most_common_n = mode_n$value[1],
     ssf_metadata_status = ssf_metadata_status
   )
   out_list

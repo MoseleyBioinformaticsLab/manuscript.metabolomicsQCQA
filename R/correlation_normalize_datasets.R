@@ -285,7 +285,8 @@ determine_qc_samples = function(ssf_long) {
   if (!is.null(ssf_long[["sample_id"]])) {
     sample_qc = grepl(
       ".*pool.*|.*qc.*|.*blank.*|.*quality.*",
-      ssf_long$sample_id
+      ssf_long$sample_id,
+      ignore.case = TRUE
     )
   } else {
     sample_qc = rep(FALSE, nrow(ssf_long))
@@ -294,7 +295,8 @@ determine_qc_samples = function(ssf_long) {
   if (!is.null(ssf_long[["subject"]])) {
     subject_qc = grepl(
       ".*pool.*|.*qc.*|.*blank.*|.*quality.*",
-      ssf_long$subject
+      ssf_long$subject,
+      ignore.case = TRUE
     )
   } else {
     subject_qc = rep(FALSE, nrow(ssf_long))
@@ -303,7 +305,8 @@ determine_qc_samples = function(ssf_long) {
   if (!is.null(ssf_long[["item"]])) {
     item_qc = grepl(
       ".*pool.*|.*qc.*|.*blank.*|.*quality.*",
-      ssf_long$item
+      ssf_long$item,
+      ignore.case = TRUE
     )
   } else {
     item_qc = rep(FALSE, nrow(ssf_long))
