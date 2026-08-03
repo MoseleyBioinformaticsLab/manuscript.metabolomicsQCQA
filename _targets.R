@@ -172,6 +172,10 @@ data_limits_t = tar_target(
   )
 )
 
+actual_analysis_t = tar_assign({
+  not_gray_pca = find_pca_remove_gray(sets_qc_evaluation) |> tar_target()
+})
+
 manuscript_t = tar_quarto(
   manuscript,
   "docs/manuscript.qmd",
@@ -230,6 +234,7 @@ list(
   sets_rsd_t,
   sets_pc_number_t,
   data_limits_t,
+  actual_analysis_t,
   contains_negatives_report_t,
   negatives_testing_report_t,
   mean_median_ratios_report_t,
