@@ -46,18 +46,30 @@ n_no_se = summary_qc |>
 n_few = summary_qc |>
   dplyr::filter(failed_steps %in% "none", failed_why %in% "too few samples")
 
+
 overall_status = find_green_analyses(sets_qc_evaluation)
-n_overall = summarize_status(overall_status)
-n_green = n_overall |> dplyr::filter(overall_status %in% "green")
-n_yellow = n_overall |> dplyr::filter(overall_status %in% "yellow")
-n_red = n_overall |> dplyr::filter(overall_status %in% "red")
-n_gray = n_overall |> dplyr::filter(overall_status %in% "gray")
+gray_status = overall_status |>
+  dplyr::filter(
+    completed_steps %in% "se; dynamic_range; correlation; pca",
+    overall_status %in% "gray"
+  )
+color_status = overall_status |>
+  dplyr::filter(
+    completed_steps %in% "se; dynamic_range; correlation; pca",
+    !overall_status %in% "gray"
+  )
+
+n_color = summarize_status(color_status)
+n_green = n_color |> dplyr::filter(overall_status %in% "green")
+n_yellow = n_color |> dplyr::filter(overall_status %in% "yellow")
+n_red = n_color |> dplyr::filter(overall_status %in% "red")
+n_gray = nrow(gray_status)
 ```
 
 **Introduction:** While depositing omics data into public repositories is frequently required by grant funders and journals, the quality of deposited data is not uniform, limiting its reuse in large meta-analyses.
 Here we present a comprehensive evaluation of data quality across all publicly available datasets in Metabolomics Workbench.
 
-**Methods:** We downloaded 6105 datasets (analysis and ancillary data files) from  Metabolomics Workbench in November of 2025.
+**Methods:** We downloaded 7240 datasets (analysis and ancillary data files) from  Metabolomics Workbench in July of 2026.
 Needed harmonizations and repairs were made to downloaded analysis files.
 
 For each dataset, we attempted to:
@@ -74,4 +86,5 @@ For each successful step, we assigned a color-based data quality grade for a giv
 In addition, we generated an HTML QC/QA report for each of the datasets.
 
 **Results:** Of the `{r} n_parsed` datasets that could be parsed, `{r} format_in_sentence(n_no_se)` could not be coerced into a summarized experiment object for various reasons; `{r} format_in_sentence(n_few)` had $\lt 3$ samples, and therefore could not undergo correlation, PCA, or RSD calculations; and `{r} format_in_sentence(n_completed)` were able to go through all steps to PCA.
-For successful PCA, `{r} format_in_sentence(n_gray)` had either a single SSF, or every sample was its own SSF, making them inappropriate for differential analyses, while `{r} format_in_sentence(n_green)` had all **green** statuses; `{r} format_in_sentence(n_yellow)` had one or more **yellow** statuses; and `{r} format_in_sentence(n_red)` had one or more **red** statuses across the QC/QA evaluations.
+For successful PCA, `{r} n_gray` had either a single SSF, or every sample was its own SSF, making them inappropriate for differential analyses.
+Among those left, `{r} format_in_sentence(n_green)` had all **green** statuses; `{r} format_in_sentence(n_yellow)` had one or more **yellow** statuses; and `{r} format_in_sentence(n_red)` had one or more **red** statuses across the QC/QA evaluations.
