@@ -177,6 +177,10 @@ actual_analysis_t = tar_assign({
   not_gray_pca = find_pca_remove_gray(sets_qc_color) |> tar_target()
   parsed_grouped_statuses = parse_statuses(not_gray_pca) |> tar_target()
   waterfall_input = calculate_losses_at_steps(sets_qc_color) |> tar_target()
+  loss_waterfall_plot = create_loss_waterfall_plot(waterfall_input) |>
+    tar_target()
+  nose_reasons_bar_plot = create_nose_reasons_bar_plot(sets_qc_color) |>
+    tar_target()
 })
 
 manuscript_t = tar_quarto(
