@@ -6,29 +6,61 @@ format: html
 ---
 
 ```{r}
-#| label: setup
-#| include: false
-knitr::opts_chunk$set(echo = FALSE)
-## target knits qmds in their own session, so load libraries here.
-## source(here::here("packages.R"))
-## if you want access to the functions you've written
-## lapply(list.files(here::here("./R"), full.names = TRUE), source)
+#| label: knitr-chunks
+#| echo: false
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = TRUE,
+  warning = FALSE,
+  fig.width = 14,
+  fig.height = 12,
+  dev = "ragg_png",
+  dpi = 150
+)
 ```
 
 ```{r}
 #| label: load-targets
-#| include: false
-targets::tar_source(c("./packages.R", "R"))
-tar_load(c(reproducibility))
+#| message: false
+#| warning: false
+library(targets)
+tar_source(c("packages.R", "R"))
+tar_load(sets_qc_evaluation)
+```
 
-# # If your chunk output is shown in-line, then you'll need to wrap tar_load()
-# # like so:
-#
-# withr::with_dir(here::here(), {
-#   tar_load(c(target_1, target_2, target_3))
-# })
-#
-# # This is not needed when using tar_make() to render the document.
+
+```{r}
+#| label: summarize_steps
+summary_qc = summarize_qc_results_table(sets_qc_evaluation)
+n_parsed = nrow(sets_qc_evaluation)
+
+n_completed = summary_qc |>
+  dplyr::filter(completed_steps %in% "se; dynamic_range; correlation; pca")
+
+n_no_se = summary_qc |>
+  dplyr::filter(is.na(failed_why) & completed_steps %in% "none")
+
+n_few = summary_qc |>
+  dplyr::filter(failed_steps %in% "none", failed_why %in% "too few samples")
+
+
+overall_status = set_overall_color_status(sets_qc_evaluation)
+gray_status = overall_status |>
+  dplyr::filter(
+    completed_steps %in% "se; dynamic_range; correlation; pca",
+    overall_status %in% "gray"
+  )
+color_status = overall_status |>
+  dplyr::filter(
+    completed_steps %in% "se; dynamic_range; correlation; pca",
+    !overall_status %in% "gray"
+  )
+
+n_color = summarize_status(color_status)
+n_green = n_color |> dplyr::filter(overall_status %in% "green")
+n_yellow = n_color |> dplyr::filter(overall_status %in% "yellow")
+n_red = n_color |> dplyr::filter(overall_status %in% "red")
+n_gray = nrow(gray_status)
 ```
 
 ## Introduction
@@ -47,9 +79,15 @@ The measures we have used to assess the quality include:
   * The number of outlier samples detected within each subject-sample-factor;
   * The correlations of any quality-control samples, if present.
 
-We also provide quality-control reports for a large number of analyses.
+We also provide quality-control reports for all of the datasets.
 
 ## Methods
+
+### Parsing and Transformation to Summarized Experiment
+
+After datasets were repaired and ancillary datasets downloaded, we attempt to read in the jsonized data and transform it into a SummarizedExperiment object, which is ideal for holding feature metadata, abundances, and sample metadata, as well as hold any required extra data in the metadata slot.
+
+
 
 ### Detection of Log-Transformed Datasets
 
@@ -181,3 +219,41 @@ SSF group size > 10:
   * size fraction <= 0.25 ~ green;
   * size fraction > 0.25 ~ yellow;
   * size fraction > 0.5 ~ red;
+
+## Results
+
+### Detection of Log-Transformation
+
+
+### Datasets Removed Along The Process
+
+As the data were parsed and transformed into R and Bioconductor data structures, many datasets were removed for various reasons.
+In fact, there were several datasets with no data, 
+
+### Overall Statuses
+
+Using the following quality statuses:
+  
+  * number of samples within each subject-sample-factor (SSF);
+  * percent missingness;
+  * left-censorship test;
+  * median ICI-Kt correlation;
+  * relative-standard deviation;
+  * principal components accounting for 90% of the variance;
+  * ANOVA test of SSF to PC scores;
+
+we obtained the following breakdown of statuses shown in Table X. 
+Although the most common category of statuses contain one or more yellow, a large portion of those ($\gt$ 50%) are actually due to datasets where one or more SSFs have 3 or 4 samples, instead of 5 or more required for a green status.
+
+Table X. Number of datasets with all green across the statuses, one or more yellow statuses, and one or more red statuses.
+
+```{r}
+#| label: status-colors
+tmp_color = n_color |>
+  dplyr::transmute(Color = overall_status, N = n, `%` = perc_display)
+
+display_color = tibble::tibble(Color = c("green", "yellow", "red"))
+display_color = dplyr::left_join(display_color, tmp_color, by = "Color")
+display_color |>
+  gt::gt()
+```

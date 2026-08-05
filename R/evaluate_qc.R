@@ -929,7 +929,7 @@ create_review_list = function(sets_qc_evaluation, mwtab_datasets) {
   )
 }
 
-summarize_qc_results_table = function(sets_qc_evaluation, group_none = FALSE) {
+summarize_qc_results_table = function(sets_qc_evaluation, group_none = "yes") {
   n_qc = nrow(sets_qc_evaluation)
   qc_summary = sets_qc_evaluation |>
     dplyr::select(completed_steps, failed_steps, failed_why) |>
@@ -941,20 +941,23 @@ summarize_qc_results_table = function(sets_qc_evaluation, group_none = FALSE) {
     ) |>
     dplyr::arrange(completed_steps, failed_steps, failed_why)
 
-  qc_none = sets_qc_evaluation |>
-    dplyr::filter(failed_steps %in% "create_se") |>
-    dplyr::select(completed_steps, failed_steps) |>
-    dplyr::summarise(
-      n = dplyr::n(),
-      perc = n / n_qc,
-      perc_display = paste0(format(perc * 100, digits = 2), "%"),
-      .by = c(completed_steps)
-    )
-
-  dplyr::bind_rows(qc_summary, qc_none)
+  if (group_none %in% "yes") {
+    qc_none = sets_qc_evaluation |>
+      dplyr::filter(failed_steps %in% "create_se") |>
+      dplyr::select(completed_steps, failed_steps) |>
+      dplyr::summarise(
+        n = dplyr::n(),
+        perc = n / n_qc,
+        perc_display = paste0(format(perc * 100, digits = 2), "%"),
+        .by = c(completed_steps)
+      )
+    return(dplyr::bind_rows(qc_summary, qc_none))
+  } else {
+    return(qc_summary)
+  }
 }
 
-find_green_analyses = function(sets_qc_evaluation) {
+set_overall_color_status = function(sets_qc_evaluation) {
   status_cols = grep("status$", names(sets_qc_evaluation), value = TRUE)
   status_cols = grep(
     "^summarized|^has_qc|^score_icikt|^score_rle|^ssf_metadata",
@@ -980,7 +983,10 @@ find_green_analyses = function(sets_qc_evaluation) {
   overall_status[yellow_status] = "yellow"
   overall_status[green_status] = "green"
   not_gray$overall_status = overall_status
-  dplyr::bind_rows(gray_sets, not_gray)
+  all_color = dplyr::bind_rows(gray_sets, not_gray)
+  new_order = c("overall_status", colnames(sets_qc_evaluation))
+  out_color = all_color |>
+    dplyr::select(tidyselect::all_of(new_order))
 }
 
 summarize_status = function(overall_status) {

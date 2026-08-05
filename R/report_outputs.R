@@ -1,3 +1,21 @@
+convert_description_to_sentence = function(in_string) {
+  # in_string = "mwtab_matched_samples"
+
+  split_string = strsplit(in_string, "\\_")[[1]]
+
+  sentence_case = stringr::str_to_sentence(split_string)
+  match_mwtab = sentence_case %in% "Mwtab"
+  sentence_case[match_mwtab] = "MWTAB"
+
+  less_3 = nchar(sentence_case) <= 3
+  sentence_case[less_3] = toupper(sentence_case[less_3])
+
+  match_why = sentence_case %in% "WHY"
+  sentence_case[match_why] = "Why"
+  paste0(sentence_case, collapse = " ")
+}
+
+
 sets_create_qcqa_reports = function(
   pca_sets,
   sets_qc_evaluation,
@@ -213,7 +231,11 @@ calculate_variance_stuff = function(in_abundance) {
   raw_medians_rsd = NULL
   norm_medians_rsd = NULL
 
-  raw_rsd = calculate_rsd_matrix(raw_abundance, sample_metadata, all_factors) |>
+  raw_rsd = calculate_rsd_matrix(
+    raw_abundance,
+    sample_metadata,
+    all_factors
+  ) |>
     dplyr::filter(n >= 3) |>
     dplyr::mutate(data = "r")
   norm_rsd = calculate_rsd_matrix(
@@ -433,7 +455,10 @@ transform_summary_to_useful_table = function(summary_info) {
     }
   })
   out_table = tibble::tibble(
-    Descriptor = names(summary_text),
+    Descriptor = purrr::map_chr(
+      names(summary_text),
+      convert_description_to_sentence
+    ),
     Value = unlist(summary_text)
   )
   return(out_table)
