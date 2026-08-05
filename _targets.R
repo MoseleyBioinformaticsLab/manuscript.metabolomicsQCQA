@@ -175,6 +175,8 @@ data_limits_t = tar_target(
 actual_analysis_t = tar_assign({
   sets_qc_color = set_overall_color_status(sets_qc_evaluation) |> tar_target()
   not_gray_pca = find_pca_remove_gray(sets_qc_color) |> tar_target()
+  parsed_grouped_statuses = parse_statuses(not_gray_pca) |> tar_target()
+  waterfall_input = calculate_losses_at_steps(sets_qc_color) |> tar_target()
 })
 
 manuscript_t = tar_quarto(
