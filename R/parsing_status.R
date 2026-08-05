@@ -1,5 +1,5 @@
 find_pca_remove_gray = function(sets_qc_color) {
-  keep_status = overall_status |>
+  keep_status = sets_qc_color |>
     dplyr::filter(
       completed_steps %in% "se; dynamic_range; correlation; pca",
       !overall_status %in% "gray"
