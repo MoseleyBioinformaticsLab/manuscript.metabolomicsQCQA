@@ -6,6 +6,13 @@ format: html
 ---
 
 ```{r}
+#| label: number-plots
+#| include: false
+library(documentNumbering)
+figure_count = dn_counter$new("Figure ", "_")
+```
+
+```{r}
 #| label: knitr-chunks
 #| echo: false
 knitr::opts_chunk$set(
@@ -14,6 +21,7 @@ knitr::opts_chunk$set(
   warning = FALSE,
   fig.width = 14,
   fig.height = 12,
+  fig.process = figure_count$modify_path,
   dev = "ragg_png",
   dpi = 150
 )
@@ -27,6 +35,16 @@ library(targets)
 tar_source(c("packages.R", "R"))
 tar_load(sets_qc_evaluation)
 ```
+
+```{r}
+#| label: load-plots
+tar_load(c(nose_reasons_bar_plot,
+loss_waterfall_plot))
+
+figure_count$increment("loss-nose-plot")
+```
+
+
 
 
 ```{r}
@@ -229,6 +247,11 @@ SSF group size > 10:
 
 As the data were parsed and transformed into R and Bioconductor data structures, many datasets were removed for various reasons.
 In fact, there were several datasets with no data, 
+
+```{r}
+#| label: loss-nose-plot
+(loss_waterfall_plot / nose_reasons_bar_plot) + plot_annotation(tag_levels = "A")
+```
 
 ### Overall Statuses
 
