@@ -47,7 +47,7 @@ n_few = summary_qc |>
   dplyr::filter(failed_steps %in% "none", failed_why %in% "too few samples")
 
 
-overall_status = find_green_analyses(sets_qc_evaluation)
+overall_status = set_overall_color_status(sets_qc_evaluation)
 gray_status = overall_status |>
   dplyr::filter(
     completed_steps %in% "se; dynamic_range; correlation; pca",

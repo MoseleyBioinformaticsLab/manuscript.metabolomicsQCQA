@@ -173,7 +173,8 @@ data_limits_t = tar_target(
 )
 
 actual_analysis_t = tar_assign({
-  not_gray_pca = find_pca_remove_gray(sets_qc_evaluation) |> tar_target()
+  sets_qc_color = set_overall_color_status(sets_qc_evaluation) |> tar_target()
+  not_gray_pca = find_pca_remove_gray(sets_qc_color) |> tar_target()
 })
 
 manuscript_t = tar_quarto(
