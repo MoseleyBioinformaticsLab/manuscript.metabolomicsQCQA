@@ -1,7 +1,7 @@
 calculate_losses_at_steps = function(sets_qc_color) {
   # tar_load(sets_qc_evaluation); tar_source("R")
   n_each = summarize_qc_results_table(sets_qc_color, group_none = "yes")
-  n_total = nrow(sets_qc_evaluation)
+  n_total = nrow(sets_qc_color)
 
   stopped_se = n_each |>
     dplyr::filter(completed_steps %in% "none", is.na(failed_steps)) |>
@@ -15,7 +15,7 @@ calculate_losses_at_steps = function(sets_qc_color) {
   stopped_correlation = n_each |>
     dplyr::filter(failed_steps %in% "correlation") |>
     dplyr::pull(n)
-  gray_pca = sum(sets_qc_evaluation$pca_anova_pvalue_status %in% "gray")
+  gray_pca = sum(sets_qc_color$pca_anova_pvalue_status %in% "gray")
 
   results_df = tibble::tribble(
     ~step           , ~n                         , ~type   ,
