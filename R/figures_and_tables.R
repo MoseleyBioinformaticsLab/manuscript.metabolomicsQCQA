@@ -29,7 +29,7 @@ calculate_losses_at_steps = function(sets_qc_color) {
 }
 
 create_loss_waterfall_plot = function(waterfall_input) {
-  library(waterfall)
+  library(waterfalls)
   loss_waterfall_plot = waterfall_input |>
     waterfall(
       calc_total = TRUE,
