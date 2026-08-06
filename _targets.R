@@ -54,7 +54,7 @@ processed_group_t = tar_target(
   bind_group_processed(processed)
 )
 
-report_file_t = tar_file(report_file, "resources/example_report.qmd")
+report_file_t = tar_file(report_files, fs::dir_ls("resources", regexp = "qmd"))
 
 mwtab_ftp_file_t = tar_file(
   mwtab_ftp_file,
@@ -95,7 +95,10 @@ sets_map = tar_map(
   tar_target(se_qc_eval, sets_evaluate_qc(se_pca, data_limits)), #10
   tar_target(se_rsd, sets_rsd(se_pca)), #11
   tar_target(se_pc_number, sets_get_pc(se_pca)), #12
-  tar_target(qcqa_reports, sets_create_qcqa_reports(se_pca, sets_qc_color))
+  tar_target(
+    qcqa_reports,
+    sets_create_qcqa_reports(se_pca, sets_qc_color, report_files)
+  )
 )
 
 se_negative_information_t = tar_combine(
@@ -226,6 +229,7 @@ list(
   ancillary_datasets_t,
   mwtab_ftp_file_t,
   mwtab_raw_files_t,
+  report_file_t,
   processed_t,
   processed_group_t,
   sets_map,

@@ -19,6 +19,7 @@ convert_description_to_sentence = function(in_string) {
 sets_create_qcqa_reports = function(
   pca_sets,
   sets_qc_color,
+  report_files,
   save_loc = "qcqa_reports"
 ) {
   # pca_sets = tar_read(se_pca_g01); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
