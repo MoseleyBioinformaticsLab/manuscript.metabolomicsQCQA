@@ -58,7 +58,7 @@ sample_metadata |>
 se_data = se_data[, is.na(se_data$removed), drop = FALSE]
 factor_types = metadata(se_data)$factor_types
 tmp_ssf = get_vardata(se_data) |>
-  dplyr::select(-within_icikt, -between_icikt, -w_b_better)
+  dplyr::select(!tidyselect::any_of(c("within_icikt", "between_icikt", "w_b_better")))
 experimental_design = determine_experimental_design(tmp_ssf, factor_types)
 experimental_design$n_by_factor_factors |>
   add_total_samples_by_factor() |>

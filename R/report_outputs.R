@@ -18,10 +18,10 @@ convert_description_to_sentence = function(in_string) {
 
 sets_create_qcqa_reports = function(
   pca_sets,
-  sets_qc_evaluation,
+  sets_qc_color,
   save_loc = "qcqa_reports"
 ) {
-  # pca_sets = tar_read(se_pca_g01); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_evaluation)
+  # pca_sets = tar_read(se_pca_g01); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
 
   sets_tmp_files = purrr::map(names(pca_sets), \(in_id) {
     paste0(tempfile(paste0(in_id, "_")), c(".rds", ".qmd"))
@@ -32,7 +32,7 @@ sets_create_qcqa_reports = function(
     sets_tmp_files,
     create_report_from_templates,
     save_loc,
-    sets_qc_evaluation,
+    sets_qc_color,
     quiet = TRUE
   )
   out_reports
@@ -45,6 +45,7 @@ create_report_from_templates = function(
   quiet = TRUE
 ) {
   # se_data = pca_sets[[1]]; in_tmp_files = sets_tmp_files[[1]]; quiet = FALSE; tar_source("R");
+  # se_data = pca_sets[["AN007791"]]; in_tmp_files = sets_tmp_files[["AN007791"]]; quiet = FALSE; tar_source("R")
   analysis_id = get_specific_metadata(se_data, "qc")$id
   # message(analysis_id)
   summary_info = sets_qc_evaluation[
@@ -467,10 +468,18 @@ transform_summary_to_useful_table = function(summary_info) {
 gt_sample_metadata = function(sample_metadata) {
   out_gt = sample_metadata |>
     gt::gt()
+  to_engineering = base::intersect(
+    c("value_min", "value_max", "dynamic_range"),
+    names(sample_metadata)
+  )
+  to_number = base::intersect(
+    c("median_ici_correlation", "score", "within_icikt", "between_icikt"),
+    names(sample_metadata)
+  )
   out_gt = out_gt |>
-    gt::fmt_engineering(c(value_min, value_max, dynamic_range), decimals = 2) |>
+    gt::fmt_engineering(to_engineering, decimals = 2) |>
     gt::fmt_number(
-      c(median_ici_correlation, score, within_icikt, between_icikt),
+      to_number,
       n_sigfig = 2
     )
   out_gt
