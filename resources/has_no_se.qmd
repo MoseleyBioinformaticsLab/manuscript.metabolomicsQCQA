@@ -2,6 +2,16 @@
 #| label: determine-reason-no-se
 if (report_list$failed["why"] %in% "no feature data") {
   out_reason = "The analysis had no metabolite feature data present."
+} else if (report_list$failed["why"] %in% "no samples; didn't match ssf") {
+  out_reason = "There were no matching samples between the SSF and metabolite data."
+} else if (report_list$failed["why"] %in% "duplicate sample attributes") {
+  out_reason = "There were some duplicated sample attributes, when they should all be unique."
+} else if (report_list$failed["why"] %in% "no features; didn't match metabolites") {
+  out_reason = "The features couldn't be matched between the abundance data and the metabolite data."
+} else if (report_list$failed["why"] %in% "no numeric abundances") {
+  out_reason = "There were no abundances that could be converted to numbers."
+} else if (report_list$failed["why"] %in% "no subject sample factors") {
+  out_reason = "There is no subject sample factor data."
 }
 ```
 
