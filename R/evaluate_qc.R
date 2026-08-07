@@ -304,9 +304,9 @@ get_n_samples_ssf = function(se_data, default = FALSE) {
   n_has_3 = out_n$`N-Samples` >= 3
 
   n_sample_status = dplyr::case_when(
-    !all(n_has_3) ~ "red",
-    !all(n_has_5) & all(n_has_3) ~ "yellow",
-    all(n_has_5) ~ "green"
+    !sum(n_has_3) > 1 ~ "red",
+    !sum(n_has_5) > 1 & sum(n_has_3) > 1 ~ "yellow",
+    sum(n_has_5) > 1 ~ "green"
   )
 
   ssf_metadata_status = dplyr::case_when(
