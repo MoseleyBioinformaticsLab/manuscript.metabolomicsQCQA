@@ -97,7 +97,7 @@ sets_map = tar_map(
   tar_target(se_pc_number, sets_get_pc(se_pca)), #12
   tar_target(
     qcqa_reports,
-    sets_create_qcqa_reports(se_pca, sets_qc_color, report_files, group_sets)
+    sets_create_qcqa_reports(se_pca, sets_qc_color, report_files)
   )
 )
 
