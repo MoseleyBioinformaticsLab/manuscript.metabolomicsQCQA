@@ -20,11 +20,26 @@ sets_create_qcqa_reports = function(
   pca_sets,
   sets_qc_color,
   report_files,
+  group_sets,
   save_loc = "qcqa_reports"
 ) {
   # pca_sets = tar_read(se_pca_g01); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
   # pca_sets = tar_read(se_pca_g02); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
+  # pca_sets = tar_read(se_pca_g35); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
+  id_sets = names(pca_sets)
+  all_sets = purrr::map(group_sets$set, \(x) {
+    x
+  }) |>
+    purrr::list_rbind()
+  use_set = all_sets |>
+    dplyr::filter(id %in% id_sets) |>
+    dplyr::pull(group) |>
+    unique()
 
+  n_cores = future::nbrOfWorkers()
+  if (use_set %in% "g09") {
+    plan(multicore, workers = ceiling(n_cores / 2))
+  }
   sets_tmp_files = purrr::map(names(pca_sets), \(in_id) {
     paste0(tempfile(paste0(in_id, "_")), c(".rds", ".qmd"))
   })
@@ -37,6 +52,7 @@ sets_create_qcqa_reports = function(
     sets_qc_color,
     quiet = TRUE
   )
+  plan(multicore, workers = n_cores)
   out_reports
 }
 create_report_from_templates = function(
@@ -50,6 +66,7 @@ create_report_from_templates = function(
   # se_data = pca_sets[["AN007791"]]; in_tmp_files = sets_tmp_files[["AN007791"]]; quiet = FALSE; tar_source("R")
   # se_pca_g02
   # se_data = pca_sets[["AN000304"]]; in_tmp_files = sets_tmp_files[["AN000304"]]; quiet = FALSE; sets_qc_evaluation = sets_qc_color
+  # se_data = pca_sets[["AN000645"]]; in_tmp_files = sets_tmp_files[["AN000645"]]; quiet = FALSE; sets_qc_evaluation = sets_qc_color
   analysis_id = get_specific_metadata(se_data, "qc")$id
   # message(analysis_id)
   summary_info = sets_qc_evaluation[
