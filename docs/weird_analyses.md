@@ -41,3 +41,5 @@
   * Has all same values, or missing.
 * AN005958:
   * Has ".E" instead of just "E" to denote the exponent, which had to be corrected.
+* AN003719:
+  * The temporal aspect is encoded as "additional sample data", when it is integral to the actual experiment. Time should have been "factors", not additional data. I wonder how many of our "yellow" and "red" PCA data are weird timecourses?

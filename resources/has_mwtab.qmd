@@ -180,7 +180,7 @@ collection_table |>
 #| label: tbl-mw-factors
 #| tbl-cap: Metabolomics workbench subject sample factors data.
 mwtab_meta$SUBJECT_SAMPLE_FACTORS |>
-  widen_ssf_json() |>
+  widen_ssf_for_reports() |>
   gt::gt() |>
   gt::opt_interactive()
 ```

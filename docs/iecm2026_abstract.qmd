@@ -43,6 +43,9 @@ n_completed = summary_qc |>
 n_no_se = summary_qc |>
   dplyr::filter(is.na(failed_why) & completed_steps %in% "none")
 
+n_dropped = summary_qc |>
+  dplyr::filter(failed_steps %in% "correlation")
+
 n_few = summary_qc |>
   dplyr::filter(failed_steps %in% "none", failed_why %in% "too few samples")
 
@@ -64,6 +67,7 @@ n_green = n_color |> dplyr::filter(overall_status %in% "green")
 n_yellow = n_color |> dplyr::filter(overall_status %in% "yellow")
 n_red = n_color |> dplyr::filter(overall_status %in% "red")
 n_gray = nrow(gray_status)
+n_total = sum(n_color$n)
 ```
 
 **Introduction:** While depositing omics data into public repositories is frequently required by grant funders and journals, the quality of deposited data is not uniform, limiting its reuse in large meta-analyses.
@@ -85,6 +89,6 @@ For each dataset, we attempted to:
 For each successful step, we assigned a color-based data quality grade for a given dataset: **red**, think twice before using; **yellow**, probably OK; and **green**,  looks good for that step.
 In addition, we generated an HTML QC/QA report for each of the datasets.
 
-**Results:** Of the `{r} n_parsed` datasets that could be parsed, `{r} format_in_sentence(n_no_se)` could not be coerced into a summarized experiment object for various reasons; `{r} format_in_sentence(n_few)` had $\lt 3$ samples, and therefore could not undergo correlation, PCA, or RSD calculations; and `{r} format_in_sentence(n_completed)` were able to go through all steps to PCA.
+**Results:** Of the `{r} n_parsed` datasets that could be parsed, `{r} format_in_sentence(n_no_se)` could not be coerced into a summarized experiment object for various reasons; `{r} format_in_sentence(n_few)` had < 3 samples, and therefore could not undergo correlation, PCA, or RSD calculations; another `{r} format_in_sentence(n_dropped)` started correlation but could not complete all steps, and `{r} format_in_sentence(n_completed)` were able to go through all steps to PCA.
 For successful PCA, `{r} n_gray` had either a single SSF, or every sample was its own SSF, making them inappropriate for differential analyses.
-Among those left, `{r} format_in_sentence(n_green)` had all **green** statuses; `{r} format_in_sentence(n_yellow)` had one or more **yellow** statuses; and `{r} format_in_sentence(n_red)` had one or more **red** statuses across the QC/QA evaluations.
+Among the `{r} n_total` remaining, `{r} format_in_sentence(n_green)` had all **green** statuses; `{r} format_in_sentence(n_yellow)` had one or more **yellow** statuses; and `{r} format_in_sentence(n_red)` had one or more **red** statuses across the QC/QA evaluations.
