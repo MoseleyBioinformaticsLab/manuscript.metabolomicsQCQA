@@ -8,6 +8,9 @@ format:
     toc-depth: 4
     toc-expand: true
     embed-resources: true
+filters:
+  - convert-to-webp
+webp-delete-originals: true
 ---
 
 Last generated at: `r Sys.time()`
@@ -59,7 +62,7 @@ knitr::opts_chunk$set(
   fig.width = 14,
   fig.height = 12,
   dev = "ragg_png",
-  dpi = 150
+  dpi = 72
 )
 ```
 

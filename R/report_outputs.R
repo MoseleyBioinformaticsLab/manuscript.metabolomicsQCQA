@@ -28,6 +28,8 @@ sets_create_qcqa_reports = function(
   # pca_sets = tar_read(se_pca_g30); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
   # pca_sets = tar_read(se_pca_g28); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
   # pca_sets = tar_read(se_pca_g11); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
+  # pca_sets = tar_read(se_pca_g24); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
+
   set_size = object.size(pca_sets) * 1e-9
 
   n_cores = future::nbrOfWorkers()
@@ -37,6 +39,13 @@ sets_create_qcqa_reports = function(
   sets_tmp_files = purrr::map(names(pca_sets), \(in_id) {
     paste0(tempfile(paste0(in_id, "_")), c(".rds", ".qmd"))
   })
+
+  use_tmp_dir = fs::path_dir(sets_tmp_files[[1]][1])
+  fs::dir_copy(
+    "resources/_extensions",
+    fs::path(use_tmp_dir, "_extensions"),
+    overwrite = TRUE
+  )
   names(sets_tmp_files) = names(pca_sets)
   out_reports = furrr::future_map2(
     pca_sets,
@@ -63,6 +72,7 @@ create_report_from_templates = function(
   # se_data = pca_sets[["AN000645"]]; in_tmp_files = sets_tmp_files[["AN000645"]]; quiet = FALSE; sets_qc_evaluation = sets_qc_color
   # se_data = pca_sets[["AN003719"]]; in_tmp_files = sets_tmp_files[["AN003719"]]; quiet = FALSE; sets_qc_evaluation = sets_qc_color
   # se_data = pca_sets[["AN003914"]]; in_tmp_files = sets_tmp_files[["AN003914"]]; quiet = FALSE; sets_qc_evaluation = sets_qc_color
+  # se_data = pca_sets[["AN003141"]]; in_tmp_files = sets_tmp_files[["AN003141"]]; quiet = FALSE; sets_qc_evaluation = sets_qc_color
   analysis_id = get_specific_metadata(se_data, "qc")$id
   # message(analysis_id)
   summary_info = sets_qc_evaluation[
