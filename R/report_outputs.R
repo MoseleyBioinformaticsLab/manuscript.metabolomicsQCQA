@@ -212,13 +212,25 @@ get_study_id_link = function(mwtab_data) {
 create_pca_anova_table = function(anova_results, variance_info) {
   tmp_anova = anova_results |>
     dplyr::filter(!is.na(df)) |>
-    dplyr::mutate(p.adjust = p.adjust(p.value, method = "bonferroni"))
+    dplyr::mutate(
+      p.adjust = p.adjust(p.value, method = "bonferroni"),
+      .by = variable
+    )
+  all_sig_pc = tmp_anova |>
+    dplyr::filter(p.adjust <= 0.05) |>
+    dplyr::pull(PC)
+
+  if (length(all_sig_pc) == 0) {
+    use_pcs = c("PC1", "PC2", "PC3", "PC4", "PC5")
+  } else {
+    use_pcs = stringr::str_sort(unique(all_sig_pc), numeric = TRUE)
+  }
   tmp_anova = dplyr::left_join(
     tmp_anova,
     variance_info[, c("pc", "labels")],
     by = c("PC" = "pc")
   )
-  use_pcs = c("PC1", "PC2", "PC3", "PC4", "PC5")
+
   tmp_anova |>
     dplyr::filter(PC %in% use_pcs) |>
     dplyr::arrange(PC, p.value) |>
@@ -345,6 +357,7 @@ create_grouping_scores_table = function(
 
 create_variance_values = function(variance_table, ind = "PC2", group = "PC5") {
   # variance_table = use_pca$pca_groups$all$pca$variance; ind = "PC2"; group = "PC5"
+  # variance_table = use_pca$all$pca$variance; ind = "PC2"; group = "PC5"
   ind_indices = seq_len(which(variance_table$pc %in% ind))
   ind_values = variance_table$percent[ind_indices]
   names(ind_values) = variance_table$pc[ind_indices]
@@ -371,7 +384,7 @@ create_variance_values = function(variance_table, ind = "PC2", group = "PC5") {
   n_group = which(variance_table$pc %in% group)
   group_print = paste0(format(group_value * 100, digits = 2), "%")
   group_result = glue::glue(
-    "PC-variable ANOVA results for PCs 1 - {n_group}, arranged by PC and p-value. Adjusted p-values are bolded. Cumulative variance accounted for is {group_print}."
+    "PC-variable ANOVA results for PCs 1 - {n_group}, arranged by PC and p-value. Adjusted p-values $\\le$ 0.05 are bolded. Cumulative variance accounted for is {group_print}."
   )
   names(group_value) = group
 

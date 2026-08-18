@@ -349,7 +349,9 @@ do_pca = function(se_data) {
 
   test_vars = c(
     factor_types |>
-      dplyr::filter(type %in% "subject_sample_factor") |>
+      dplyr::filter(
+        type %in% c("subject_sample_factor", "additional_sample_data")
+      ) |>
       dplyr::pull(factor),
     "ssf"
   )

@@ -1,4 +1,5 @@
 find_additional_factors = function(parsed_grouped_statuses) {
+  # tar_load(parsed_grouped_statuses); tar_source("R")
   all_status_cols = setup_statuses(names(parsed_grouped_statuses))
 
   interesting_status_df = tibble::tribble(
@@ -20,7 +21,10 @@ find_additional_factors = function(parsed_grouped_statuses) {
   all_indices = unique(unlist(interesting_status_indices))
 
   all_matches = parsed_grouped_statuses[all_indices, "match"] |>
-    tidyr::unnest(cols = "match")
+    tidyr::unnest(cols = "match") |>
+    dplyr::filter(most_common_n >= 10) |>
+    dplyr::arrange(dplyr::desc(most_common_n))
+  all_matches
 }
 
 find_matching_status_index = function(keep_status, status_definition) {
