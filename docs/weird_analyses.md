@@ -43,3 +43,13 @@
   * Has ".E" instead of just "E" to denote the exponent, which had to be corrected.
 * AN003719:
   * The temporal aspect is encoded as "additional sample data", when it is integral to the actual experiment. Time should have been "factors", not additional data. I wonder how many of our "yellow" and "red" PCA data are weird timecourses?
+* AN001764:
+  * has replicate samples (_1, _2). Only becomes apparent when looking at the checkerboard pattern in the heatmap. replicate information is **not** included in the SSF, or extra data.
+* AN002538:
+  * temporal aspect is in "additional sample data".
+
+
+## Really nice examples to highlight
+
+* AN002341
+  * Heatmap honestly looks wonderful, as well as the PCA.
