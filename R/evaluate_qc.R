@@ -356,25 +356,37 @@ check_pca = function(se_data, pca_limits, default = FALSE) {
       pca_pc_index_90 <= pca_limits[2] ~ "yellow",
     pca_pc_index_90 > pca_limits[2] ~ "red"
   )
-  pca_anova = pca_data_use$pca$anova |>
-    dplyr::mutate(p.adjust = p.adjust(p.value, method = "bonferroni"))
+  pca_anova = pca_data_use$pca$anova
 
   pca_anova_pvalue = pca_anova |>
-    dplyr::arrange(p.adjust) |>
+    dplyr::arrange(padjust) |>
     dplyr::slice_head(n = 1)
+
+  factor_types = get_specific_metadata(se_data, "factor_types")
+  pca_anova_pvalue = dplyr::left_join(
+    pca_anova_pvalue,
+    factor_types,
+    by = c("variable" = "factor")
+  )
 
   pca_anova_perc = pca_variance |>
     dplyr::filter(pc %in% pca_anova_pvalue$PC) |>
     dplyr::pull(percent)
   pca_anova_pvalue_status = dplyr::case_when(
-    pca_anova_pvalue$p.adjust > 0.05 ~ "red",
-    pca_anova_pvalue$p.adjust <= 0.05 &
-      (pca_anova_perc >= 0.05) ~ "green",
-    pca_anova_pvalue$p.adjust <= 0.05 &
+    pca_anova_pvalue$padjust > 0.05 ~ "red",
+    pca_anova_pvalue$padjust <= 0.05 &
+      (pca_anova_perc >= 0.05) &
+      (pca_anova_pvalue$type %in%
+        c("subject_sample_factor", "derived")) ~ "green",
+    pca_anova_pvalue$padjust <= 0.05 &
+      (pca_anova_perc >= 0.05) &
+      (pca_anova_pvalue$type %in%
+        c("additional_sample_data", "additional_ssf")) ~ "yellow",
+    pca_anova_pvalue$padjust <= 0.05 &
       (pca_anova_perc >= 0.01 & pca_anova_perc < 0.05) ~ "yellow",
-    pca_anova_pvalue$p.adjust <= 0.05 &
+    pca_anova_pvalue$padjust <= 0.05 &
       (pca_anova_perc < 0.01) ~ "red",
-    is.na(pca_anova_pvalue$p.adjust) ~ "gray"
+    is.na(pca_anova_pvalue$padjust) ~ "gray"
   )
   return(list(
     pca_pc_index_90 = pca_pc_index_90,
