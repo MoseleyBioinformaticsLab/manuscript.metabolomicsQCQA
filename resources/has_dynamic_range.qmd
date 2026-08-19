@@ -7,7 +7,7 @@ Values $\le 0$ were set to missing for all further calculations.
 
 ```{r}
 #| label: tbl-sample-metadata
-#| tbl-cap: Sample metadata, including the sample ID, the various subject-sample-factors provided, and then measured or calculated sample attributes, including outlier status (if the analysis made it to ICI-Kt), median ICI-Kt, within SSF ICI-Kt, between SSF ICI-Kt, and if the within is higher than the between.
+#| tbl-cap: Sample metadata, including the sample ID, the various subject-sample-factors and additional-sample data provided (SSF are bolded), and then measured or calculated sample attributes, including outlier status (if the analysis made it to ICI-Kt), median ICI-Kt, within SSF ICI-Kt, between SSF ICI-Kt, and if the within is higher than the between.
 sample_metadata = get_vardata(se_data)
 factor_types = get_specific_metadata(se_data, "factor_types")
 sample_metadata |>
@@ -26,7 +26,10 @@ metadata(se_data)$data_issues |>
 
 ## Transformation
 
-Did we log-transform the data before further analysis?
+Some datasets have log-transformed abundances when submitted.
+The analysis code we are using assumes that the abundance values are raw, not log-transformed.
+Therefore, we try to detect if the values are log-transformed already, and if so, exponentiate them before further processing.
+The transformation, and information about what values went into that decision are shown in @tbl-transformation.
 
 ```{r}
 #| label: tbl-transformation

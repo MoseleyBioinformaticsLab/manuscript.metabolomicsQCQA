@@ -522,6 +522,9 @@ gt_sample_metadata = function(sample_metadata, factor_types) {
     sample_metadata = sample_metadata |>
       dplyr::select(!tidyselect::any_of(non_display_factors$factor))
   }
+  bold_factors = factor_types |>
+    dplyr::filter(type %in% "subject_sample_factor" | factor %in% "ssf") |>
+    dplyr::pull(factor)
   out_gt = sample_metadata |>
     gt::gt()
   to_engineering = base::intersect(
@@ -537,6 +540,15 @@ gt_sample_metadata = function(sample_metadata, factor_types) {
     gt::fmt_number(
       to_number,
       n_sigfig = 2
+    ) |>
+    gt::tab_style(
+      style = list(gt::cell_text(weight = "bold")),
+      locations = list(
+        gt::cells_body(
+          columns = bold_factors
+        ),
+        gt::cells_column_labels(columns = bold_factors)
+      )
     )
   out_gt
 }
