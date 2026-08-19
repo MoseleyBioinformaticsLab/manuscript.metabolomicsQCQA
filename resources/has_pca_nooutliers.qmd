@@ -4,6 +4,7 @@ We remove any outlier samples (scoring using median ICI-Kt), and redo all the ca
 
 ```{r}
 #| label: not-outliers
+max_group = find_maximum_pc(pca_data$not_outlier$pca$anova)
 not_outlier_variances = create_variance_values(
   pca_data$not_outlier$pca$variance,
   ind = max_ind,

@@ -4,6 +4,7 @@ Finally, we remove both outliers and any quality-control samples.
 
 ```{r}
 #| label: not-out-qc
+max_group = find_maximum_pc(pca_data$not_outlier$pca$anova)
 not_outlier_qc_variances = create_variance_values(
   pca_data$not_outlier_qc$pca$variance,
   ind = max_ind,

@@ -126,7 +126,7 @@ pca_data$all$scores |>
 ```{r}
 #| label: all-pca-variances
 max_ind = "PC2"
-max_group = "PC5"
+max_group = find_maximum_pc(pca_data$all$pca$anova)
 all_variances = create_variance_values(
   pca_data$all$pca$variance,
   ind = max_ind,
@@ -149,7 +149,7 @@ All samples.
 
 :::
 
-In addition, for each principal component up to those accounting for 90% of the variance, we test the sample scores against each of the experimental factors, including the combination of all factors (factors) using ANOVA to allow for the presence of several groups.
+In addition, for each principal component up to those accounting for 90% of the variance, we test the sample scores against each of the experimental subject-sample-factors (SSF), including all of the additional sample data factors if present, and combinations of SSF and addittional sample factors (these will be **ssf_** in the tables) using ANOVA to allow for the presence of several groups.
 
 ::: {#tbl-all-pca-anova}
 

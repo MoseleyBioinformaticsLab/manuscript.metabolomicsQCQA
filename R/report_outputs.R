@@ -29,6 +29,7 @@ sets_create_qcqa_reports = function(
   # pca_sets = tar_read(se_pca_g28); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
   # pca_sets = tar_read(se_pca_g11); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
   # pca_sets = tar_read(se_pca_g24); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
+  # pca_sets = tar_read(se_pca_g02); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
 
   set_size = object.size(pca_sets) * 1e-9
 
@@ -73,6 +74,7 @@ create_report_from_templates = function(
   # se_data = pca_sets[["AN003719"]]; in_tmp_files = sets_tmp_files[["AN003719"]]; quiet = FALSE; sets_qc_evaluation = sets_qc_color
   # se_data = pca_sets[["AN003914"]]; in_tmp_files = sets_tmp_files[["AN003914"]]; quiet = FALSE; sets_qc_evaluation = sets_qc_color
   # se_data = pca_sets[["AN003141"]]; in_tmp_files = sets_tmp_files[["AN003141"]]; quiet = FALSE; sets_qc_evaluation = sets_qc_color
+  # se_data = pca_sets[["AN004656"]]; in_tmp_files = sets_tmp_files[["AN004656"]]; quiet = FALSE; sets_qc_evaluation = sets_qc_color
   analysis_id = get_specific_metadata(se_data, "qc")$id
   # message(analysis_id)
   summary_info = sets_qc_evaluation[
@@ -211,33 +213,25 @@ get_study_id_link = function(mwtab_data) {
 
 create_pca_anova_table = function(anova_results, variance_info) {
   tmp_anova = anova_results |>
-    dplyr::filter(!is.na(df)) |>
-    dplyr::mutate(
-      p.adjust = p.adjust(p.value, method = "bonferroni"),
-      .by = variable
-    )
-  all_sig_pc = tmp_anova |>
-    dplyr::filter(p.adjust <= 0.05) |>
-    dplyr::pull(PC)
+    dplyr::filter(!is.na(df))
+  low_pcs = c("PC1", "PC2", "PC3", "PC4", "PC5")
+  sig_anova = tmp_anova |>
+    dplyr::filter(padjust <= 0.05 | (variable %in% "ssf" & PC %in% low_pcs))
 
-  if (length(all_sig_pc) == 0) {
-    use_pcs = c("PC1", "PC2", "PC3", "PC4", "PC5")
-  } else {
-    use_pcs = stringr::str_sort(unique(all_sig_pc), numeric = TRUE)
-  }
-  tmp_anova = dplyr::left_join(
-    tmp_anova,
+  use_pcs = stringr::str_sort(unique(sig_anova$PC), numeric = TRUE)
+
+  out_anova = dplyr::left_join(
+    sig_anova,
     variance_info[, c("pc", "labels")],
     by = c("PC" = "pc")
   )
 
-  tmp_anova |>
-    dplyr::filter(PC %in% use_pcs) |>
-    dplyr::arrange(PC, p.value) |>
+  out_anova |>
+    dplyr::arrange(stringr::str_rank(PC, numeric = TRUE), p.value) |>
     dplyr::transmute(
       PC = labels,
       variable = variable,
-      `P-adjusted` = p.adjust,
+      `P-adjusted` = padjust,
       `P-value` = p.value,
       df,
       sumsq,
@@ -355,6 +349,22 @@ create_grouping_scores_table = function(
     gt::fmt_number(columns = differences_fraction, decimals = 2)
 }
 
+find_maximum_pc = function(anova_table, pcut = 0.05) {
+  max_pc = "PC5"
+  sig_table = anova_table |>
+    dplyr::filter(padjust <= pcut)
+  if (nrow(sig_table) == 0) {
+    max_pc = "PC5"
+  } else {
+    sig_pcs = stringr::str_sort(unique(sig_table$PC), numeric = TRUE)
+    max_pc = sig_pcs[length(sig_pcs)]
+    if (as.numeric(gsub("PC", "", max_pc)) < 5) {
+      max_pc = "PC5"
+    }
+  }
+  return(max_pc)
+}
+
 create_variance_values = function(variance_table, ind = "PC2", group = "PC5") {
   # variance_table = use_pca$pca_groups$all$pca$variance; ind = "PC2"; group = "PC5"
   # variance_table = use_pca$all$pca$variance; ind = "PC2"; group = "PC5"
@@ -384,7 +394,7 @@ create_variance_values = function(variance_table, ind = "PC2", group = "PC5") {
   n_group = which(variance_table$pc %in% group)
   group_print = paste0(format(group_value * 100, digits = 2), "%")
   group_result = glue::glue(
-    "PC-variable ANOVA results for PCs 1 - {n_group}, arranged by PC and p-value. Adjusted p-values $\\le$ 0.05 are bolded. Cumulative variance accounted for is {group_print}."
+    "PC-variable ANOVA results for PCs 1 - {n_group} and adjusted-p-values $\\le$ 0.05, arranged by PC and p-value. Adjusted p-values $\\le$ 0.05 are bolded. Cumulative variance accounted for is {group_print}."
   )
   names(group_value) = group
 

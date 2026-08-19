@@ -4,6 +4,7 @@ In this case, we remove any quality-control samples, such as pooled, blanks, or 
 
 ```{r}
 #| label: not-qc
+max_group = find_maximum_pc(pca_data$not_qc$pca$anova)
 not_qc_variances = create_variance_values(
   pca_data$not_qc$pca$variance,
   ind = max_ind,
