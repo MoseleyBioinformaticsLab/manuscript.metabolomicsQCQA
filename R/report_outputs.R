@@ -477,7 +477,7 @@ add_scores_metadata = function(se_data) {
     order_data[, c("sample_id", "within_icikt", "between_icikt", "w_b_better")],
     by = "sample_id"
   )
-  colData(se_data) = cbind(colData(se_data), order_added[, -1, drop = FALSE])
+  se_data = add_coldata(se_data, order_added)
   return(se_data)
 }
 
@@ -505,7 +505,13 @@ transform_summary_to_useful_table = function(summary_info) {
   return(out_table)
 }
 
-gt_sample_metadata = function(sample_metadata) {
+gt_sample_metadata = function(sample_metadata, factor_types) {
+  non_display_factors = factor_types |>
+    dplyr::filter(type %in% "additional_ssf")
+  if (nrow(non_display_factors) > 0) {
+    sample_metadata = sample_metadata |>
+      dplyr::select(!tidyselect::any_of(non_display_factors$factor))
+  }
   out_gt = sample_metadata |>
     gt::gt()
   to_engineering = base::intersect(

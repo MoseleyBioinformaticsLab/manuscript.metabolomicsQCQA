@@ -2,7 +2,8 @@ determine_experimental_design = function(in_ssf, factor_types) {
   # in_dataset = tar_read(cor_g06)[[1]]
   extra_vars = factor_types |>
     dplyr::filter(
-      (type %in% c("additional_sample_data", "computed", "derived")) &
+      (type %in%
+        c("additional_sample_data", "computed", "derived", "additional_ssf")) &
         (!factor %in% c("ssf"))
     ) |>
     dplyr::pull(factor)

@@ -6,6 +6,24 @@ get_vardata = function(se_data, which = "cols") {
   }
 }
 
+add_coldata = function(se_data, additional_data) {
+  if (nrow(additional_data) != nrow(colData(se_data))) {
+    stop("Number of rows doesn't match!")
+  }
+  if ("sample_id" %in% colnames(additional_data)) {
+    tmp_df = tibble::tibble(sample_id = se_data$sample_id)
+    additional_data = dplyr::left_join(
+      tmp_df,
+      additional_data,
+      by = "sample_id"
+    )
+    additional_data = additional_data |>
+      dplyr::select(-sample_id)
+  }
+  colData(se_data) = cbind(colData(se_data), additional_data)
+  se_data
+}
+
 sets_run_pca_experimental_design = function(lc_sets) {
   # lc_sets = tar_read(lc_g01); tar_source("R")
   # pca_sets = purrr::map(lc_sets[1:10], run_pca_experimental_design, .progress = TRUE)
@@ -56,6 +74,7 @@ run_pca_experimental_design = function(se_data) {
   # check lc_g04; AN000777; AN001296
   # lc_sets = tar_read(lc_g10); se_data = lc_sets$AN003604; tar_source("R")
   # se_data = cor_sets[[1]]
+  # tar_load(se_pca_g02); se_data = se_pca_g02[["AN004656"]]; tar_source("R")
   start_time = Sys.time()
 
   if (metadata(se_data) |> check_isstop()) {
@@ -76,11 +95,16 @@ run_pca_experimental_design = function(se_data) {
       score = score,
       outlier = outlier
     )
+
+  # this is here so that things removed during ICI-Kt, and therefore
+  # outlier detection, get set to FALSE, as they are NOT actually outliers,
+  # but still need to be handled.
   just_outlier_info = dplyr::left_join(
     data.frame(sample_id = se_data$sample_id),
     just_outlier_info,
     by = "sample_id"
   )
+
   just_outlier_info = just_outlier_info |>
     dplyr::mutate(outlier = dplyr::replace_values(outlier, NA ~ FALSE))
 
@@ -96,10 +120,11 @@ run_pca_experimental_design = function(se_data) {
     )
   )
 
-  colData(se_data) = cbind(
-    colData(se_data),
-    just_outlier_info |> dplyr::select(-sample_id)
-  )
+  se_data = add_coldata(se_data, just_outlier_info)
+  metadata(se_data)$factor_types = factor_types
+
+  se_data = create_additional_factors_ssf(se_data)
+  factor_types = get_specific_metadata(se_data, "factor_types")
 
   all_res = NULL
   not_outlier_res = NULL
@@ -339,6 +364,7 @@ do_pca = function(se_data) {
   pca_res = prcomp(t(log_matrix), center = TRUE, scale. = FALSE)
 
   factor_types = metadata(se_data)$factor_types
+
   pca_var = visualizationQualityControl::visqc_score_contributions(pca_res$x)
   pca_90 = which(pca_var$cumulative > 0.9) |> min()
   if ((length(pca_90) == 0) || is.infinite(pca_90) || is.na(pca_90)) {
@@ -347,10 +373,14 @@ do_pca = function(se_data) {
     use_test = seq_len(pca_90)
   }
 
+  # we test the SSF, the various underlying factors that make up the SSF, as
+  # well as the additional-sample-data, and combinations of additional-sample-data and
+  # SSF
   test_vars = c(
     factor_types |>
       dplyr::filter(
-        type %in% c("subject_sample_factor", "additional_sample_data")
+        type %in%
+          c("subject_sample_factor", "additional_sample_data", "additional_ssf")
       ) |>
       dplyr::pull(factor),
     "ssf"
@@ -365,6 +395,11 @@ do_pca = function(se_data) {
     ssf |>
       dplyr::select(tidyselect::all_of(test_vars2))
   )
+  pca_anova = pca_anova |>
+    dplyr::mutate(
+      padjust = p.adjust(p.value, method = "bonferroni"),
+      .by = variable
+    )
   pca_x = pca_res$x
   pca_df = cbind(as.data.frame(pca_x), ssf)
 
@@ -378,6 +413,42 @@ do_pca = function(se_data) {
   labelled::var_label(pca_df) = label_vals
 
   list(pca = pca_df, variance = pca_var, anova = pca_anova)
+}
+
+
+create_additional_factors_ssf = function(se_data) {
+  factor_types = get_specific_metadata(se_data, "factor_types")
+  ssf_df = get_vardata(se_data, "cols")
+
+  additional_factors = factor_types |>
+    dplyr::filter(type %in% "additional_sample_data") |>
+    dplyr::pull(factor)
+
+  if (length(additional_factors) > 0) {
+    ssf_factor = ssf_df[["ssf"]]
+    additional_df = purrr::map(additional_factors, \(in_factor) {
+      use_factor = ssf_df[[in_factor]]
+      if (length(unique(use_factor)) == nrow(ssf_df)) {
+        return(NULL)
+      }
+      new_factor = paste0(ssf_factor, "-", use_factor)
+      out_tbl = tibble::tibble(new_f = new_factor)
+      names(out_tbl) = paste0("ssf_", in_factor)
+      out_tbl
+    }) |>
+      purrr::list_cbind()
+
+    if (ncol(additional_df) > 0) {
+      factor_types_add = tibble::tibble(
+        factor = colnames(additional_df),
+        type = "additional_ssf"
+      )
+      factor_types = dplyr::bind_rows(factor_types, factor_types_add)
+      metadata(se_data)$factor_types = factor_types
+      se_data = add_coldata(se_data, additional_df)
+    }
+  }
+  return(se_data)
 }
 
 sets_create_qcqa_plots = function(pca_sets) {
