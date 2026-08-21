@@ -338,6 +338,7 @@ get_n_samples_ssf = function(se_data, default = FALSE) {
 }
 
 check_technical_replicates = function(se_data, use_defaults) {
+  # se_data = sets_se[["AN006248"]]
   if (use_defaults) {
     return(list(
       technical_replicates_detected = "no",
@@ -395,12 +396,15 @@ check_technical_replicates = function(se_data, use_defaults) {
   })
 
   if (any(matches_t_reps)) {
-    technical_replicates_status = "green"
-    technical_replicates_metadata = paste0(
-      compare_factors[matches_t_reps],
-      collapse = "; "
-    )
-    technical_replicates_df = NULL
+    metadata_factor = compare_factors[matches_t_reps]
+    if (!("ssf" %in% metadata_factor)) {
+      technical_replicates_status = "green"
+      technical_replicates_metadata = paste0(
+        compare_factors[matches_t_reps],
+        collapse = "; "
+      )
+      technical_replicates_df = NULL
+    }
   } else {
     new_names = janitor::make_clean_names(c(
       names(tmp_metadata),

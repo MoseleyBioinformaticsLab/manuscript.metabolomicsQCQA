@@ -116,6 +116,15 @@ detect_technical_replicate_samples = function(se_data) {
     return(NULL)
   }
 
+  n_rep = nrow(replicate_df)
+  n_samples = nrow(ici_data)
+  if ((n_rep / n_samples) < 0.5) {
+    warning(
+      "Number of samples in replicates are not at least 50% of samples, returning NULL."
+    )
+    return(NULL)
+  }
+
   return(replicate_df)
 }
 
