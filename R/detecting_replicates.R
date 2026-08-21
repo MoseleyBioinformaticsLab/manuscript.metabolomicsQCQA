@@ -43,12 +43,12 @@ detect_technical_replicate_samples = function(se_data) {
 
   dist_summary = dist_df |>
     dplyr::summarise(
-      mad_cor = mad(cor_dist),
-      med_cor = median(cor_dist),
-      mad_string = mad(string_dist),
-      med_string = median(string_dist),
-      limit_cor = med_cor - (2.5 * mad_cor),
-      limit_string = med_string - (1 * mad_string)
+      sd_cor = sd(cor_dist),
+      mean_cor = mean(cor_dist),
+      sd_string = sd(string_dist),
+      mean_string = mean(string_dist),
+      limit_cor = mean_cor - (2.5 * sd_cor),
+      limit_string = mean_string - (1 * sd_string)
     )
 
   test_plot = dist_df |>
