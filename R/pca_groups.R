@@ -342,7 +342,7 @@ check_matches_ssf = function(ssf_df) {
   other_cols = other_cols[!(other_cols %in% "ssf")]
   not_match_ssf = purrr::map_lgl(ssf_df[, other_cols, drop = FALSE], \(in_col) {
     other_rle = rle_2_df(rle(in_col))
-    !identical(other_rle, ssf_rle)
+    !identical(other_rle$length, ssf_rle$length)
   })
   names(not_match_ssf[not_match_ssf])
 }

@@ -1,9 +1,13 @@
 sets_evaluate_qc = function(sets_se, data_limits) {
-  # sets_se = tar_read(se_pca_g01); tar_source("R"); tar_load(data_limits)
+  # sets_se = tar_read(se_pca_g01); tar_source("R"); tar_load(data_limits); se_data = sets_se[["AN006191"]]
   # sets_se = tar_read(se_pca_g02); tar_source("R")
   # sets_se = tar_read(se_pca_g20); se_data = sets_se[[194]]; tar_source("R"); tar_load(data_limits)
   sets_qc = purrr::map(sets_se, \(x) {
-    evaluate_qc(x, data_limits) |> tibble::as_tibble()
+    tmp_res = evaluate_qc(x, data_limits)
+    to_tibble = !(names(tmp_res) %in% "technical_replicates_df")
+    out_tibble = tmp_res[to_tibble] |> tibble::as_tibble()
+    out_tibble$technical_replicates_df = list(tmp_res$technical_replicates_df)
+    out_tibble
   }) |>
     purrr::list_rbind()
   sets_qc
@@ -126,6 +130,8 @@ evaluate_qc = function(se_data, data_limits) {
   pca_list = check_pca(se_data, data_limits$pca, use_defaults)
   score_list = get_scores(se_data, use_defaults)
 
+  tech_replicate_list = check_technical_replicates(se_data, use_defaults)
+
   data_list = c(
     se_data_list,
     se_samples_removed_list,
@@ -135,7 +141,8 @@ evaluate_qc = function(se_data, data_limits) {
     median_correlations_list,
     rsd_list,
     pca_list,
-    score_list
+    score_list,
+    tech_replicate_list
   )
   return(c(mwtab_list, data_list, analysis_list))
 }
@@ -330,6 +337,88 @@ get_n_samples_ssf = function(se_data, default = FALSE) {
   out_list
 }
 
+check_technical_replicates = function(se_data, use_defaults) {
+  if (use_defaults) {
+    return(list(
+      technical_replicates_detected = "no",
+      technical_replicates_status = "red",
+      technical_replicates_metadata = "NA",
+      technical_replicates_df = NULL
+    ))
+  }
+
+  replicate_df = detect_technical_replicate_samples(se_data)
+
+  if (is.null(replicate_df)) {
+    return(list(
+      technical_replicates_detected = "no",
+      technical_replicates_status = "red",
+      technical_replicates_metadata = "NA",
+      technical_replicates_df = NULL
+    ))
+  } else {
+    technical_replicates_detected = "yes"
+    technical_replicates_status = "yellow"
+    technical_replicates_metadata = "replicate_group"
+  }
+
+  se_metadata = get_vardata(se_data)
+
+  tmp_metadata = dplyr::left_join(
+    replicate_df |> dplyr::select(sample_id),
+    se_metadata,
+    by = "sample_id"
+  )
+
+  t_rep_rle = rle_2_df(rle(replicate_df$replicate_group))
+
+  factor_types = get_specific_metadata(se_data, "factor_types")
+  compare_factors = c(
+    "subject",
+    "ssf",
+    factor_types |>
+      dplyr::filter(
+        type %in%
+          c(
+            "subject_sample_factors",
+            "additional_sample_data",
+            "ssf_additional"
+          )
+      ) |>
+      dplyr::pull(factor)
+  )
+  compare_factors = base::intersect(compare_factors, names(tmp_metadata))
+
+  matches_t_reps = purrr::map_lgl(compare_factors, \(in_factor) {
+    tmp_rle = rle_2_df(rle(tmp_metadata[[in_factor]]))
+    identical(t_rep_rle$length, tmp_rle$length)
+  })
+
+  if (any(matches_t_reps)) {
+    technical_replicates_status = "green"
+    technical_replicates_metadata = paste0(
+      compare_factors[matches_t_reps],
+      collapse = "; "
+    )
+    technical_replicates_df = NULL
+  } else {
+    new_names = janitor::make_clean_names(c(
+      names(tmp_metadata),
+      "replicate_group"
+    ))
+    technical_replicates_metadata = new_names[length(new_names)]
+    names(replicate_df)[1] = technical_replicates_metadata
+    technical_replicates_df = replicate_df
+  }
+
+  return(list(
+    technical_replicates_detected = technical_replicates_detected,
+    technical_replicates_metadata = technical_replicates_metadata,
+    technical_replicates_status = technical_replicates_status,
+    technical_replicates_df = technical_replicates_df
+  ))
+}
+
 check_pca = function(se_data, pca_limits, default = FALSE) {
   # pca_limits = data_limits$pca
   if (default) {
@@ -391,7 +480,7 @@ check_pca = function(se_data, pca_limits, default = FALSE) {
   return(list(
     pca_pc_index_90 = pca_pc_index_90,
     pca_pc_index_90_status = pca_pc_index_90_status,
-    pca_anova_pvalue = pca_anova_pvalue$p.adjust,
+    pca_anova_pvalue = pca_anova_pvalue$padjust,
     pca_anova_pvalue_PC = pca_anova_pvalue$PC,
     pca_anova_pvalue_status = pca_anova_pvalue_status
   ))

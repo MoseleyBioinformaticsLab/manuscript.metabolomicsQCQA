@@ -1,4 +1,4 @@
-detecting_replicate_samples = function(se_data) {
+detect_technical_replicate_samples = function(se_data) {
   # possible replicate datasets to work with:
   #  AN001764 - no replicate in the metadata; THIS IS NOT ACTUALLY REPLICATES GROUPING TOGETHER!
   #  AN004485 - has biological replicate in metadata;
@@ -8,6 +8,7 @@ detecting_replicate_samples = function(se_data) {
   # how to detect these?
   # Can we correlate leveshtein distances with correlation based distances?
   # se_pca = tar_read(se_pca_g01); se_data = se_pca[["AN006191"]]; tar_source("R")
+  # se_pca = tar_read(se_pca_g01); se_data = se_pca[["AN006248"]]; tar_source("R")
 
   pca_data = metadata(se_data)$pca_groups
   last_run = check_qc_outputs(se_data)
@@ -37,24 +38,28 @@ detecting_replicate_samples = function(se_data) {
     by = c("s1", "s2")
   )
 
+  dist_df = dist_df |>
+    dplyr::filter(!(s1 == s2))
+
   dist_summary = dist_df |>
     dplyr::summarise(
       mad_cor = mad(cor_dist),
       med_cor = median(cor_dist),
       mad_string = mad(string_dist),
       med_string = median(string_dist),
-      limit_cor = med_cor - (3 * mad_cor),
-      limit_string = med_string - (1.5 * mad_string)
+      limit_cor = med_cor - (2.5 * mad_cor),
+      limit_string = med_string - (1 * mad_string)
     )
 
   test_plot = dist_df |>
     ggplot(aes(x = cor_dist, y = string_dist)) +
     geom_jitter(height = 0.01, width = 0.01, alpha = 0.2) +
-    geom_vline(data = dist_summary, aes(xintercept = med_cor - (3 * mad_cor))) +
+    geom_vline(data = dist_summary, aes(xintercept = limit_cor)) +
     geom_hline(
       data = dist_summary,
-      aes(yintercept = med_string - (1.5 * mad_string))
+      aes(yintercept = limit_string)
     )
+
   dist_df = dist_df |>
     dplyr::mutate(
       replicate = dplyr::case_when(
@@ -64,9 +69,10 @@ detecting_replicate_samples = function(se_data) {
       )
     )
   dist_rle = rle_2_df(rle(dist_df$replicate))
+
   dist_rle$locs = vector(mode = "list", length = nrow(dist_rle))
 
-  if (!any(dist_rle$value == 1) || !any(dist_rle$length > 1)) {
+  if (!any(dist_rle$value == 1)) {
     return(NULL)
   }
 
@@ -84,23 +90,33 @@ detecting_replicate_samples = function(se_data) {
   }
   dist_rle = dist_rle |>
     dplyr::filter(value == 1)
-  dist_rle$replicate = paste0("r", seq_len(nrow(dist_rle)))
+  dist_rle$replicate_group = paste0("r", seq_len(nrow(dist_rle)))
 
   replicate_samples = purrr::map(
     dist_rle$locs,
     \(in_loc) {
       tmp_df = dist_df[in_loc, ]
-      unique(unlist(tmp_df[, c("s1", "s2")]))
+      sort(unique(unlist(tmp_df[, c("s1", "s2")])))
     }
   ) |>
     unique()
-  names(replicate_samples) = paste0("r", seq_len(length(replicate_samples)))
+  names(replicate_samples) = paste0(
+    "technical_replicate_",
+    seq_len(length(replicate_samples))
+  )
   replicate_df = tibble::enframe(
     replicate_samples,
-    name = "replicate",
+    name = "replicate_group",
     value = "sample_id"
   ) |>
     tidyr::unnest(cols = sample_id)
+
+  if (sum(duplicated(replicate_df$sample_id)) > 0) {
+    warning("Samples in multiple replicates, returning NULL.")
+    return(NULL)
+  }
+
+  return(replicate_df)
 }
 
 
