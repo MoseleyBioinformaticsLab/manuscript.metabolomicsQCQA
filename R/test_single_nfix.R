@@ -1,0 +1,28 @@
+test_single_n_fix = function() {
+  sets_n1_hit = readRDS("resources/sets_qc_color_n1_ssf_2026-08-24.rds")
+  group_sets = readRDS("resources/group_sets.rds")
+  tar_load(mwtab_raw_files)
+  tar_load(processed_group)
+
+  all_sets = purrr::map(group_sets$set, \(x) {
+    x
+  }) |>
+    purrr::list_rbind()
+  test_datasets = all_sets |>
+    dplyr::filter(id %in% sets_n1_hit$internal_id) |>
+    dplyr::mutate(type = "n1")
+  other_datasets = all_sets |>
+    dplyr::filter(!id %in% sets_n1_hit$internal_id) |>
+    dplyr::slice_sample(n = 20) |>
+    dplyr::mutate(type = "other")
+
+  run_datasets = dplyr::bind_rows(test_datasets, other_datasets)
+
+  run_out = sets_readrds_convert_to_se(
+    run_datasets,
+    processed_group,
+    mwtab_raw_files
+  )
+
+  run_ssf = purrr::map(run_out, \(in_run) {})
+}

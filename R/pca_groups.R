@@ -112,18 +112,18 @@ run_pca_experimental_design = function(se_data) {
   factor_types = dplyr::bind_rows(
     factor_types,
     tibble::tribble(
-      ~factor                  , ~type      ,
-      "median_ici_correlation" , "computed" ,
-      "outlier_fraction"       , "computed" ,
-      "score"                  , "computed" ,
-      "outlier"                , "computed"
+      ~factor                  , ~type      , ~source       ,
+      "median_ici_correlation" , "computed" , "correlation" ,
+      "outlier_fraction"       , "computed" , "correlation" ,
+      "score"                  , "computed" , "correlation" ,
+      "outlier"                , "computed" , "correlation"
     )
   )
 
   se_data = add_coldata(se_data, just_outlier_info)
   metadata(se_data)$factor_types = factor_types
 
-  se_data = create_additional_factors_ssf(se_data)
+  se_data = create_additional_factors_ssf(se_data, source = "pca")
   factor_types = get_specific_metadata(se_data, "factor_types")
 
   all_res = NULL
@@ -416,7 +416,7 @@ do_pca = function(se_data) {
 }
 
 
-create_additional_factors_ssf = function(se_data) {
+create_additional_factors_ssf = function(se_data, source = "pca") {
   factor_types = get_specific_metadata(se_data, "factor_types")
   ssf_df = get_vardata(se_data, "cols")
 
@@ -441,7 +441,8 @@ create_additional_factors_ssf = function(se_data) {
     if (ncol(additional_df) > 0) {
       factor_types_add = tibble::tibble(
         factor = colnames(additional_df),
-        type = "additional_ssf"
+        type = "additional_ssf",
+        source = source
       )
       factor_types = dplyr::bind_rows(factor_types, factor_types_add)
       metadata(se_data)$factor_types = factor_types

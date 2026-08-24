@@ -144,7 +144,8 @@ calculate_dynamic_range = function(se_data) {
     metadata(se_data)$factor_types,
     data.frame(
       factor = c("value_min", "value_max", "dynamic_range", "removed"),
-      type = "computed"
+      type = "computed",
+      source = "dynamic range"
     )
   )
 

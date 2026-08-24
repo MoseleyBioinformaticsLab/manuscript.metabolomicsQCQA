@@ -111,6 +111,7 @@ readrds_convert_to_se = function(rds_file, md5_sum, mwtab_raw_files) {
   # rds_file = "parsed_rds/AN003159.rds"; tar_load(mwtab_raw_files); tar_source("R")
   # rds_file = "parsed_rds/AN003350.rds";tar_load(mwtab_raw_files); tar_source("R")
   # rds_file = "parsed_rds/AN006191.rds";tar_load(mwtab_raw_files); tar_source("R")
+  # rds_file = "parsed_rds/AN000135.rds"; tar_load(mwtab_raw_files); tar_source("R")
   processed_data = readRDS(rds_file)
   check_md5(processed_data, md5_sum)
 
@@ -238,7 +239,8 @@ readrds_convert_to_se = function(rds_file, md5_sum, mwtab_raw_files) {
   }
   factor_type = ssf |>
     dplyr::select(factor, type) |>
-    dplyr::distinct()
+    dplyr::distinct() |>
+    dplyr::mutate(source = "mwtab")
 
   ssf_wide = widen_ssf_json(ssf, id_cols)
 
@@ -263,15 +265,24 @@ readrds_convert_to_se = function(rds_file, md5_sum, mwtab_raw_files) {
   safe_matrix = safe_matrix[, ssf_wide$sample_id, drop = FALSE]
 
   use_for_factors = c(id_cols, grab_factor_types(factor_type))
-  ssf_concat = create_ssf_groups_json(
+
+  ssf_info = determine_extra_ssf(
     ssf_wide |> dplyr::select(tidyselect::all_of(use_for_factors)),
     id_cols
   )
 
+  ssf_concat = ssf_info$ssf_wide
+
+  if (!is.null(ssf_info$remove_ssf)) {
+    match_removed = factor_type$factor %in% ssf_info$remove_ssf
+    factor_type[match_removed, "type"] = "additional_sample_data"
+    factor_type[match_removed, "source"] = "modified by group detection"
+  }
   other_factors = c(
     "sample_id",
     grab_factor_types(factor_type, "additional_sample_data")
   )
+
   if (length(other_factors) > 1) {
     ssf_use = dplyr::left_join(
       ssf_wide[, other_factors],
@@ -283,7 +294,11 @@ readrds_convert_to_se = function(rds_file, md5_sum, mwtab_raw_files) {
   }
   factor_type = dplyr::bind_rows(
     factor_type,
-    data.frame(factor = c("ssf", "experiment_or_qc"), type = "derived")
+    data.frame(
+      factor = c("ssf", "experiment_or_qc"),
+      type = "derived",
+      source = "dataset"
+    )
   )
 
   pooled_or_qc = determine_qc_samples(
