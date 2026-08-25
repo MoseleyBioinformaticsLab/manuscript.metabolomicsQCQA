@@ -149,13 +149,13 @@ determine_extra_ssf = function(ssf_data, id_cols = NULL) {
 }
 
 check_single_factors_to_remove = function(
-  ssf_data,
+  ssf_ordered,
   other_factors,
   to_remove_factors
 ) {
   other_is_single = purrr::map_lgl(other_factors, \(in_factor) {
-    n_uniq = length(unique(ssf_data[[in_factor]]))
-    n_uniq == nrow(ssf_wide) || n_uniq == 1
+    n_uniq = length(unique(ssf_ordered[[in_factor]]))
+    n_uniq == nrow(ssf_ordered) || n_uniq == 1
   })
 
   if (sum(other_is_single) == length(other_factors)) {
