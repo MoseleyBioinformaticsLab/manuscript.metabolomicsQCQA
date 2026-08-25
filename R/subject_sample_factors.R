@@ -17,6 +17,10 @@ determine_extra_ssf = function(ssf_wide, id_cols = NULL) {
     id_cols = c("sample_id", "subject")
   }
 
+  if (nrow(ssf_wide) == 1) {
+    ssf_concat = create_ssf_groups_json(ssf_wide, id_cols = id_cols)
+    return(list(ssf_concat = ssf_concat, removed = NULL))
+  }
   other_factors = base::setdiff(colnames(ssf_wide), id_cols)
 
   if (length(other_factors) == 1) {
