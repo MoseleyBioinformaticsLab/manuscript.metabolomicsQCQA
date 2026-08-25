@@ -21,9 +21,12 @@ test_single_n_fix = function() {
 
   run_datasets = dplyr::bind_rows(test_datasets, other_datasets)
 
-  run_out = sets_readrds_convert_to_se(
-    run_datasets,
-    processed_group,
+  all_files = run_datasets$file
+  all_md5 = run_datasets$md5
+  run_out = purrr::map2(
+    all_files,
+    all_md5,
+    readrds_convert_to_se,
     mwtab_raw_files
   )
 }
