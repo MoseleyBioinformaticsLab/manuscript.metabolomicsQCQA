@@ -60,7 +60,7 @@ determine_extra_ssf = function(ssf_wide, id_cols = NULL) {
   }
   # if nothing fixes the problem, or creates a single group, then just return what we started with
   if (all(alt_groups$n1_sum == 1) || (all(alt_groups$n_all == 1))) {
-    return(ssf_concat = ssf_concat, remove_ssf = NULL)
+    return(list(ssf_concat = ssf_concat, remove_ssf = NULL))
   }
   alt_groups_low_n1 = alt_groups |>
     dplyr::filter(n1_sum <= 0.5)

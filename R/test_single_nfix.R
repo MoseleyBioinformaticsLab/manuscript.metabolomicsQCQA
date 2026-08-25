@@ -3,6 +3,9 @@ test_single_n_fix = function() {
   group_sets = readRDS("resources/group_sets.rds")
   tar_load(mwtab_raw_files)
   tar_load(processed_group)
+  tar_source("R")
+  library(furrr)
+  plan(multicore, workers = 10)
 
   all_sets = purrr::map(group_sets$set, \(x) {
     x
@@ -23,6 +26,4 @@ test_single_n_fix = function() {
     processed_group,
     mwtab_raw_files
   )
-
-  run_ssf = purrr::map(run_out, \(in_run) {})
 }
