@@ -92,7 +92,15 @@ determine_extra_ssf = function(ssf_wide, id_cols = NULL) {
     return(list(ssf_concat = ssf_concat, remove_ssf = to_remove_factors))
   }
   # if nothing fixes the problem, or creates a single group, then just return what we started with
-  if (all(alt_groups$n1_sum == 1) || (all(alt_groups$n_all == 1))) {
+  dist_groups = alt_groups |>
+    dplyr::select(n1_sum, n_all, n10, med_size, n_groups) |>
+    dplyr::distinct()
+
+  if (
+    all(alt_groups$n1_sum == 1) ||
+      (all(alt_groups$n_all == 1)) ||
+      (nrow(dist_groups) == 1)
+  ) {
     return(list(ssf_concat = ssf_concat, remove_ssf = to_remove_factors))
   }
   alt_groups_low_n1 = alt_groups |>
