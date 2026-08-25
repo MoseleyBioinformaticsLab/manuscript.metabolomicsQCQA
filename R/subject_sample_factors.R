@@ -12,19 +12,21 @@ widen_ssf_json = function(ssf_data2, id_cols = NULL) {
     janitor::clean_names(unique_sep = "...")
 }
 
-determine_extra_ssf = function(ssf_wide, id_cols = NULL) {
+determine_extra_ssf = function(ssf_data, id_cols = NULL) {
+  # ssf_data = ssf_wide |> dplyr::select(tidyselect::all_of(use_for_factors))
   if (is.null(id_cols)) {
     id_cols = c("sample_id", "subject")
   }
 
-  if (nrow(ssf_wide) == 1) {
-    ssf_concat = create_ssf_groups_json(ssf_wide, id_cols = id_cols)
+  if (nrow(ssf_data) == 1) {
+    ssf_concat = create_ssf_groups_json(ssf_data, id_cols = id_cols)
     return(list(ssf_concat = ssf_concat, removed = NULL))
   }
-  other_factors = base::setdiff(colnames(ssf_wide), id_cols)
 
-  if (length(other_factors) == 1) {
-    ssf_concat = create_ssf_groups_json(ssf_wide, id_cols = id_cols)
+  other_factors = base::setdiff(colnames(ssf_data), id_cols)
+
+  if (length(other_factors) <= 1) {
+    ssf_concat = create_ssf_groups_json(ssf_data, id_cols = id_cols)
     return(list(ssf_concat = ssf_concat, removed = NULL))
   }
 
@@ -36,25 +38,17 @@ determine_extra_ssf = function(ssf_wide, id_cols = NULL) {
     to_remove_factors = NULL
   }
 
-  single_factors = purrr::map_lgl(other_factors, \(in_factor) {
-    n_uniq = length(unique(ssf_wide[[in_factor]]))
-    n_uniq == nrow(ssf_wide) || n_uniq == 1
-  })
-
-  to_remove_factors = c(to_remove_factors, other_factors[single_factors])
-  other_factors = base::setdiff(other_factors, to_remove_factors)
-
   use_concat = c(id_cols, other_factors)
   if (length(other_factors) == 1) {
     ssf_concat = create_ssf_groups_json(
-      ssf_wide |> dplyr::select(tidyselect::all_of(use_concat)),
+      ssf_data |> dplyr::select(tidyselect::all_of(use_concat)),
       id_cols = id_cols
     )
     return(list(ssf_concat = ssf_concat, removed = to_remove_factors))
   }
 
   ssf_concat = create_ssf_groups_json(
-    ssf_wide |> dplyr::select(tidyselect::all_of(use_concat)),
+    ssf_data |> dplyr::select(tidyselect::all_of(use_concat)),
     id_cols = id_cols
   )
 
@@ -66,32 +60,43 @@ determine_extra_ssf = function(ssf_wide, id_cols = NULL) {
   n_sum = sum(n_each$length)
   n1_sum = n_1 / n_sum
   if (n1_sum > 0.5) {
-    alt_groups = purrr::map(other_factors, \(remove_factor) {
-      keep_factors = base::setdiff(colnames(ssf_wide), remove_factor)
-      ssf_alt = create_ssf_groups_json(
-        ssf_wide |> dplyr::select(all_of(c(id_cols, keep_factors))),
-        id_cols
-      ) |>
-        dplyr::arrange(ssf)
-      alt_each = rle_2_df(rle(ssf_alt$ssf))
-      alt_1 = sum(alt_each$length == 1)
-      alt_sum = sum(alt_each$length)
-      alt_group = nrow(alt_each)
-      alt_g10 = sum(alt_each$length > (alt_sum * 0.1))
-      alt_all = sum(alt_each$length == alt_sum)
-      alt_med_size = median(alt_each$length)
-      alt_n_groups = nrow(alt_each)
-      tibble::tibble(
-        removed = remove_factor,
-        n1_sum = alt_1 / alt_sum,
-        n_all = alt_all / alt_sum,
-        n10 = alt_g10 / alt_group,
-        med_size = alt_med_size,
-        n_groups = alt_n_groups,
-        ssf_alt = list(ssf_alt)
-      )
-    }) |>
-      purrr::list_rbind()
+    other_factor_list = check_single_factors_to_remove(
+      ssf_ordered,
+      other_factors,
+      to_remove_factors
+    )
+    other_factors = other_factor_list$other_factors
+    to_remove_factors = other_factor_list$to_remove_factors
+    if (length(other_factors) > 0) {
+      alt_groups = purrr::map(other_factors, \(remove_factor) {
+        keep_factors = base::setdiff(colnames(ssf_data), remove_factor)
+        ssf_alt = create_ssf_groups_json(
+          ssf_data |> dplyr::select(all_of(c(id_cols, keep_factors))),
+          id_cols
+        ) |>
+          dplyr::arrange(ssf)
+        alt_each = rle_2_df(rle(ssf_alt$ssf))
+        alt_1 = sum(alt_each$length == 1)
+        alt_sum = sum(alt_each$length)
+        alt_group = nrow(alt_each)
+        alt_g10 = sum(alt_each$length > (alt_sum * 0.1))
+        alt_all = sum(alt_each$length == alt_sum)
+        alt_med_size = median(alt_each$length)
+        alt_n_groups = nrow(alt_each)
+        tibble::tibble(
+          removed = remove_factor,
+          n1_sum = alt_1 / alt_sum,
+          n_all = alt_all / alt_sum,
+          n10 = alt_g10 / alt_group,
+          med_size = alt_med_size,
+          n_groups = alt_n_groups,
+          ssf_alt = list(ssf_alt)
+        )
+      }) |>
+        purrr::list_rbind()
+    } else {
+      return(list(ssf_concat = ssf_concat, remove_ssf = to_remove_factors))
+    }
   } else {
     return(list(ssf_concat = ssf_concat, remove_ssf = to_remove_factors))
   }
@@ -139,6 +144,28 @@ determine_extra_ssf = function(ssf_wide, id_cols = NULL) {
     return(list(
       ssf_concat = alt_groups_return$ssf_alt[[1]],
       remove_ssf = c(to_remove_factors, alt_groups_return$removed)
+    ))
+  }
+}
+
+check_single_factors_to_remove = function(
+  ssf_data,
+  other_factors,
+  to_remove_factors
+) {
+  other_is_single = purrr::map_lgl(other_factors, \(in_factor) {
+    n_uniq = length(unique(ssf_data[[in_factor]]))
+    n_uniq == nrow(ssf_wide) || n_uniq == 1
+  })
+
+  if (sum(other_is_single) == length(other_factors)) {
+    return(list(other_factors = NULL, to_remove_factors = NULL))
+  } else {
+    to_remove_factors = c(to_remove_factors, other_factors[other_is_single])
+    other_factors = base::setdiff(other_factors, to_remove_factors)
+    return(list(
+      other_factors = other_factors,
+      to_remove_factors = to_remove_factors
     ))
   }
 }

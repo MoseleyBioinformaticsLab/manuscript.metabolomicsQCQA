@@ -29,4 +29,24 @@ test_single_n_fix = function() {
     readrds_convert_to_se,
     mwtab_raw_files
   )
+
+  names(run_out) = run_datasets$id
+  run_check_changes = purrr::map_lgl(run_out, \(in_run) {
+    run_factor_types = get_specific_metadata(in_run, "factor_types")
+
+    was_modified = "modified by group detection" %in% run_factor_types$source
+    was_modified
+  })
+  run_datasets$was_modified = run_check_changes
+
+  out_res = list(datasets = run_datasets, se_runs = run_out)
+  saveRDS(out_res, file = "resources/test_single_nfix.rds")
+}
+
+check_single_n_fix = function() {
+  out_res = readRDS("resources/test_single_nfix.rds")
+  run_datasets = out_res$datasets
+  se_runs = out_res$se_runs
+
+  View(run_datasets)
 }
