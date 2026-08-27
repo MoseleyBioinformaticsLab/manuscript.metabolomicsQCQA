@@ -286,6 +286,12 @@ determine_extra_ssf = function(ssf_data, id_cols, factor_type) {
 
     if (nrow(alt_groups_low_n1) == 1) {
       return(alt_groups_low_n1$ssf_alt[[1]])
+    } else if (nrow(alt_groups_low_n1) == 0) {
+      return(list(
+        ssf_concat = ssf_concat,
+        factor_type = factor_type,
+        data = ssf_data
+      ))
     }
     alt_groups_low_n10 = alt_groups_low_n1 |>
       dplyr::filter(n10 <= 0.5)
