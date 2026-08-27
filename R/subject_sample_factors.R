@@ -237,6 +237,7 @@ determine_extra_ssf = function(ssf_data, id_cols, factor_type) {
         factor_type,
         remove_factor
       )
+      ssf_alt_list$data = ssf_data
 
       tmp_concat = ssf_alt_list$ssf_concat |> dplyr::arrange(ssf)
       alt_each = rle_2_df(rle(tmp_concat$ssf))
@@ -268,7 +269,11 @@ determine_extra_ssf = function(ssf_data, id_cols, factor_type) {
         (all(alt_groups$n_all == 1)) ||
         (nrow(dist_groups) == 1)
     ) {
-      return(list(ssf_concat = ssf_concat, factor_type = factor_type))
+      return(list(
+        ssf_concat = ssf_concat,
+        factor_type = factor_type,
+        data = ssf_data
+      ))
     }
     alt_groups_low_n1 = alt_groups |>
       dplyr::filter(n1_sum <= 0.5)
@@ -294,7 +299,11 @@ determine_extra_ssf = function(ssf_data, id_cols, factor_type) {
     }
   } else {
     # message("last")
-    return(list(ssf_concat = ssf_concat, factor_type = factor_type))
+    return(list(
+      ssf_concat = ssf_concat,
+      factor_type = factor_type,
+      data = ssf_data
+    ))
   }
 }
 

@@ -119,6 +119,7 @@ readrds_convert_to_se = function(rds_file, md5_sum, mwtab_raw_files) {
   # rds_file = "parsed_rds/AN007003.rds"; tar_load(mwtab_raw_files); tar_source("R")
   # rds_file = "parsed_rds/AN004799.rds"; tar_load(mwtab_raw_files); tar_source("R")
   # rds_file = "parsed_rds/AN002937.rds"; tar_load(mwtab_raw_files); tar_source("R")
+  # rds_file = "parsed_rds/AN003169.rds"; tar_load(mwtab_raw_files); tar_source("R")
 
   processed_data = readRDS(rds_file)
   check_md5(processed_data, md5_sum)
@@ -282,6 +283,7 @@ readrds_convert_to_se = function(rds_file, md5_sum, mwtab_raw_files) {
 
   ssf_concat = ssf_info$ssf_concat
   factor_type = ssf_info$factor_type
+  ssf_wide = ssf_info$data
 
   other_factors = c(
     "sample_id",
