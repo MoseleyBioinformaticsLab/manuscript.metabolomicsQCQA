@@ -189,7 +189,11 @@ determine_extra_ssf = function(ssf_data, id_cols, factor_type) {
       ssf_data[, use_concat, drop = FALSE],
       id_cols = id_cols
     )
-    return(list(ssf_concat = ssf_concat, factor_type = factor_type))
+    return(list(
+      ssf_concat = ssf_concat,
+      factor_type = factor_type,
+      data = ssf_data
+    ))
   }
 
   raw_file_match = grep(
@@ -205,8 +209,10 @@ determine_extra_ssf = function(ssf_data, id_cols, factor_type) {
   }
 
   if (length(ssf_factors) == 0) {
+    tmp_res = create_ssf_modify_factor_type(ssf_data, id_cols, factor_type)
+    tmp_res$data = ssf_data
     return(
-      create_ssf_modify_factor_type(ssf_data, id_cols, factor_type)
+      tmp_res
     )
   }
 
