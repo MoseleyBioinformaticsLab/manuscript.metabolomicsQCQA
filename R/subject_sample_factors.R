@@ -156,7 +156,7 @@ create_ssf_modify_factor_type = function(
   ssf_data,
   id_cols,
   factor_type,
-  remove_factors
+  remove_factors = NULL
 ) {
   if (length(remove_factors) > 0) {
     for (iremove in remove_factors) {
