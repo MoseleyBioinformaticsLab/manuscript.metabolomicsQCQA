@@ -619,7 +619,7 @@ get_ssf_group_sizes = function(ssf_data) {
     dplyr::distinct()
 
   ssf_wide = widen_ssf_json(ssf, id_cols)
-  use_for_factors = c(id_cols, grab_factor_types(factor_type))
+  use_for_factors = c(id_cols, get_factors_of_type(factor_type))
   ssf_concat = create_ssf_groups_json(
     ssf_wide |> dplyr::select(tidyselect::all_of(use_for_factors)),
     id_cols

@@ -271,23 +271,20 @@ readrds_convert_to_se = function(rds_file, md5_sum, mwtab_raw_files) {
     dplyr::filter(sample_id %in% colnames(safe_matrix))
   safe_matrix = safe_matrix[, ssf_wide$sample_id, drop = FALSE]
 
-  use_for_factors = c(id_cols, grab_factor_types(factor_type))
+  use_for_factors = c(id_cols, get_factors_of_type(factor_type))
 
   ssf_info = determine_extra_ssf(
-    ssf_wide |> dplyr::select(tidyselect::all_of(use_for_factors)),
-    id_cols
+    ssf_wide,
+    id_cols,
+    factor_type
   )
 
   ssf_concat = ssf_info$ssf_concat
+  factor_type = ssf_info$factor_type
 
-  if (!is.null(ssf_info$remove_ssf)) {
-    match_removed = factor_type$factor %in% ssf_info$remove_ssf
-    factor_type[match_removed, "type"] = "additional_sample_data"
-    factor_type[match_removed, "source"] = "modified by group detection"
-  }
   other_factors = c(
     "sample_id",
-    grab_factor_types(factor_type, "additional_sample_data")
+    get_factors_of_type(factor_type, "additional_sample_data")
   )
 
   if (length(other_factors) > 1) {
@@ -299,6 +296,11 @@ readrds_convert_to_se = function(rds_file, md5_sum, mwtab_raw_files) {
   } else {
     ssf_use = ssf_concat
   }
+
+  ssf_order = tibble::tibble(factor = names(ssf_use))
+  factor_type = dplyr::left_join(ssf_order, factor_type, by = "factor") |>
+    dplyr::filter(!is.na(type))
+
   factor_type = dplyr::bind_rows(
     factor_type,
     data.frame(
@@ -387,7 +389,7 @@ create_empty_se = function(processed_data, why = "") {
   se_data
 }
 
-grab_factor_types = function(
+get_factors_of_type = function(
   factor_type,
   use_type = "subject_sample_factor"
 ) {
