@@ -47,7 +47,8 @@
   * has replicate samples (_1, _2). Only becomes apparent when looking at the checkerboard pattern in the heatmap. replicate information is **not** included in the SSF, or extra data.
 * AN002538:
   * temporal aspect is in "additional sample data".
-
+* AN002937:
+  * Has some weird SSF coming up, should investigate
 
 ## Really nice examples to highlight
 
