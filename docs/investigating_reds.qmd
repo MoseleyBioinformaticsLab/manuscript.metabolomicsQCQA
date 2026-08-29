@@ -1,0 +1,39 @@
+## Red PCA
+
+* Has another factor present in the PCA:
+  * AN000074;
+  * AN000073;
+  * AN000236;
+  * AN000262;
+  * AN000300;
+  * AN000370;
+  * AN000454; Weirdly this data also shows bimodal patterns in the dynamic range.
+
+* Maybe another factor?
+  * AN000041;
+  * AN000343;
+  * AN000353;
+  * AN000405;
+  * AN000435
+
+* Some samples doing something weird that outlier detection doesn't find:
+  * AN000035;
+
+* Just a mixture of sample classes all over:
+  * AN000694;
+  * AN000649;
+  * AN000076;
+  * AN000080;
+  * AN000086;
+  * AN000094;
+  * AN000369;
+  * AN000381;
+  * AN000382;
+  * AN000413;
+  * AN000415;
+  * AN000432
+
+* Just a mixture, and correlations are really low:
+  * AN000081;
+  * AN000083;
+

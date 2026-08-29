@@ -4,4 +4,6 @@ data/smd
 mwtab
 predicted_annotations
 parsed_rds
+parsed_rds_old
+qcqa_reports
 docs/contains_negatives_files
