@@ -171,8 +171,9 @@ do_correlation = function(se_data) {
   n_cores = future::nbrOfWorkers()
 
   n_item = ncol(raw_matrix) * nrow(raw_matrix)
+  n_comparison = choose(ncol(raw_matrix), 2)
   # try halving number of workers to get around memory issues
-  if (n_item > 1e6) {
+  if (n_item > 1e6 || n_comparison > 1e7) {
     plan(multicore, workers = ceiling(n_cores / 2))
   }
   se_ici = ICIKendallTau::ici_kendalltau(raw_matrix, return_matrix = FALSE)
