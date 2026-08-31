@@ -8,16 +8,29 @@
   * AN000300;
   * AN000370;
   * AN000454; Weirdly this data also shows bimodal patterns in the dynamic range.
+  * AN000455; also bimodal dynamic range
+  * AN000461;
+  * AN000653
+
 
 * Maybe another factor?
   * AN000041;
   * AN000343;
   * AN000353;
   * AN000405;
-  * AN000435
+  * AN000435;
+  * AN000490;
+  * AN000492;
+  * AN000495;
+  * AN000496;
+  * AN000557;
+  * AN000558;
+  * AN000592
 
 * Some samples doing something weird that outlier detection doesn't find:
   * AN000035;
+  * AN000477;
+  * AN000625
 
 * Just a mixture of sample classes all over:
   * AN000694;
@@ -31,7 +44,23 @@
   * AN000382;
   * AN000413;
   * AN000415;
-  * AN000432
+  * AN000432;
+  * AN000491;
+  * AN000501;
+  * AN000540;
+  * AN000541;
+  * AN000554;
+  * AN000556;
+  * AN000584;
+  * AN000585;
+  * AN000588;
+  * AN000589;
+  * AN000593;
+  * AN000624;
+  * AN000645;
+  * AN000647;
+  * AN000649;
+
 
 * Just a mixture, and correlations are really low:
   * AN000081;

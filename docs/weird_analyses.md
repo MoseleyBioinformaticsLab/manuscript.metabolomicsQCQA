@@ -43,12 +43,15 @@
   * Has ".E" instead of just "E" to denote the exponent, which had to be corrected.
 * AN003719:
   * The temporal aspect is encoded as "additional sample data", when it is integral to the actual experiment. Time should have been "factors", not additional data. I wonder how many of our "yellow" and "red" PCA data are weird timecourses?
+  * we added additional sample data to get tested in the PCA. Also, after 10% of the current red set, this is not it. Maybe a few, but not the majority.q
 * AN001764:
   * has replicate samples (_1, _2). Only becomes apparent when looking at the checkerboard pattern in the heatmap. replicate information is **not** included in the SSF, or extra data.
 * AN002538:
   * temporal aspect is in "additional sample data".
 * AN002937:
   * Has some weird SSF coming up, should investigate
+* AN008018:
+  * 18,000 samples, 56 metabolites. Median correlation distributions of training and test healthy look different. Which is weird.
 
 ## Really nice examples to highlight
 

@@ -2,6 +2,7 @@ sets_evaluate_qc = function(sets_se, data_limits) {
   # sets_se = tar_read(se_pca_g01); tar_source("R"); tar_load(data_limits); se_data = sets_se[["AN006191"]]
   # sets_se = tar_read(se_pca_g02); tar_source("R")
   # sets_se = tar_read(se_pca_g20); se_data = sets_se[[194]]; tar_source("R"); tar_load(data_limits)
+  # sets_se = tar_read(se_pca_g22); se_data = sets_se[[75]]; tar_source("R"); tar_load(data_limits)
   sets_qc = purrr::map(sets_se, \(x) {
     tmp_res = evaluate_qc(x, data_limits)
     to_tibble = !(names(tmp_res) %in% "technical_replicates_df")
@@ -403,6 +404,9 @@ check_technical_replicates = function(se_data, use_defaults) {
         compare_factors[matches_t_reps],
         collapse = "; "
       )
+      technical_replicates_df = NULL
+    } else {
+      technical_replicates_metadata = paste0(metadata_factor, collapse = ";")
       technical_replicates_df = NULL
     }
   } else {
