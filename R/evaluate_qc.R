@@ -1069,7 +1069,7 @@ summarize_qc_results_table = function(sets_qc_evaluation, group_none = "yes") {
 set_overall_color_status = function(sets_qc_evaluation) {
   status_cols = grep("status$", names(sets_qc_evaluation), value = TRUE)
   status_cols = grep(
-    "^summarized|^has_qc|^score_icikt|^score_rle|^ssf_metadata",
+    "^summarized|^has_qc|^score_icikt|^score_rle|^ssf_metadata|^technical_replicate",
     status_cols,
     invert = TRUE,
     value = TRUE

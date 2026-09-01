@@ -70,8 +70,8 @@ n_gray = nrow(gray_status)
 n_total = sum(n_color$n)
 ```
 
-**Introduction:** While depositing omics data into public repositories is frequently required by grant funders and journals, the quality of deposited data is not uniform, limiting its reuse in large meta-analyses.
-Here we present a comprehensive evaluation of data quality across all publicly available datasets in Metabolomics Workbench.
+**Introduction:** While depositing omics data into public repositories is frequently required by grant funders and journals, the quality of deposited data is not uniform, limiting their reuse in large meta-analyses.
+Here we present a comprehensive evaluation of data quality across all available datasets in Metabolomics Workbench.
 
 **Methods:** We downloaded 7240 datasets from  Metabolomics Workbench in July 2026.
 Needed harmonizations and repairs were made to downloaded analysis files.
