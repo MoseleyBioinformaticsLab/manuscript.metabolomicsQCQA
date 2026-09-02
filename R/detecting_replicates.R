@@ -10,7 +10,11 @@ detect_technical_replicate_samples = function(se_data) {
   # se_pca = tar_read(se_pca_g01); se_data = se_pca[["AN006191"]]; tar_source("R")
   # se_pca = tar_read(se_pca_g01); se_data = se_pca[["AN006248"]]; tar_source("R")
 
-  pca_data = metadata(se_data)$pca_groups
+  # need the ici data here too!
+  pca_data = get_specific_metadata(se_data, "pca_groups")
+  se_ici = get_specific_metadata(se_data, "icikt")$cor
+  ici_square = ICIKendallTau::long_df_2_cor_matrix(se_ici)
+
   last_run = check_qc_outputs(se_data)
 
   if (is.null(last_run$pca)) {
@@ -19,9 +23,10 @@ detect_technical_replicate_samples = function(se_data) {
   pca_index = last_run$pca[length(last_run$pca)]
   pca_data_use = pca_data[[pca_index]]
 
-  ici_data = pca_data_use$order$ici
-  string_dist = calculate_stringdist_distances(colnames(ici_data), "cosine")
-  ici_dist = 1 - ici_data
+  ici_order = pca_data_use$order$ici_order
+  ici_square = ici_square[ici_order, ici_order]
+  string_dist = calculate_stringdist_distances(ici_order, "cosine")
+  ici_dist = 1 - ici_square
 
   order_data = pca_data_use$order$dendrogram$indices
   ici_dist = ici_dist[order_data, order_data]

@@ -5,9 +5,11 @@ sets_evaluate_qc = function(sets_se, data_limits) {
   # sets_se = tar_read(se_pca_g22); se_data = sets_se[[75]]; tar_source("R"); tar_load(data_limits)
   sets_qc = purrr::map(sets_se, \(x) {
     tmp_res = evaluate_qc(x, data_limits)
-    to_tibble = !(names(tmp_res) %in% "technical_replicates_df")
+    to_tibble = !(names(tmp_res) %in%
+      c("technical_replicates_df", "data_sizes_df"))
     out_tibble = tmp_res[to_tibble] |> tibble::as_tibble()
     out_tibble$technical_replicates_df = list(tmp_res$technical_replicates_df)
+    out_tibble$data_sizes_df = list(tmp_res$data_sizes_df)
     out_tibble
   }) |>
     purrr::list_rbind()
@@ -96,6 +98,9 @@ evaluate_qc = function(se_data, data_limits) {
     use_defaults = TRUE
   }
 
+  data_sizes_list = list(
+    data_sizes_df = get_dataset_sizes(se_data, mwtab_data_list, use_defaults)
+  )
   se_data_list = get_se_data_counts_status(se_data, use_defaults)
 
   se_samples_removed_list = get_samples_removed(se_data, use_defaults)
@@ -143,7 +148,8 @@ evaluate_qc = function(se_data, data_limits) {
     rsd_list,
     pca_list,
     score_list,
-    tech_replicate_list
+    tech_replicate_list,
+    data_sizes_list
   )
   return(c(mwtab_list, data_list, analysis_list))
 }
@@ -282,7 +288,62 @@ get_scores = function(se_data, default = FALSE) {
   )
 }
 
-get_dataset_sizes = function(se_data) {}
+get_dataset_sizes = function(se_data, mwtab_data_list, use_defaults) {
+  if (use_defaults) {
+    mwtab = tibble::tibble(
+      Source = "Metabolomics Workbench",
+      `N-Features` = NA,
+      `N-Samples` = NA,
+      `N-SSF` = NA,
+      `N-Samples-Per-SSF` = NA
+    )
+    in_se = tibble::tibble(
+      Source = "Initial-SE",
+      `N-Features` = NA,
+      `N-Samples` = NA,
+      `N-SSF` = NA,
+      `N-Samples-Per-SSF` = NA
+    )
+    in_kept = tibble::tibble(
+      Source = "Kept-SE",
+      `N-Features` = NA,
+      `N-Samples` = NA,
+      `N-SSF` = NA,
+      `N-Samples-Per-SSF` = NA
+    )
+    return(dplyr::bind_rows(mwtab, in_se, in_kept))
+  }
+  mwtab = tibble::tibble(
+    Source = "Metabolomics Workbench",
+    `N-Features` = mwtab_data_list$mwtab_matched_features,
+    `N-Samples` = mwtab_data_list$mwtab_matched_samples,
+    `N-SSF` = mwtab_data_list$mwtab_n_ssf,
+    `N-Samples-Per-SSF` = mwtab_data_list$mwtab_n_ssf_samples
+  )
+
+  rle_ssf = rle_2_df(rle(se_data$ssf |> sort()))
+  in_se = tibble::tibble(
+    Source = "Initial-SE",
+    `N-Features` = nrow(se_data),
+    `N-Samples` = ncol(se_data),
+    `N-SSF` = nrow(rle_ssf),
+    `N-Samples-Per-SSF` = median(rle_ssf$length)
+  )
+
+  kept = is.na(se_data$removed) &
+    !se_data$outlier &
+    (se_data$experiment_or_qc %in% "experiment")
+  se_kept = se_data[, kept, drop = FALSE]
+  rle_kept = rle_2_df(rle(se_kept$ssf |> sort()))
+  in_kept = tibble::tibble(
+    Source = "Kept-SE",
+    `N-Features` = nrow(se_kept),
+    `N-Samples` = ncol(se_kept),
+    `N-SSF` = nrow(rle_kept),
+    `N-Samples-Per-SSF` = median(rle_kept$length)
+  )
+  dplyr::bind_rows(mwtab, in_se, in_kept)
+}
 
 get_n_samples_ssf = function(se_data, default = FALSE) {
   if (default) {
