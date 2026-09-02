@@ -282,6 +282,8 @@ get_scores = function(se_data, default = FALSE) {
   )
 }
 
+get_dataset_sizes = function(se_data) {}
+
 get_n_samples_ssf = function(se_data, default = FALSE) {
   if (default) {
     out_n = tibble::tibble(ssf = "NA", `N-Samples` = NA)

@@ -305,7 +305,7 @@ determine_neigbors_ordering = function(ici_values, group_data) {
   join_rles = join_rles |> dplyr::mutate(diff = length.ideal - length.ici)
 
   list(
-    ici = ici_square,
+    ici_order = colnames(ici_square),
     dendrogram = ici_dendrogram,
     diff_rle = join_rles,
     diff_median_ici = ici_compare
@@ -465,6 +465,9 @@ create_qcqa_plots = function(se_data, report_list) {
   use_samples = is.na(se_data$removed)
   se_data = se_data[, use_samples, drop = FALSE]
 
+  se_ici = get_specific_metadata(se_data, "icikt")$cor
+  ici_square = ICIKendallTau::long_df_2_cor_matrix(se_ici)
+
   sample_metadata = get_vardata(se_data)
   all_ssf = unique(sample_metadata$ssf)
   ssf_colors = scales::hue_pal()(length(all_ssf))
@@ -527,7 +530,8 @@ create_qcqa_plots = function(se_data, report_list) {
       ssf_colors,
       cor_colors,
       guide_nrow,
-      guide_ncol
+      guide_ncol,
+      ici_square
     )
   } else {
     pca_heatmap_median_ici_each = NULL
@@ -588,7 +592,8 @@ create_pca_median_ici_heatmap = function(
   ssf_colors,
   cor_colors,
   guide_nrow,
-  guide_ncol
+  guide_ncol,
+  ici_cor
 ) {
   if (is.null(pca_group)) {
     return(list(
@@ -618,8 +623,9 @@ create_pca_median_ici_heatmap = function(
 
   sample_info = pca_group$pca$pca
 
+  ici_cor = ici_cor[heatmap_data$ici_order, heatmap_data$ici_order]
   sample_info = dplyr::left_join(
-    data.frame(sample_id = rownames(heatmap_data$ici)),
+    data.frame(sample_id = heatmap_data$ici_order),
     sample_info,
     by = "sample_id"
   )
@@ -643,7 +649,7 @@ create_pca_median_ici_heatmap = function(
   )
 
   out_heatmap = ComplexHeatmap::Heatmap(
-    matrix = heatmap_data$ici,
+    matrix = ici_cor,
     col = cor_colors,
     name = "ICI-Kt",
     right_annotation = left_var,
