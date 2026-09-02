@@ -56,15 +56,6 @@ detect_technical_replicate_samples = function(se_data) {
       limit_string = mean_string - (1 * sd_string)
     )
 
-  test_plot = dist_df |>
-    ggplot(aes(x = cor_dist, y = string_dist)) +
-    geom_jitter(height = 0.01, width = 0.01, alpha = 0.2) +
-    geom_vline(data = dist_summary, aes(xintercept = limit_cor)) +
-    geom_hline(
-      data = dist_summary,
-      aes(yintercept = limit_string)
-    )
-
   dist_df = dist_df |>
     dplyr::mutate(
       replicate = dplyr::case_when(
@@ -122,7 +113,7 @@ detect_technical_replicate_samples = function(se_data) {
   }
 
   n_rep = nrow(replicate_df)
-  n_samples = nrow(ici_data)
+  n_samples = nrow(ici_square)
   if ((n_rep / n_samples) < 0.5) {
     warning(
       "Number of samples in replicates are not at least 50% of samples, returning NULL."
