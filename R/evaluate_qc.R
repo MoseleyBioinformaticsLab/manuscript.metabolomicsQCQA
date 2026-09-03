@@ -3,6 +3,7 @@ sets_evaluate_qc = function(sets_se, data_limits) {
   # sets_se = tar_read(se_pca_g02); tar_source("R")
   # sets_se = tar_read(se_pca_g20); se_data = sets_se[[194]]; tar_source("R"); tar_load(data_limits)
   # sets_se = tar_read(se_pca_g22); se_data = sets_se[[75]]; tar_source("R"); tar_load(data_limits)
+  # sets_se = tar_read(se_pca_g35); se_data = sets_se[[75]]; tar_source("R"); tar_load(data_limits)
   sets_qc = purrr::map(sets_se, \(x) {
     tmp_res = evaluate_qc(x, data_limits)
     to_tibble = !(names(tmp_res) %in%
@@ -330,9 +331,13 @@ get_dataset_sizes = function(se_data, mwtab_data_list, use_defaults) {
     `N-Samples-Per-SSF` = median(rle_ssf$length)
   )
 
+  se_metadata = get_vardata(se_data)
+
   kept = is.na(se_data$removed) &
-    !se_data$outlier &
     (se_data$experiment_or_qc %in% "experiment")
+  if ("outlier" %in% names(se_metadata)) {
+    kept = kept & !se_data$outlier
+  }
   se_kept = se_data[, kept, drop = FALSE]
   rle_kept = rle_2_df(rle(se_kept$ssf |> sort()))
   in_kept = tibble::tibble(
