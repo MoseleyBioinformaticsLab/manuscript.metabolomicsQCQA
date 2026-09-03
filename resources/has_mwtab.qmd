@@ -199,3 +199,11 @@ bind_analysis_related_tables(mwtab_meta) |>
 ```
 
 :::
+
+```{r}
+#| label: tbl-data-sizes
+#| tbl-cap: Number of metabolite features (N-Features), samples (N-Samples), subject sample factor groups (N-SSF), and median number of samples in each subject sample factor grouping (N-Samples-Per-SSF) provided by Metabolomics Workbench, when the data was transformed to a summarized experiment object (Initial-SE), and after removing quality-control samples, outliers, and samples with too few features (Kept-SE).
+data_sizes = metadata(se_data)$summary$data_sizes_df[[1]]
+data_sizes |>
+  gt::gt()
+```

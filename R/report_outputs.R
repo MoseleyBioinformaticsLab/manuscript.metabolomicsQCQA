@@ -29,7 +29,7 @@ sets_create_qcqa_reports = function(
   # pca_sets = tar_read(se_pca_g28); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
   # pca_sets = tar_read(se_pca_g11); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
   # pca_sets = tar_read(se_pca_g24); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
-  # pca_sets = tar_read(se_pca_g02); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
+  # pca_sets = tar_read(se_pca_g35); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
 
   set_size = object.size(pca_sets) * 1e-9
 
@@ -66,7 +66,7 @@ create_report_from_templates = function(
   sets_qc_evaluation,
   quiet = TRUE
 ) {
-  # se_data = pca_sets[[1]]; in_tmp_files = sets_tmp_files[[1]]; quiet = FALSE; tar_source("R");
+  # se_data = pca_sets[[1]]; in_tmp_files = sets_tmp_files[[1]]; quiet = FALSE; tar_source("R"); sets_qc_evaluation = sets_qc_color
   # se_data = pca_sets[["AN007791"]]; in_tmp_files = sets_tmp_files[["AN007791"]]; quiet = FALSE; tar_source("R")
   # se_pca_g02
   # se_data = pca_sets[["AN000304"]]; in_tmp_files = sets_tmp_files[["AN000304"]]; quiet = FALSE; sets_qc_evaluation = sets_qc_color
@@ -493,7 +493,14 @@ add_scores_metadata = function(se_data) {
 
 
 transform_summary_to_useful_table = function(summary_info) {
-  summary_text = purrr::imap(summary_info, \(x, id) {
+  use_cols = grep(
+    "^technical_replicates_df|^data_sizes_df",
+    names(summary_info),
+    value = TRUE,
+    invert = TRUE
+  )
+  use_info = summary_info[, use_cols, drop = FALSE]
+  summary_text = purrr::imap(use_info, \(x, id) {
     if (
       inherits(x, "numeric") &&
         (id %in% c("left_censorship_test", "pca_anova_pvalue"))
