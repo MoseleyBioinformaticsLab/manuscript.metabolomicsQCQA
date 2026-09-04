@@ -1,3 +1,11 @@
+```{r}
+#| label: load-it
+tar_load(parsed_grouped_statuses)
+red_pca = parsed_grouped_statuses$match[[3]]
+red_pca |> dplyr::arrange(analysis_id) |> View()
+```
+
+
 ## Red PCA
 
 * Has another factor present in the PCA:
@@ -10,13 +18,20 @@
   * AN000454; Weirdly this data also shows bimodal patterns in the dynamic range.
   * AN000455; also bimodal dynamic range
   * AN000461;
-  * AN000653
+  * AN000843;
+  * AN000844;
+  * AN000853;
+  * AN000854;
+  * AN000873;
+  * AN000885;
+  * AN000923;
+
+
 
 
 * Maybe another factor?
   * AN000041;
   * AN000343;
-  * AN000353;
   * AN000405;
   * AN000435;
   * AN000490;
@@ -30,7 +45,8 @@
 * Some samples doing something weird that outlier detection doesn't find:
   * AN000035;
   * AN000477;
-  * AN000625
+  * AN000625;
+  * AN000884
 
 * Just a mixture of sample classes all over:
   * AN000694;
@@ -42,7 +58,6 @@
   * AN000369;
   * AN000381;
   * AN000382;
-  * AN000413;
   * AN000415;
   * AN000432;
   * AN000491;
@@ -53,16 +68,27 @@
   * AN000556;
   * AN000584;
   * AN000585;
-  * AN000588;
   * AN000589;
   * AN000593;
-  * AN000624;
   * AN000645;
   * AN000647;
-  * AN000649;
+  * AN000677;
+  * AN000689;
+  * AN000694
+  * AN000723
+  * AN000730;
+  * AN000887;
+  * AN000909;
+  * AN000910;
+  * AN000919
 
 
 * Just a mixture, and correlations are really low:
   * AN000081;
   * AN000083;
+  * AN000675;
 
+* Not enough samples for PCA to pick up on the difference:
+  * AN000670;
+  * AN000676;
+  * AN000678
