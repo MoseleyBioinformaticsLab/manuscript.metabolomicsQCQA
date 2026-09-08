@@ -176,7 +176,7 @@ data_limits_t = tar_target(
   )
 )
 
-confounding_factors_t = tar_target(
+confounding_factors_t = tar_combine(
   sets_confounding_factors,
   sets_map[[13]],
   command = dplyr::bind_rows(!!!.x)
