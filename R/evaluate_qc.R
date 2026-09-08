@@ -4,6 +4,7 @@ sets_evaluate_qc = function(sets_se, data_limits) {
   # sets_se = tar_read(se_pca_g20); se_data = sets_se[[194]]; tar_source("R"); tar_load(data_limits)
   # sets_se = tar_read(se_pca_g22); se_data = sets_se[[75]]; tar_source("R"); tar_load(data_limits)
   # sets_se = tar_read(se_pca_g35); se_data = sets_se[[75]]; tar_source("R"); tar_load(data_limits)
+  # sets_se = tar_read(se_pca_g13); se_data = sets_se[["AN000778"]]; tar_source("R"); tar_load(data_limits)
   sets_qc = purrr::map(sets_se, \(x) {
     tmp_res = evaluate_qc(x, data_limits)
     to_tibble = !(names(tmp_res) %in%
@@ -503,6 +504,7 @@ check_pca = function(se_data, pca_limits, default = FALSE) {
       pca_pc_index_90_status = "red",
       pca_anova_pvalue = NA,
       pca_anova_pvalue_PC = "NA",
+      pca_anova_pvalue_variable_type = "NA",
       pca_anova_pvalue_status = "red"
     ))
   }
@@ -558,6 +560,11 @@ check_pca = function(se_data, pca_limits, default = FALSE) {
     pca_pc_index_90_status = pca_pc_index_90_status,
     pca_anova_pvalue = pca_anova_pvalue$padjust,
     pca_anova_pvalue_PC = pca_anova_pvalue$PC,
+    pca_anova_pvalue_variable_type = paste0(
+      pca_anova_pvalue$variable,
+      ":",
+      pca_anova_pvalue$type
+    ),
     pca_anova_pvalue_status = pca_anova_pvalue_status
   ))
 }

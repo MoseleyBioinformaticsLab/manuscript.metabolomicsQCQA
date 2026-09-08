@@ -108,6 +108,10 @@ color_and_scores |>
   ggplot(aes(x = log10(statistic), y = overall_status)) + geom_sina() + geom_vline(xintercept = log10(5000))
 
 color_and_scores |>
-  ggplot(aes(x = -1 * log10(p.value), y = overall_status)) + geom_sina() + geom_vline(xintercept = -1 * log10(1e-10))
+  ggplot(aes(x = -1 * log10(p.value), y = overall_status)) + geom_sina() + geom_vline(xintercept = -1 * log10(1e-50))
 
+red_yellow_pca = dplyr::bind_rows(parsed_grouped_statuses$match[[3]], parsed_grouped_statuses$match[[4]])
+red_yellow_scores = dplyr::left_join(red_yellow_pca, pc1_scores, by = "analysis_id")
+
+red_yellow_scores |> dplyr::filter(p.value <= 1e-10, statistic >= 300, percent >= 0.3) |> dplyr::arrange(analysis_id) |> View()
 ```

@@ -47,3 +47,22 @@ sets_detect_confounding_factors = function(sets_pca) {
     purrr::list_rbind()
   out_factors
 }
+
+
+add_confounding_factor_status = function(
+  sets_qc_color,
+  sets_confounding_factors
+) {
+  sets_qc_confounds = sets_qc_color |>
+    dplyr::mutate(confounding_factor_detected = "no")
+
+  sets_yellow_red = sets_qc_color |>
+    dplyr::filter(pca_anova_pvalue_status %in% c("yellow", "red"))
+  possible_confound = sets_confounding_factors |>
+    dplyr::filter(
+      analysis_id %in% sets_yellow_red$analysis_id,
+      p.value <= 1e-10,
+      statistic >= 300,
+      percent >= 0.3
+    )
+}
