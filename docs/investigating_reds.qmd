@@ -92,3 +92,22 @@ red_pca |> dplyr::arrange(analysis_id) |> View()
   * AN000670;
   * AN000676;
   * AN000678
+
+```{r}
+#| label: check-confounding-factors
+tar_load(sets_confounding_factors)
+tar_load(parsed_grouped_statuses)
+tar_load(sets_qc_color)
+
+
+pc1_scores = sets_confounding_factors |>
+  dplyr::filter(PC %in% "PC1")
+color_and_scores = dplyr::inner_join(sets_qc_color, pc1_scores, by = "analysis_id")
+
+color_and_scores |>
+  ggplot(aes(x = log10(statistic), y = overall_status)) + geom_sina() + geom_vline(xintercept = log10(5000))
+
+color_and_scores |>
+  ggplot(aes(x = -1 * log10(p.value), y = overall_status)) + geom_sina() + geom_vline(xintercept = -1 * log10(1e-10))
+
+```

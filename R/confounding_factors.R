@@ -1,5 +1,6 @@
 detect_confounding_factors = function(se_data) {
   # sets_pca = tar_read(se_pca_g34); se_data = sets_pca[["AN000923"]]; tar_source("R")
+  # sets_pca = tar_read(se_pca_g05); se_data = sets_pca[["AN000262"]]; tar_source("R")
   report_list = check_qc_outputs(se_data)
 
   pca_groups = get_specific_metadata(se_data, "pca_groups")
@@ -10,6 +11,11 @@ detect_confounding_factors = function(se_data) {
   }
 
   pca_scores = use_group[[1]]$pca$pca
+  pca_variance = use_group[[1]]$pca$variance
+
+  # also pull the variances for PC1 and PC2, as I think they
+  # will help us determine what is actually *real* and what
+  # is not.
 
   clustering_pcs = purrr::map(c("PC1", "PC2"), \(in_pc) {
     # in_pc = "PC1"
@@ -28,6 +34,11 @@ detect_confounding_factors = function(se_data) {
   }) |>
     purrr::list_rbind()
   clustering_pcs$analysis_id = metadata(se_data)$mwtab$ID
+  clustering_pcs = dplyr::left_join(
+    clustering_pcs,
+    pca_variance,
+    by = c("PC" = "pc")
+  )
   clustering_pcs
 }
 
