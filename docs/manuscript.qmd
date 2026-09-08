@@ -193,7 +193,8 @@ To get actual cutoffs, we convert the values to raw space and floor them to the 
 
 ANOVA p-adjusted: 
 
-  * p-adjust <= 0.05 && PC-perc >= 5% ~ green; 
+  * p-adjust <= 0.05 && PC-perc >= 5% && factor is SSF or derived ~ green; 
+  * p-adjust <= 0.05 && PC-perc >= 5% && factor is additional sample-data or combination of SSF and additional sample-data ~ yellow;
   * p-adjust <= 0.05 && 1% <= PC-perc < 5% ~ yellow;
   * p-adjust <= 0.05 && PC-perc < 1% ~ red;
   * p-adjusted > 0.05 ~ red.
@@ -218,9 +219,9 @@ SSF group size > 10:
   * 0.1 < Inter better fraction <= 0.3 ~ yellow;
   * Inter better fraction > 0.3 ~ red;
 
-  #### Number of Sample Group Sizes by Hiearchical Clustering Compared to Actual
+#### Number of Sample Group Sizes by Hiearchical Clustering Compared to Actual
 
-  SSF group size <= 5:
+SSF group size <= 5:
 
   * size difference == 0 ~ green;
   * 0 < size difference < 2 ~ yellow;
@@ -237,6 +238,22 @@ SSF group size > 10:
   * size fraction <= 0.25 ~ green;
   * size fraction > 0.25 ~ yellow;
   * size fraction > 0.5 ~ red;
+
+### Detection of Possible Confounding Factors
+
+When a dataset has a **yellow** or **red** status due to the ANOVA test of sample SSF and sample scores from the principal component analysis (PCA), it is possible that there is a confounding factor present that is not listed in the SSF or additional sample data.
+We attempt to detect the presence of possible confounding factors by clustering the samples by them using hiearchical clustering of their PC scores, splitting them into two clusters, and testing the PC scores against cluster membership by ANOVA.
+This is carried out for both PC1 and PC2.
+
+As the clusters are always completely separated (due to using heiarchical clustering and cutting into two clusters), the p-values are generally small.
+Therefore, we use some heuristic cutoffs across overall color grade, ANOVA p-value, ANOVA statistic, and percent variance accounted for by the PC being tested to detect the presence of **possible** confounding factors.
+
+In this analysis, we used:
+
+  * PCA ANOVA color grade of **yellow** or **red**;
+  * ANOVA p-value $\le 1 \times 10^{-10}$;
+  * ANOVA statistic $\ge$ 300;
+  * PC percent variance $\ge$ 30%.
 
 ## Results
 
@@ -291,4 +308,5 @@ Examples we have seen include:
   * duplicated columns of measurements, sometimes several replicated columns, with and without actual values data; 
   * quality-control samples in the metabolite measurements block, but those samples are not included in the SSF (AN000139); 
   * using ".E" instead of "E" to denote exponents; metabolite ratios in the metabolite measurements (AN005958);
-  * metabolite ratios included in the data block, not just metabolite abundances (AN000645)
+  * metabolite ratios included in the data block, not just metabolite abundances (AN000645);
+  * biological replicate information or number included in the subject-sample-factors or the subject-sample-factor name for each sample, creating groups with one sample each, instead of the three or more samples in each group that is actually present (AN002454, and so, so many others)
