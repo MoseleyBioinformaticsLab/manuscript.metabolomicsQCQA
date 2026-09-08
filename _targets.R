@@ -95,6 +95,7 @@ sets_map = tar_map(
   tar_target(se_qc_eval, sets_evaluate_qc(se_pca, data_limits)), #10
   tar_target(se_rsd, sets_rsd(se_pca)), #11
   tar_target(se_pc_number, sets_get_pc(se_pca)), #12
+  tar_target(se_confounds, sets_detect_confounding_factors(se_pca)), #13
   tar_target(
     qcqa_reports,
     sets_create_qcqa_reports(se_pca, sets_qc_color, report_files)
@@ -175,6 +176,12 @@ data_limits_t = tar_target(
   )
 )
 
+confounding_factors_t = tar_target(
+  sets_confounding_factors,
+  sets_map[[13]],
+  command = dplyr::bind_rows(!!!.x)
+)
+
 actual_analysis_t = tar_assign({
   sets_qc_color = set_overall_color_status(sets_qc_evaluation) |> tar_target()
   not_gray_pca = find_pca_remove_gray(sets_qc_color) |> tar_target()
@@ -245,6 +252,7 @@ list(
   sets_rsd_t,
   sets_pc_number_t,
   data_limits_t,
+  confounding_factors_t,
   actual_analysis_t,
   contains_negatives_report_t,
   negatives_testing_report_t,
