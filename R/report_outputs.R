@@ -18,7 +18,7 @@ convert_description_to_sentence = function(in_string) {
 
 sets_create_qcqa_reports = function(
   pca_sets,
-  sets_qc_color,
+  sets_qc_color_confounds,
   report_files,
   report_save_loc = "qcqa_reports",
   rds_save_loc = "rds_dataset_outputs"
