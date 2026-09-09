@@ -98,7 +98,7 @@ sets_map = tar_map(
   tar_target(se_confounds, sets_detect_confounding_factors(se_pca)), #13
   tar_target(
     qcqa_reports,
-    sets_create_qcqa_reports(se_pca, sets_qc_confounds, report_files)
+    sets_create_qcqa_reports(se_pca, sets_qc_confounds, report_files) #14
   )
 )
 
@@ -174,6 +174,12 @@ data_limits_t = tar_target(
     sets_rsd_result,
     sets_pc_number_result
   )
+)
+
+sets_qc_reports_t = tar_combine(
+  sets_qc_reports,
+  sets_map[[14]],
+  command = dplyr::bind_rows(!!!.x)
 )
 
 confounding_factors_t = tar_combine(
@@ -257,6 +263,7 @@ list(
   sets_rsd_t,
   sets_pc_number_t,
   data_limits_t,
+  sets_qc_reports_t,
   confounding_factors_t,
   actual_analysis_t,
   contains_negatives_report_t,

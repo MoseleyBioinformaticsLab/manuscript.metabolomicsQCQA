@@ -20,7 +20,8 @@ sets_create_qcqa_reports = function(
   pca_sets,
   sets_qc_color,
   report_files,
-  save_loc = "qcqa_reports"
+  report_save_loc = "qcqa_reports",
+  rds_save_loc = "rds_dataset_outputs"
 ) {
   # pca_sets = tar_read(se_pca_g01); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
   # pca_sets = tar_read(se_pca_g02); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
@@ -29,7 +30,7 @@ sets_create_qcqa_reports = function(
   # pca_sets = tar_read(se_pca_g28); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
   # pca_sets = tar_read(se_pca_g11); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
   # pca_sets = tar_read(se_pca_g24); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
-  # pca_sets = tar_read(se_pca_g35); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
+  # pca_sets = tar_read(se_pca_g35); tar_source("R"); report_save_loc = "qcqa_reports"; rds_save_loc = "rds_dataset_outputs"; quiet = FALSE; tar_load(sets_qc_color_confounds)
 
   set_size = object.size(pca_sets) * 1e-9
 
@@ -52,18 +53,21 @@ sets_create_qcqa_reports = function(
     pca_sets,
     sets_tmp_files,
     create_report_from_templates,
-    save_loc,
-    sets_qc_color,
+    report_save_loc,
+    rds_save_loc,
+    sets_qc_color_confounds,
     quiet = TRUE
-  )
+  ) |>
+    purrr::list_rbind()
   plan(multicore, workers = n_cores)
   out_reports
 }
 create_report_from_templates = function(
   se_data,
   in_tmp_files,
-  save_loc = "qcqa_reports",
-  sets_qc_evaluation,
+  report_save_loc = "qcqa_reports",
+  rds_save_loc = "rds_dataset_outputs",
+  sets_qc_color_confounds,
   quiet = TRUE
 ) {
   # se_data = pca_sets[[1]]; in_tmp_files = sets_tmp_files[[1]]; quiet = FALSE; tar_source("R"); sets_qc_evaluation = sets_qc_color
@@ -75,10 +79,11 @@ create_report_from_templates = function(
   # se_data = pca_sets[["AN003914"]]; in_tmp_files = sets_tmp_files[["AN003914"]]; quiet = FALSE; sets_qc_evaluation = sets_qc_color
   # se_data = pca_sets[["AN003141"]]; in_tmp_files = sets_tmp_files[["AN003141"]]; quiet = FALSE; sets_qc_evaluation = sets_qc_color
   # se_data = pca_sets[["AN004656"]]; in_tmp_files = sets_tmp_files[["AN004656"]]; quiet = FALSE; sets_qc_evaluation = sets_qc_color
+  # se_data = pca_sets[[1]]; in_tmp_files = sets_tmp_files[[1]]; quiet = FALSE
   analysis_id = get_specific_metadata(se_data, "qc")$id
   # message(analysis_id)
-  summary_info = sets_qc_evaluation[
-    sets_qc_evaluation$internal_id %in% analysis_id,
+  summary_info = sets_qc_color_confounds[
+    sets_qc_color_confounds$internal_id %in% analysis_id,
     ,
     drop = FALSE
   ]
@@ -160,7 +165,7 @@ create_report_from_templates = function(
   }
 
   cat(all_text, file = in_tmp_files[2], sep = "\n")
-  final_html = fs::path(save_loc, glue::glue("{analysis_id}.html"))
+  final_html = fs::path(report_save_loc, glue::glue("{analysis_id}.html"))
   q_res = try(quarto::quarto_render(
     in_tmp_files[2],
     execute_dir = here::here(),
@@ -180,6 +185,11 @@ create_report_from_templates = function(
   tmp_html = fs::path_ext_set(tmp_qmd, "html")
 
   fs::file_copy(tmp_html, final_html, overwrite = TRUE)
+
+  tmp_rds = in_tmp_files[1]
+  final_rds = fs::path(rds_save_loc, paste0(analysis_id, ".rds"))
+  fs::file_copy(tmp_rds, final_rds, overwrite = TRUE)
+
   unlink(in_tmp_files[1])
   unlink(in_tmp_files[2])
   unlink(tmp_html)
