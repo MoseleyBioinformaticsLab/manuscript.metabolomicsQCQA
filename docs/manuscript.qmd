@@ -262,13 +262,17 @@ In this analysis, we used:
 
 ### Datasets Removed Along The Process
 
-As the data were parsed and transformed into R and Bioconductor data structures, many datasets were removed for various reasons.
+As the data were parsed and transformed into R and Bioconductor data structures, some datasets were removed for various reasons.
 In fact, there were several datasets with no data, 
 
 ```{r}
 #| label: loss-nose-plot
-(loss_waterfall_plot / nose_reasons_bar_plot) + plot_annotation(tag_levels = "A")
+(free(loss_waterfall_plot) / nose_reasons_bar_plot) + plot_annotation(tag_levels = "A")
 ```
+
+Figure X.
+**A**: Waterfall loss plot showing how many datasets were initially processed (7240), and then how many were removed as the analysis progressed along each stage. No SE: 167, a summarized experiment object could not be constructed; Dynamic Range: 622, datasets had less than three samples after checking that each sample had $\ge 10$ non-missing feature abundances; Correlation: 5, datasets had less than three samples after removing samples that generated missing sample-sample correlation values; PCA: 247, datasets that had a single SSF for all samples, or each sample had their own SSF.
+**B**: Counts for why the creation of the summarized experiment object failed for the 167 datasets in the "No SE" step.
 
 ### Overall Statuses
 

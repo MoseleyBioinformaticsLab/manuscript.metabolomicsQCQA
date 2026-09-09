@@ -34,7 +34,9 @@ create_loss_waterfall_plot = function(waterfall_input) {
     waterfall(
       calc_total = TRUE,
       total_rect_color = "lightgreen",
-      total_rect_text_color = "black"
+      total_rect_text_color = "black",
+      put_rect_text_outside_when_value_below = 300,
+      rect_text_size = 1.5
     ) +
     scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +
     labs(x = "Step", y = "N-Datasets")
