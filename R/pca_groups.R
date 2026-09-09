@@ -466,7 +466,11 @@ create_qcqa_plots = function(se_data, report_list) {
   se_data = se_data[, use_samples, drop = FALSE]
 
   se_ici = get_specific_metadata(se_data, "icikt")$cor
-  ici_square = ICIKendallTau::long_df_2_cor_matrix(se_ici)
+  if (is.null(se_ici)) {
+    ici_square = NULL
+  } else {
+    ici_square = ICIKendallTau::long_df_2_cor_matrix(se_ici)
+  }
 
   sample_metadata = get_vardata(se_data)
   all_ssf = unique(sample_metadata$ssf)

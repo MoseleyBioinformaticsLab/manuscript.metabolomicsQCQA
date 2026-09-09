@@ -79,6 +79,7 @@ create_report_from_templates = function(
   # se_data = pca_sets[["AN003914"]]; in_tmp_files = sets_tmp_files[["AN003914"]]; quiet = FALSE; sets_qc_evaluation = sets_qc_color
   # se_data = pca_sets[["AN003141"]]; in_tmp_files = sets_tmp_files[["AN003141"]]; quiet = FALSE; sets_qc_evaluation = sets_qc_color
   # se_data = pca_sets[["AN004656"]]; in_tmp_files = sets_tmp_files[["AN004656"]]; quiet = FALSE; sets_qc_evaluation = sets_qc_color
+  # se_data = pca_sets[["AN003829"]]; in_tmp_files = sets_tmp_files[["AN003829"]]; quiet = FALSE;
   # se_data = pca_sets[[1]]; in_tmp_files = sets_tmp_files[[1]]; quiet = FALSE
   analysis_id = get_specific_metadata(se_data, "qc")$id
   # message(analysis_id)

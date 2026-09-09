@@ -112,7 +112,8 @@ After datasets were repaired and ancillary datasets downloaded, we attempt to re
 
 #### Matching Samples and Features Between Data Blocks
 
-The mwtab format contains a subject sample factors 
+The mwtab format contains a subject sample factors block, detailing the samples, their metadata (and possible additional sample data) as well as data blocks containing the abundances and metabolite metadata.
+Alternatively, the data could be made available in an external file.
 
 ### Removing Factors That Cause Single Sample Grouping
 
