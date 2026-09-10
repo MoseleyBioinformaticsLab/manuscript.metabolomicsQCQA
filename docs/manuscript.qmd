@@ -49,8 +49,8 @@ figure_count$increment("loss-nose-plot")
 
 ```{r}
 #| label: summarize_steps
-summary_qc = summarize_qc_results_table(sets_qc_evaluation)
-n_parsed = nrow(sets_qc_evaluation)
+summary_qc = summarize_qc_results_table(sets_qc_color_confounds)
+n_parsed = nrow(sets_qc_color_confounds)
 
 n_completed = summary_qc |>
   dplyr::filter(completed_steps %in% "se; dynamic_range; correlation; pca")
@@ -62,13 +62,12 @@ n_few = summary_qc |>
   dplyr::filter(failed_steps %in% "none", failed_why %in% "too few samples")
 
 
-overall_status = set_overall_color_status(sets_qc_evaluation)
-gray_status = overall_status |>
+gray_status = sets_qc_color_confounds |>
   dplyr::filter(
     completed_steps %in% "se; dynamic_range; correlation; pca",
     overall_status %in% "gray"
   )
-color_status = overall_status |>
+color_status = sets_qc_color_confounds |>
   dplyr::filter(
     completed_steps %in% "se; dynamic_range; correlation; pca",
     !overall_status %in% "gray"
@@ -92,8 +91,9 @@ As such, we have attempted to assess the quality of a large number of datasets i
 Previous related publications include
 
 The measures we have used to assess the quality of each dataset include:
+
   * The number of subject sample factor (SSF) groups;
-  * The number of features with non-missing values in at least one sample, and the number of samples with $ge$ 10 non-missing features;
+  * The number of features with non-missing values in at least one sample, and the number of samples with $\ge$ 10 non-missing features;
   * The number of samples within each SSF grouping;
   * The presence of quality-control samples;
   * The percent missing samples, and the results of a test for missingness being due to left-censorship;
@@ -312,20 +312,36 @@ Using the following quality statuses:
   * ANOVA test of SSF to PC scores;
 
 we obtained the following breakdown of statuses shown in Table X. 
-Although the most common category of statuses contain one or more yellow, a large portion of those ($\gt$ 50%) are actually due to datasets where one or more SSFs have 3 or 4 samples, instead of 5 or more required for a green status.
+Although the most common category of statuses contain one or more yellow, two sets of statuses there dominate all others: 1 - datasets where one or more SSF groupings have only 3 or 4 samples (1132 or 44%); 2 - datasets where the PCA ANOVA p-value got a status of yellow (379, 15%).
+In both of those cases, all other statuses are green.
+For the red statuses, the most common category was that the PCA ANOVA p-value has a red status (503, 30%), or PCA ANOVA red status and SSF groupings with only 3 or 4 samples (yellow) (343, 21%) with all other statuses being green.
 
 Table X. Number of datasets with all green across the statuses, one or more yellow statuses, and one or more red statuses.
 
 ```{r}
 #| label: status-colors
 tmp_color = n_color |>
-  dplyr::transmute(Color = overall_status, N = n, `%` = perc_display)
+  dplyr::transmute(`Overall Status` = overall_status, N = n, `%` = perc_display)
 
-display_color = tibble::tibble(Color = c("green", "yellow", "red"))
-display_color = dplyr::left_join(display_color, tmp_color, by = "Color")
+display_color = tibble::tibble(`Overall Status` = c("green", "yellow", "red"))
+display_color = dplyr::left_join(display_color, tmp_color, by = "Overall Status")
 display_color |>
   gt::gt()
 ```
+
+
+### Possible Confounding Factors
+
+```{r}
+#| label: calculate-confounding-percentage
+n_yellow_red = nrow(sets_qc_color_confounds |> dplyr::filter(pca_anova_pvalue_status %in% c("yellow", "red")))
+n_confound = nrow(sets_qc_color_confounds |> dplyr::filter(confounding_factor_detected %in% "yes"))
+perc_confound = format_percentage(n_confound / n_yellow_red)
+```
+
+From the datasets with a yellow or red status for the PCA ANOVA p-value, we used a series of ad-hoc cutoffs and clustering to try and determine if their might be a potential confounding factor present (see Methods).
+For the `{r} n_yellow_red` datasets with yellow or red PCA ANOVA p-value statuses, `{r} n_confound` (`{r} perc_confound`) *likely* have a confounding factor present.
+
 
 ### Weirdness Encountered
 

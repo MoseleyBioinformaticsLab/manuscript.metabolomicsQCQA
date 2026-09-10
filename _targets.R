@@ -195,12 +195,29 @@ actual_analysis_t = tar_assign({
     sets_confounding_factors
   ) |>
     tar_target()
-  not_gray_pca = find_pca_remove_gray(sets_qc_color) |> tar_target()
+  not_gray_pca = find_pca_remove_gray(sets_qc_color_confounds) |> tar_target()
   parsed_grouped_statuses = parse_statuses(not_gray_pca) |> tar_target()
+  parsed_percentage_overall = calculate_percentage_overall(
+    parsed_grouped_statuses
+  ) |>
+    tar_target()
+})
+
+figures_tables_t = tar_assign({
   waterfall_input = calculate_losses_at_steps(sets_qc_color) |> tar_target()
   loss_waterfall_plot = create_loss_waterfall_plot(waterfall_input) |>
     tar_target()
   nose_reasons_bar_plot = create_nose_reasons_bar_plot(sets_qc_color) |>
+    tar_target()
+  parsed_percentage_csv = create_csv_file(
+    parsed_percentage_overall,
+    out_file = "outputs/parsed_percentage_overall.csv"
+  ) |>
+    tar_target()
+  sets_qc_color_confounds_csv = create_csv_file(
+    sets_qc_color_confounds,
+    out_file = "outputs/sets_qc_color_status.csv"
+  ) |>
     tar_target()
 })
 
@@ -266,6 +283,7 @@ list(
   sets_qc_reports_t,
   confounding_factors_t,
   actual_analysis_t,
+  figures_tables_t,
   contains_negatives_report_t,
   negatives_testing_report_t,
   mean_median_ratios_report_t,

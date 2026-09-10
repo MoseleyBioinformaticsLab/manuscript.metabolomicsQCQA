@@ -37,3 +37,23 @@ create_group_scores_histogram = function(
     ggplot(aes(x = {{ which }})) +
     geom_histogram(bins = 100)
 }
+
+format_percentage = function(fractional_value, digits = 2) {
+  (fractional_value * 100) |> format(digits = digits) |> paste0("%")
+}
+
+create_csv_file = function(in_df, out_file) {
+  is_list_col = purrr::map_lgl(in_df, \(x) {
+    inherits(x, "list")
+  })
+  no_list_df = in_df[, !is_list_col, drop = FALSE]
+  write.table(
+    no_list_df,
+    file = out_file,
+    row.names = FALSE,
+    col.names = TRUE,
+    append = FALSE,
+    sep = ","
+  )
+  digest::digest(out_file, algo = "md5", file = TRUE)
+}

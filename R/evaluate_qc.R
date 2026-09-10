@@ -1142,19 +1142,13 @@ summarize_qc_results_table = function(sets_qc_evaluation, group_none = "yes") {
 }
 
 set_overall_color_status = function(sets_qc_evaluation) {
-  status_cols = grep("status$", names(sets_qc_evaluation), value = TRUE)
-  status_cols = grep(
-    "^summarized|^has_qc|^score_icikt|^score_rle|^ssf_metadata|^technical_replicate",
-    status_cols,
-    invert = TRUE,
-    value = TRUE
-  )
+  status_cols = setup_statuses(names(sets_qc_evaluation))
 
   gray_sets = sets_qc_evaluation |>
     dplyr::filter(pca_anova_pvalue_status %in% "gray") |>
     dplyr::mutate(overall_status = "gray")
   not_gray = sets_qc_evaluation |>
-    dplyr::filter(!(pca_anova_pvalue_status %in% "gray"))
+    dplyr::filter_out(pca_anova_pvalue_status %in% "gray")
   green_status = yellow_status = rep(TRUE, nrow(not_gray))
 
   for (istatus in status_cols) {
