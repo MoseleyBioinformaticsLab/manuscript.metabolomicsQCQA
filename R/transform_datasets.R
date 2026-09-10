@@ -27,6 +27,13 @@ calculate_mean_median_ratio = function(safe_matrix) {
   abs(safe_mean / safe_median)
 }
 
+calculate_skew = function(safe_matrix) {
+  safe_median = median(safe_matrix, na.rm = TRUE)
+  safe_mean = mean(safe_matrix, na.rm = TRUE)
+  safe_sd = sd(safe_matrix, na.rm = TRUE)
+  (safe_mean - safe_median) / safe_sd
+}
+
 calculate_matrix_dynamic_range = function(safe_matrix) {
   # to calculate the dynamic range in the presence of negatives,
   # we will do:
@@ -63,6 +70,7 @@ check_mmr_negatives = function(in_se) {
 
   mmr_value = calculate_mean_median_ratio(raw_data)
   dynamic_range = calculate_matrix_dynamic_range(raw_data)
+  skew_value = calculate_skew(raw_data)
   n_vals = nrow(raw_data) * ncol(raw_data)
   n_miss = sum(is.na(raw_data))
   n_neg = sum(raw_data < 0, na.rm = TRUE)
@@ -73,6 +81,7 @@ check_mmr_negatives = function(in_se) {
     qc_info,
     tibble::tibble(
       mmr = mmr_value,
+      skew = skew_value,
       dynamic_range = dynamic_range,
       N = n_vals,
       N_present = n_vals - n_miss,

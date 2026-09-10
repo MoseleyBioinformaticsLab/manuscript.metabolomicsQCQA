@@ -141,8 +141,11 @@ Therefore, we can detect already log-transformed data by determining if it is "n
 However, tests for normality are notoriously fickle and prone to return non-significant values if the data is at all different from expectations.
 One common element of normally distributed data is that the mean and median of the data are relatively close together, whereas for skewed or long-tailed data the mean and median, by definition, are very different.
 
-We calculated the mean-median-ratio (MMR) across all 5904 datasets that created a summarized experiment object, as well as the number of negative values, the maximum observed abundance, and the dynamic range (maximum / minimum values).
+We calculated the mean-median-ratio (MMR) across all 7073 datasets that created a summarized experiment object, as well as the number of negative values, the maximum observed abundance, and the dynamic range (maximum / minimum values).
 The dynamic range calculated in the presence of negative values involves first adding the absolute value of the minimum value, + 1, to transform all values to be positive, and subsequently calcuating the ratio of the maximum and minimum of the transformed values.
+
+Based on the figures in X, for a given dataset, we check if the maximum observed value is $\le$ 1000, and if so, calculate the mean-median ratio across the entire dataset.
+If the mean-median-ratio is between 0.8 and 1.2, then the data is exponentiated.
 
 ### Quality Control Cutoffs
 
@@ -284,6 +287,10 @@ In this analysis, we used:
 
 ### Detection of Log-Transformation
 
+Some datasets are submitted with log-transformed values.
+However, there is nothing in the Metabolomics Workbench files that indicates the data is log-transformed already.
+If the data is log-transformed, that changes how median abundance normalization should be done, values prepared before principal component analysis, at the very least.
+Ideally, we should be able to detect log-transformed data, exponentiate it, and then carry on with the analysis.
 
 ### Datasets Removed Along The Process
 

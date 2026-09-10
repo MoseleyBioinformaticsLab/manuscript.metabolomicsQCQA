@@ -1,0 +1,68 @@
+---
+title: "Exploring Results"
+author: "Robert M Flight"
+date: last-modified
+date-format: YYYY-MM-DD HH:mm
+format: 
+  docx:
+    keep-md: true
+  html:
+    toc: true
+    embed-resources: true
+---
+
+This is a document that lets me sit and explor what is in the dataset results, before I go and write the function to have something in the manuscript.
+
+```{r}
+#| label: load-stuff
+tar_load(not_gray_pca)
+tar_source("R")
+```
+
+## Species Taxonomies
+
+What and how many of each taxonomy are reported?
+
+```{r}
+#| label: taxonomy
+sample_related = not_gray_pca |>
+  dplyr::select(subject_type, subject_species, taxonomy_id, species_group, organ, organ_specification, sample_type, collection_method)
+
+sample_related = purrr::map(sample_related, \(in_col) {
+  weird_loc = nchar(in_col) == 0 | grepl("-", in_col)
+  in_col[weird_loc] = NA_character_
+  in_col
+}) |>
+  dplyr::bind_cols()
+
+na_all = purrr::map_lgl(seq_len(nrow(sample_related)), \(in_row){
+  all(is.na(sample_related[in_row, ]))
+})
+
+n_na_col = purrr::map_int(sample_related, \(x){sum(is.na(x))})
+taxonomy_miss_other_miss = 
+all_taxonomy = not_gray_pca$taxonomy_id
+
+taxon_counts = all_taxonomy |> sort() |> rle() |> rle_2_df()
+total_taxon = sum(taxon_counts)
+
+n_human = taxon_counts |>
+  dplyr::filter(value %in% "9606") |>
+  dplyr::pull(length)
+n_mouse = taxon_counts |>
+  dplyr::filter(value %in% "10090") |>
+  dplyr::pull(length)
+n_rat = taxon_counts |>
+  dplyr::filter(value %in% "")
+```
+
+## Bad Actors
+
+```{r}
+#| label: problematic-actors
+by_actor = not_gray_pca |>
+  dplyr::group_by(institute, laboratory) |>
+  dplyr::summarise(n_green = sum(overall_status %in% "green"),
+  n_yellow = sum(overall_status %in% "yellow"), n_red = sum(overall_status %in% "red")) |>
+    dplyr::arrange(dplyr::desc(n_green), dplyr::desc(n_yellow), dplyr::desc(n_red))
+```
