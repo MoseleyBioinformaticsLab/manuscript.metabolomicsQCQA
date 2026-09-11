@@ -812,7 +812,76 @@ get_mwtab_project_info = function(mwtab_info) {
     field = c("PROJECT_ID", "STUDY_ID", "ANALYSIS_ID", "CREATED_ON")
   )
   project_fields = tibble::tibble(
-    field = c("PROJECT_TITLE", "INSTITUTE", "LABORATORY", "DOI")
+    field = c(
+      "PROJECT_TITLE",
+      "PROJECT_TYPE",
+      "PROJECT_SUMMARY",
+      "INSTITUTE",
+      "DEPARTMENT",
+      "LABORATORY",
+      "LAST_NAME",
+      "FIRST_NAME",
+      "EMAIL",
+      "PUBLICATIONS",
+      "DOI"
+    ),
+    use_field = c(
+      "project_title",
+      "project_type",
+      "project_summary",
+      "project_institute",
+      "project_department",
+      "project_laboratory",
+      "project_last_name",
+      "project_first_name",
+      "project_email",
+      "publications",
+      "doi"
+    )
+  )
+
+  study_fields = tibble::tibble(
+    field = c(
+      "STUDY_TITLE",
+      "STUDY_TYPE",
+      "STUDY_SUMMARY",
+      "INSTITUTE",
+      "DEPARTMENT",
+      "LABORATORY",
+      "LAST_NAME",
+      "FIRST_NAME",
+      "EMAIL"
+    ),
+    use_field = c(
+      "study_title",
+      "study_type",
+      "study_summary",
+      "study_institute",
+      "study_department",
+      "study_laboratory",
+      "study_last_name",
+      "study_first_name",
+      "study_email"
+    )
+  )
+
+  analysis_fields = tibble::tibble(
+    field = c(
+      "LABORATORY_NAME",
+      "ANALYSIS_TYPE",
+      "ACQUISITION_DATE",
+      "SOFTWARE_VERSION",
+      "OPERATOR_NAME",
+      "DETECTOR_TYPE"
+    ),
+    use_field = c(
+      "analysis_laboratory",
+      "analysis_type",
+      "acquistion_date",
+      "analysis_software",
+      "analysis_operator",
+      "analysis_detector_type"
+    )
   )
   mw_list = dplyr::left_join(
     mw_fields,
@@ -825,8 +894,20 @@ get_mwtab_project_info = function(mwtab_info) {
     mwtab_info$PROJECT,
     by = "field"
   ) |>
-    tibble_to_list()
-  c(mw_list, project_list)
+    tibble_to_list(name_field = "use_field")
+  study_list = dplyr::left_join(
+    study_fields,
+    mwtab_info$STUDY,
+    by = "field"
+  ) |>
+    tibble_to_list(name_field = "use_field")
+  analysis_list = dplyr::left_join(
+    analysis_fields,
+    mwtab_info$ANALYSIS,
+    by = "field"
+  ) |>
+    tibble_to_list(name_field = "use_field")
+  c(mw_list, project_list, study_list, analysis_list) |> list_clean_zero_dash()
 }
 
 get_mwtab_instrument_chromatography_info = function(mwtab_info) {
@@ -876,8 +957,17 @@ get_mwtab_instrument_chromatography_info = function(mwtab_info) {
 
   chrom_list = tibble_to_list(chrom_info, "use_field")
 
-  out_list = c(instr_list, chrom_list)
+  out_list = c(instr_list, chrom_list) |> list_clean_zero_dash()
   out_list
+}
+
+list_clean_zero_dash = function(in_list) {
+  purrr::map(in_list, \(x) {
+    weird_locs = nchar(x) == 0 | x %in% "-"
+    out_x = x
+    out_x[weird_locs] = NA_character_
+    out_x
+  })
 }
 
 get_mwtab_organism_sample = function(mwtab_info) {
@@ -886,6 +976,8 @@ get_mwtab_organism_sample = function(mwtab_info) {
       "SUBJECT_TYPE",
       "SUBJECT_SPECIES",
       "TAXONOMY_ID",
+      "GENOTYPE_STRAIN",
+      "GENDER",
       "SPECIES_GROUP"
     )
   )
@@ -917,12 +1009,12 @@ get_mwtab_organism_sample = function(mwtab_info) {
   )
   collection_list = tibble_to_list(collection_info)
 
-  c(subject_list, sampleprep_list, collection_list)
+  c(subject_list, sampleprep_list, collection_list) |> list_clean_zero_dash()
 }
 
 tibble_to_list = function(in_tbl, name_field = "field") {
   if (is.null(in_tbl$value)) {
-    out_list = rep("NA", nrow(in_tbl)) |> as.list()
+    out_list = rep(NA_character_, nrow(in_tbl)) |> as.list()
   } else {
     out_list = as.list(in_tbl$value)
   }
