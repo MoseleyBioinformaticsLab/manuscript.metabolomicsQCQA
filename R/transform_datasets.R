@@ -49,6 +49,25 @@ calculate_matrix_dynamic_range = function(safe_matrix) {
   max_val / min_val
 }
 
+calculate_matrix_dynamic_range_cols = function(safe_matrix) {
+  # to calculate the dynamic range in the presence of negatives,
+  # we will do:
+  # add the most negative value, + 1
+  # take the ratio.
+  min_val = min(safe_matrix, na.rm = TRUE)
+  if (min_val < 0) {
+    safe_matrix = safe_matrix + abs(min_val) + 1
+  }
+
+  # make sure to set zero to missing, so we don't try to divide by 0
+  safe_matrix[safe_matrix <= 0] = NA
+  col_maxs = MatrixGenerics::colMaxs(safe_matrix, na.rm = TRUE)
+  col_mins = MatrixGenerics::colMins(safe_matrix, na.rm = TRUE)
+
+  col_dyn_range = col_maxs / col_mins
+  col_dyn_range
+}
+
 sets_check_mmr_negatives = function(in_set) {
   # in_set = tar_read(se_g01); tar_source("R");
   sets_mmr = furrr::future_map(in_set, check_mmr_negatives) |>

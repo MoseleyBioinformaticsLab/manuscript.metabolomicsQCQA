@@ -130,10 +130,10 @@ calculate_dynamic_range = function(se_data) {
   sample_maxs = MatrixGenerics::colMaxs(data_normalized, na.rm = TRUE)
   se_data$value_min = sample_mins
   se_data$value_max = sample_maxs
-  se_data$dynamic_range = se_data$value_max / se_data$value_min
+  se_data$dynamic_range = calculate_matrix_dynamic_range_cols(clean_matrix)
 
   data_range = range(data_normalized, na.rm = TRUE)
-  data_dyn_range = data_range[2] / data_range[1]
+  data_dyn_range = calculate_matrix_dynamic_range(clean_matrix)
   n_feature = nrow(clean_matrix)
   col_not_na = n_feature - MatrixGenerics::colCounts(clean_matrix, value = NA)
 
@@ -315,7 +315,8 @@ calculate_dynamic_range_check_neg = function(se_data) {
   sample_maxs = MatrixGenerics::colMaxs(data_matrix, na.rm = TRUE)
   se_data$value_min = sample_mins
   se_data$value_max = sample_maxs
-  se_data$dynamic_range = se_data$value_max / se_data$value_min
+
+  se_data$dynamic_range = calculate_matrix_dynamic_range_cols(data_matrix)
 
   data_range = range(data_matrix, na.rm = TRUE)
   data_dyn_range = data_range[2] / data_range[1]
