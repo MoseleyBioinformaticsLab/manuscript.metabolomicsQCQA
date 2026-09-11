@@ -58,3 +58,32 @@ create_nose_reasons_bar_plot = function(sets_qc_color) {
     scale_x_continuous(expan = expansion(mult = c(0, 0.05)))
   nose_histogram_plot
 }
+
+create_dataset_sizes_plot = function(sets_qc_color) {
+  # tar_load(sets_qc_color); tar_source("R")
+  all_sizes = purrr::map(seq_len(nrow(sets_qc_color)), \(in_row) {
+    tmp_df = sets_qc_color$data_sizes_df[[in_row]]
+    tmp_df$analysis_id = sets_qc_color$analysis_id[in_row]
+    tmp_df
+  }) |>
+    purrr::list_rbind()
+
+  all_sizes = all_sizes |>
+    dplyr::mutate(
+      Source = factor(
+        Source,
+        levels = c("Metabolomics Workbench", "Initial-SE", "Kept-SE")
+      )
+    )
+  feature_plot = all_sizes |>
+    ggplot(aes(x = log10(`N-Features`))) +
+    geom_histogram(bins = 100) +
+    facet_wrap(~Source, ncol = 1) +
+    labs(x = "Log10(N-Features")
+
+  sample_plot = all_sizes |>
+    ggplot(aes(x = log10(`N-Samples`))) +
+    geom_histogram(bins = 100) +
+    facet_wrap(~Source, ncol = 1) +
+    labs(x = "Log10(N-Samples)")
+}

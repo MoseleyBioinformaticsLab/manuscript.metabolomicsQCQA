@@ -126,8 +126,8 @@ calculate_dynamic_range = function(se_data) {
 
   data_normalized = median_normalize_matrix(clean_matrix)
   assays(se_data)$normalized = data_normalized
-  sample_mins = MatrixGenerics::colMins(data_normalized, na.rm = TRUE)
-  sample_maxs = MatrixGenerics::colMaxs(data_normalized, na.rm = TRUE)
+  sample_mins = MatrixGenerics::colMins(clean_matrix, na.rm = TRUE)
+  sample_maxs = MatrixGenerics::colMaxs(clean_matrix, na.rm = TRUE)
   se_data$value_min = sample_mins
   se_data$value_max = sample_maxs
   se_data$dynamic_range = calculate_matrix_dynamic_range_cols(clean_matrix)

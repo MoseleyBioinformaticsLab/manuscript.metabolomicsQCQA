@@ -209,6 +209,8 @@ figures_tables_t = tar_assign({
     tar_target()
   nose_reasons_bar_plot = create_nose_reasons_bar_plot(sets_qc_color) |>
     tar_target()
+  datasets_sizes_plot = create_dataset_sizes_plot(sets_qc_color) |>
+    tar_target()
   parsed_percentage_csv = create_csv_file(
     parsed_percentage_overall,
     out_file = "outputs/parsed_percentage_overall.csv"
