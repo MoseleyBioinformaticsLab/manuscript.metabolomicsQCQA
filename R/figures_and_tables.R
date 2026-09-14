@@ -265,3 +265,20 @@ create_technical_replicate_plot = function(se_data) {
 
   return(list(dotplot = dist_plot, heatmap = out_heatmap))
 }
+
+create_example_confound_plot = function(se_data) {
+  # se_pca = tar_read(se_pca_g34); se_data = se_pca[["AN000454"]]; tar_source("R")
+  pca_data = get_specific_metadata(se_data, "pca_groups")
+  last_run = check_qc_outputs(se_data)
+  pca_index = last_run$pca[length(last_run$pca)]
+  pca_data_use = pca_data[[pca_index]]
+
+  pca_scores = pca_data_use$pca$pca
+
+  out_plot = pca_scores |>
+    ggplot(aes(x = PC1, y = PC2, color = ssf)) +
+    geom_point(size = 2) +
+    theme(legend.position = "top") +
+    labs(subtitle = metadata(se_data)$mwtab$ID)
+  return(out_plot)
+}

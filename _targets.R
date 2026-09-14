@@ -201,6 +201,8 @@ actual_analysis_t = tar_assign({
     parsed_grouped_statuses
   ) |>
     tar_target()
+  technical_replicate_info = technical_replicate_info_analysis(not_gray_pca) |>
+    tar_target()
 })
 
 figures_tables_t = tar_assign({
@@ -213,6 +215,10 @@ figures_tables_t = tar_assign({
     tar_target()
   technical_replicates_plot = create_technical_replicate_plot(se_pca_g01[[
     "AN006191"
+  ]]) |>
+    tar_target()
+  example_confound_plot = create_example_confound_plot(se_pca_g34[[
+    "AN000454"
   ]]) |>
     tar_target()
   parsed_percentage_csv = create_csv_file(

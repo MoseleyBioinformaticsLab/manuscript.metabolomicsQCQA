@@ -7,6 +7,7 @@ detect_technical_replicate_samples = function(se_data) {
   #
   # how to detect these?
   # Can we correlate leveshtein distances with correlation based distances?
+
   # se_pca = tar_read(se_pca_g01); se_data = se_pca[["AN006191"]]; tar_source("R")
   # se_pca = tar_read(se_pca_g01); se_data = se_pca[["AN006248"]]; tar_source("R")
 
@@ -196,4 +197,23 @@ finding_replicate_metadata = function() {
     rep_info
   }) |>
     purrr::list_rbind()
+}
+
+technical_replicate_info_analysis = function(not_gray_pca) {
+  # tar_load(not_gray_pca); tar_source("R")
+  has_tr = not_gray_pca |>
+    dplyr::filter(technical_replicates_detected %in% "yes")
+
+  tr_green = has_tr |>
+    dplyr::filter(technical_replicates_status %in% "green")
+  tr_yellow = has_tr |>
+    dplyr::filter(technical_replicates_status %in% "yellow")
+  uniq_green = unique(tr_green$technical_replicates_metadata)
+
+  list(
+    n_overall = nrow(has_tr),
+    n_green = nrow(tr_green),
+    n_yellow = nrow(tr_yellow),
+    field_green = rle_2_df(rle(sort(tr_green$technical_replicates_metadata)))
+  )
 }
