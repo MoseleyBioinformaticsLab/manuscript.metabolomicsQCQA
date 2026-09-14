@@ -86,4 +86,6 @@ create_dataset_sizes_plot = function(sets_qc_color) {
     geom_histogram(bins = 100) +
     facet_wrap(~Source, ncol = 1) +
     labs(x = "Log10(N-Samples)")
+
+  (feature_plot | sample_plot) + plot_annotation(tag_levels = "A")
 }

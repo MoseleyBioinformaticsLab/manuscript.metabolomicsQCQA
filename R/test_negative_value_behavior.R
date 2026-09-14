@@ -79,7 +79,7 @@ do_lc_tests = function(raw_data, ssf, suffix = ".org") {
 }
 
 
-plot_neg_tests = function(sets_neg_test) {
+plot_neg_tests = function(sets_neg_test, nbin = 50) {
   # tar_source("R"); tar_load(sets_neg_test)
   # we identify and remove those that had an NA statistic so we aren't
   # overinflating anything.
@@ -106,13 +106,13 @@ plot_neg_tests = function(sets_neg_test) {
     )
   p_value_plot = sets_neg_test_present |>
     ggplot(aes(x = p.value_neg_vs_org)) +
-    geom_histogram(bins = 30) +
+    geom_histogram(bins = nbin) +
     geom_vline(xintercept = 0, color = "red") +
     facet_wrap(~subset.neg, ncol = 1) +
     labs(x = "-1 x Log10(Neg-p / Missing-p)")
   estimate_plot = sets_neg_test_present |>
     ggplot(aes(x = estimate_neg_vs_org)) +
-    geom_histogram(bins = 30) +
+    geom_histogram(bins = nbin) +
     geom_vline(xintercept = 0, color = "red") +
     facet_wrap(~subset.neg, ncol = 1) +
     labs(x = "Log2(Neg-estimate / Missing-estimate)")
