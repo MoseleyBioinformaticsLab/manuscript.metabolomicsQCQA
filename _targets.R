@@ -133,7 +133,7 @@ sets_neg_test_t = tar_target(
 
 sets_neg_test_result_t = tar_target(
   sets_neg_test_result,
-  plot_neg_tests(sets_neg_test)
+  plot_neg_tests(sets_neg_test, 100)
 )
 
 sets_percent_missing_t = tar_combine(
