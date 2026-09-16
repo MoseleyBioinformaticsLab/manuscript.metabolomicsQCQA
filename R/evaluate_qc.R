@@ -110,6 +110,8 @@ evaluate_qc = function(se_data, data_limits) {
 
   qc_status_list = check_qc_samples(se_data, use_defaults)
 
+  transformation_list = get_transformation(se_data, use_defaults)
+
   percent_missing_list = check_percent_missing(
     se_data,
     data_limits$missing,
@@ -145,6 +147,7 @@ evaluate_qc = function(se_data, data_limits) {
     se_samples_removed_list,
     n_samples_list,
     qc_status_list,
+    transformation_list,
     percent_missing_list,
     median_correlations_list,
     rsd_list,
@@ -154,6 +157,20 @@ evaluate_qc = function(se_data, data_limits) {
     data_sizes_list
   )
   return(c(mwtab_list, data_list, analysis_list))
+}
+
+get_transformation = function(se_data, default = FALSE) {
+  transformation_data = get_specific_metadata(se_data, "transformation")
+  if (is.null(transformation_data) || default) {
+    return(list(
+      transformation = NA_character_,
+      mean_median_ratio = NA,
+      original_max = NA,
+      n_neg = NA
+    ))
+  } else {
+    return(transformation_data)
+  }
 }
 
 get_samples_removed = function(se_data, default = FALSE) {

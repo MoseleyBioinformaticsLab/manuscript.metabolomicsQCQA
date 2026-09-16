@@ -355,6 +355,7 @@ create_mmr_logtransform_plots = function(se_mmr_combine) {
   mmr_histogram_plot = se_mmr_lowmax |>
     ggplot(aes(x = log10(mmr))) +
     geom_histogram(bins = 100) +
+    scale_y_continuous(expand = expansion(mult = c(0, NA))) +
     labs(x = "Log10(MMR)")
 
   mmr_vs_neg_plot = se_mmr_lowmax |>
@@ -368,6 +369,7 @@ create_mmr_logtransform_plots = function(se_mmr_combine) {
     ggplot(aes(x = log10(mmr))) +
     geom_histogram(bins = 100) +
     geom_vline(xintercept = log10(c(0.8, 1.2))) +
+    scale_y_continuous(expand = expansion(mult = c(0, NA))) +
     labs(x = "Log10(MMR)")
   return(list(
     mmr_distribution = mmr_histogram_plot,

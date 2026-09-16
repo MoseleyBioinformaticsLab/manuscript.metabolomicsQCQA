@@ -252,39 +252,52 @@ figures_tables_t = tar_assign({
     tar_target()
 })
 
-manuscript_t = tar_quarto(
-  manuscript,
-  "docs/manuscript.qmd",
-  output_file = "docs/qcqa_manuscript.docx"
-)
+docs_t = tar_assign({
+  manuscript = tar_quarto("docs/manuscript.qmd")
+  reproducibility_report = tar_quarto("docs/reproducibility.qmd")
+  contains_negatives_report = tar_quarto("docs/contains_negatives.qmd")
+  negatives_testing_report = tar_quarto("docs/negatives_testing_as_missing.qmd")
+  mean_median_ratios_report = tar_quarto(
+    "docs/mean_median_ratios_for_logdetection.qmd"
+  )
+  setting_databased_cutoffs_report = tar_quarto(
+    "docs/setting_databased_cutoffs.qmd"
+  )
+  iecm2026_abstract = tar_quarto("docs/iecm2026_abstract.qmd")
+})
 
-reproducibility_t = tar_quarto(
-  reproducibility_report,
-  "docs/reproducibility.qmd"
-)
+# manuscript_t = tar_quarto(
+#   manuscript,
+#   "docs/manuscript.qmd"
+# )
 
-contains_negatives_report_t = tar_quarto(
-  contains_negatives_report,
-  "docs/contains_negatives.qmd"
-)
+# reproducibility_t = tar_quarto(
+#   reproducibility_report,
+#   "docs/reproducibility.qmd"
+# )
 
-negatives_testing_report_t = tar_quarto(
-  negatives_testing_report,
-  "docs/negatives_testing_as_missing.qmd"
-)
+# contains_negatives_report_t = tar_quarto(
+#   contains_negatives_report,
+#   "docs/contains_negatives.qmd"
+# )
 
-mean_median_ratios_report_t = tar_quarto(
-  mean_median_ratios_report,
-  "docs/mean_median_ratios_for_logdetection.qmd"
-)
+# negatives_testing_report_t = tar_quarto(
+#   negatives_testing_report,
+#   "docs/negatives_testing_as_missing.qmd"
+# )
 
-setting_databased_cutoffs_report_t =
-  tar_quarto(setting_databased_cutoffs, "docs/setting_databased_cutoffs.qmd")
+# mean_median_ratios_report_t = tar_quarto(
+#   mean_median_ratios_report,
+#   "docs/mean_median_ratios_for_logdetection.qmd"
+# )
 
-iecm2026_abstract_t = tar_quarto(
-  iecm2026_abstract,
-  "docs/iecm2026_abstract.qmd"
-)
+# setting_databased_cutoffs_report_t =
+#   tar_quarto(setting_databased_cutoffs, "docs/setting_databased_cutoffs.qmd")
+
+# iecm2026_abstract_t = tar_quarto(
+#   iecm2026_abstract,
+#   "docs/iecm2026_abstract.qmd"
+# )
 # setup_map = tar_map(
 #   json_all_map[[4]],
 #   tar_target(setup, run_setup)
@@ -315,9 +328,5 @@ list(
   confounding_factors_t,
   actual_analysis_t,
   figures_tables_t,
-  contains_negatives_report_t,
-  negatives_testing_report_t,
-  mean_median_ratios_report_t,
-  setting_databased_cutoffs_report_t,
-  iecm2026_abstract_t
+  docs_t
 )

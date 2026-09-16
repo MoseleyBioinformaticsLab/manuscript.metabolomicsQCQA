@@ -21,8 +21,8 @@ knitr::opts_chunk$set(
   warning = FALSE,
   fig.width = 14,
   fig.height = 12,
-  fig.process = figure_count$modify_path,
-  dev = "ragg_png",
+  # fig.process = figure_count$modify_path,
+  dev = "png",
   dpi = 150
 )
 ```
@@ -33,19 +33,25 @@ knitr::opts_chunk$set(
 #| warning: false
 library(targets)
 tar_source(c("packages.R", "R"))
-tar_load(c(sets_qc_color_confounds,
-technical_replicate_info))
+tar_load(c(
+  # analysis pieces
+sets_qc_color_confounds,
+potential_confound_info,
+technical_replicate_info,
+# plots
+nose_reasons_bar_plot,
+loss_waterfall_plot,
+datasets_sizes_plot,
+mmr_logtransform_plot,
+status_heatmap_top90_plot,
+technical_replicates_plot,
+example_confound_plot
+# tables
+))
 ```
 
 ```{r}
 #| label: load-plots
-tar_load(c(nose_reasons_bar_plot,
-loss_waterfall_plot,
-datasets_sizes_plot,
-status_heatmap_top90_plot,
-technical_replicates_plot,
-example_confound_plot))
-
 figure_count$increment("loss-nose-plot")
 ```
 
@@ -309,7 +315,17 @@ The dynamic range calculated in the presence of negative values involves first a
 
 This investigation resulted in first checking if the maximum observed value in a dataset is less than 1000, then calculating the mean and median of the data, and if the MMR was between 0.8 and 1.2, the data was exponentiated before further use.
 
-#### FIGURE!
+```{r}
+#| label: mmr-plot
+(mmr_logtransform_plot$mmr_distribution / (mmr_logtransform_plot$mmr_vs_neg | mmr_logtransform_plot$less1000)) + plot_annotation(tag_levels = "A")
+```
+
+Figure X.
+All plots used datasets with an MMR $\ge$ 0.2 and MMR $\le$ 200.
+**A**: Histogram of Log10(MMR).
+**B**: Log10(MMR) vs fraction of negative data values, after excluding all datasets with zero negative values.
+**C**: Histogram of Log10(MMF) for datasets with a maximum observed intensity $\le$ 1000.
+Vertical lines indicate the MMR cutoffs used of 0.8 and 1.2 to decide that a dataset should undergo exponentiation.
 
 ### Negative Values and Left-Censorship
 
