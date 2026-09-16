@@ -344,3 +344,34 @@ create_status_heatmap = function(
   out_heatmap
   # draw(ht, padding = unit(c(10, 10, 10, 10), "mm"))
 }
+
+create_mmr_logtransform_plots = function(se_mmr_combine) {
+  # tar_load(se_mmr_combine)
+  se_mmr_combine = se_mmr_combine |>
+    dplyr::mutate(neg_fraction = N_neg / N_present)
+  se_mmr_lowmax = se_mmr_combine |>
+    dplyr::filter(max <= 10^12, dplyr::between(mmr, 0.2, 200))
+
+  mmr_histogram_plot = se_mmr_lowmax |>
+    ggplot(aes(x = log10(mmr))) +
+    geom_histogram(bins = 100) +
+    labs(x = "Log10(MMR)")
+
+  mmr_vs_neg_plot = se_mmr_lowmax |>
+    dplyr::filter(neg_fraction > 0) |>
+    ggplot(aes(x = log10(mmr), y = neg_fraction)) +
+    geom_point() +
+    labs(x = "Log10(MMR)", y = "Negative-Fraction")
+
+  mmr_histogram_less1000 = se_mmr_lowmax |>
+    dplyr::filter(max <= 1000) |>
+    ggplot(aes(x = log10(mmr))) +
+    geom_histogram(bins = 100) +
+    geom_vline(xintercept = log10(c(0.8, 1.2))) +
+    labs(x = "Log10(MMR)")
+  return(list(
+    mmr_distribution = mmr_histogram_plot,
+    mmr_vs_neg = mmr_vs_neg_plot,
+    less1000 = mmr_histogram_less1000
+  ))
+}

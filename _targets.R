@@ -215,6 +215,8 @@ figures_tables_t = tar_assign({
     tar_target()
   datasets_sizes_plot = create_dataset_sizes_plot(sets_qc_color) |>
     tar_target()
+  mmr_logtransform_plot = create_mmr_logtransform_plots(se_mmr_combine) |>
+    tar_target()
   technical_replicates_plot = create_technical_replicate_plot(se_pca_g01[[
     "AN006191"
   ]]) |>

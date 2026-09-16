@@ -23,7 +23,7 @@ sets_create_qcqa_reports = function(
   report_save_loc = "qcqa_reports",
   rds_save_loc = "rds_dataset_outputs"
 ) {
-  # pca_sets = tar_read(se_pca_g01); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
+  # pca_sets = tar_read(se_pca_g01); tar_source("R"); report_save_loc = "qcqa_reports"; rds_save_loc = "rds_dataset_outputs"; quiet = FALSE; tar_load(sets_qc_color_confounds)
   # pca_sets = tar_read(se_pca_g02); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
   # pca_sets = tar_read(se_pca_g35); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
   # pca_sets = tar_read(se_pca_g30); tar_source("R"); save_loc = "qcqa_reports"; report_file = "resources/example_report.qmd"; quiet = FALSE; tar_load(sets_qc_color)
@@ -62,6 +62,7 @@ sets_create_qcqa_reports = function(
   plan(multicore, workers = n_cores)
   out_reports
 }
+
 create_report_from_templates = function(
   se_data,
   in_tmp_files,
@@ -81,6 +82,8 @@ create_report_from_templates = function(
   # se_data = pca_sets[["AN004656"]]; in_tmp_files = sets_tmp_files[["AN004656"]]; quiet = FALSE; sets_qc_evaluation = sets_qc_color
   # se_data = pca_sets[["AN003829"]]; in_tmp_files = sets_tmp_files[["AN003829"]]; quiet = FALSE;
   # se_data = pca_sets[[1]]; in_tmp_files = sets_tmp_files[[1]]; quiet = FALSE
+  # se_data = pca_sets[["AN008501"]]; in_tmp_files = sets_tmp_files[[]]; quiet = FALSE
+
   analysis_id = get_specific_metadata(se_data, "qc")$id
   # message(analysis_id)
   summary_info = sets_qc_color_confounds[
