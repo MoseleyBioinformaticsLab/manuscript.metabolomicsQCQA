@@ -282,3 +282,65 @@ create_example_confound_plot = function(se_data) {
     labs(subtitle = metadata(se_data)$mwtab$ID)
   return(out_plot)
 }
+
+create_status_heatmap = function(
+  parsed_percentage_overall,
+  order_n = "yes",
+  trim_90 = "yes",
+  use_log = "no"
+) {
+  color_list = c("red" = "#D81B60", "green" = "#004D40", "yellow" = "#FFC107")
+
+  if (order_n %in% "yes") {
+    parsed_percentage_overall = parsed_percentage_overall |>
+      dplyr::arrange(dplyr::desc(N))
+  }
+
+  if (trim_90 %in% "yes") {
+    perc_n = cumsum(parsed_percentage_overall$N) /
+      sum(parsed_percentage_overall$N)
+    which_90 = which(perc_n >= 0.9) |> min()
+    parsed_percentage_overall = parsed_percentage_overall[1:which_90, ]
+  }
+  color_df = parsed_percentage_overall[, 1:7]
+  factor_df = purrr::map(color_df, \(in_status) {
+    as.numeric(factor(in_status, levels = c("green", "yellow", "red")))
+  }) |>
+    dplyr::bind_cols()
+  color_factor = c(
+    "1" = color_list[["green"]],
+    "2" = color_list[["yellow"]],
+    "3" = color_list[["red"]]
+  )
+  factor_matrix = as.matrix(factor_df)
+
+  row_counts = parsed_percentage_overall$N
+  if (use_log %in% "yes") {
+    row_ha = ComplexHeatmap::rowAnnotation(
+      `Log10(N)` = ComplexHeatmap::anno_barplot(log10(row_counts))
+    )
+  } else {
+    row_ha = ComplexHeatmap::rowAnnotation(
+      N = ComplexHeatmap::anno_barplot(row_counts)
+    )
+  }
+
+  show_colnames = gsub("_status", "", colnames(factor_matrix))
+  show_colnames = purrr::map_chr(show_colnames, convert_description_to_sentence)
+  out_heatmap = ComplexHeatmap::Heatmap(
+    factor_matrix,
+    col = color_factor,
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    right_annotation = row_ha,
+    show_heatmap_legend = FALSE,
+    column_labels = show_colnames,
+    column_names_side = "top",
+    column_names_rot = 0,
+    column_names_centered = TRUE,
+    column_names_gp = grid::gpar(fontsize = 14, fontface = "bold")
+  )
+
+  out_heatmap
+  # draw(ht, padding = unit(c(10, 10, 10, 10), "mm"))
+}

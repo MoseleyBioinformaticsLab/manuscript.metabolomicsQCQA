@@ -73,3 +73,19 @@ add_confounding_factor_status = function(
     )
   sets_qc_confounds
 }
+
+confound_info_analysis = function(not_gray_pca) {
+  has_confound = not_gray_pca |>
+    dplyr::filter(confounding_factor_detected %in% "yes")
+
+  confound_yellow = has_confound |>
+    dplyr::filter(pca_anova_pvalue_status %in% "yellow")
+  confound_red = has_confound |>
+    dplyr::filter(pca_anova_pvalue_status %in% "red")
+
+  list(
+    n_overall = nrow(has_confound),
+    n_yellow = nrow(confound_yellow),
+    n_red = nrow(confound_red)
+  )
+}

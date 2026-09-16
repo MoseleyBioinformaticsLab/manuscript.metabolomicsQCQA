@@ -203,6 +203,8 @@ actual_analysis_t = tar_assign({
     tar_target()
   technical_replicate_info = technical_replicate_info_analysis(not_gray_pca) |>
     tar_target()
+  potential_confound_info = confound_info_analysis(not_gray_pca) |>
+    tar_target()
 })
 
 figures_tables_t = tar_assign({
@@ -221,6 +223,21 @@ figures_tables_t = tar_assign({
     "AN000454"
   ]]) |>
     tar_target()
+  status_heatmap_top90_plot = create_status_heatmap(
+    parsed_percentage_overall,
+    order_n = "yes",
+    trim_90 = "yes",
+    use_log = "no"
+  ) |>
+    tar_target()
+  status_heatmap_all_plot = create_status_heatmap(
+    parsed_percentage_overall,
+    order_n = "yes",
+    trim_90 = "no",
+    use_log = "yes"
+  ) |>
+    tar_target()
+
   parsed_percentage_csv = create_csv_file(
     parsed_percentage_overall,
     out_file = "outputs/parsed_percentage_overall.csv"
