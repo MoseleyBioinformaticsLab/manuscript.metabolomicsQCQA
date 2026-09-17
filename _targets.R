@@ -99,6 +99,10 @@ sets_map = tar_map(
   tar_target(
     qcqa_reports,
     sets_create_qcqa_reports(se_pca, sets_qc_color_confounds, report_files) #14
+  ),
+  tar_target(
+    tr_pca,
+    sets_subset_technical_replicates(se_pca, sets_qc_color_confounds) #15
   )
 )
 
@@ -180,6 +184,12 @@ sets_qc_reports_t = tar_combine(
   sets_qc_reports,
   sets_map[[14]],
   command = dplyr::bind_rows(!!!.x)
+)
+
+sets_tech_replicates_t = tar_combine(
+  sets_tech_replicates,
+  sets_map[[15]],
+  command = c(!!!.x)
 )
 
 confounding_factors_t = tar_combine(
@@ -331,6 +341,7 @@ list(
   sets_pc_number_t,
   data_limits_t,
   sets_qc_reports_t,
+  sets_tech_replicates_t,
   confounding_factors_t,
   actual_analysis_t,
   figures_tables_t,

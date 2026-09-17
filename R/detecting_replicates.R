@@ -217,3 +217,14 @@ technical_replicate_info_analysis = function(not_gray_pca) {
     field_green = rle_2_df(rle(sort(tr_green$technical_replicates_metadata)))
   )
 }
+
+
+sets_subset_technical_replicates = function(sets_pca, sets_qc_color_confounds) {
+  # sets_pca = tar_read(se_pca_g01); tar_load(sets_qc_color_confounds); tar_source("R")
+  has_tech_rep = sets_qc_color_confounds |>
+    dplyr::filter(technical_replicates_detected %in% "yes") |>
+    dplyr::pull(analysis_id)
+  keep_reps = base::intersect(names(sets_pca), has_tech_rep)
+  out_pca = sets_pca[keep_reps]
+  out_pca
+}
