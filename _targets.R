@@ -239,6 +239,12 @@ figures_tables_t = tar_assign({
     use_log = "yes"
   ) |>
     tar_target()
+  negatives_as_missing_plot = plot_neg_tests(
+    sets_neg_test,
+    nbin = 100,
+    use_subset = "all"
+  ) |>
+    tar_target()
 
   parsed_percentage_csv = create_csv_file(
     parsed_percentage_overall,

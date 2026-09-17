@@ -79,8 +79,13 @@ do_lc_tests = function(raw_data, ssf, suffix = ".org") {
 }
 
 
-plot_neg_tests = function(sets_neg_test, nbin = 50) {
-  # tar_source("R"); tar_load(sets_neg_test)
+plot_neg_tests = function(
+  sets_neg_test,
+  nbin = 50,
+  use_subset = c("ssf", "all")
+) {
+  # tar_source("R"); tar_load(sets_neg_test); use_subset = c("ssf", "all")
+  # tar_source("R"); tar_load(sets_neg_test); use_subset = c("all"); nbin = 100
   # we identify and remove those that had an NA statistic so we aren't
   # overinflating anything.
   na_org = sets_neg_test |>
@@ -89,7 +94,8 @@ plot_neg_tests = function(sets_neg_test, nbin = 50) {
     unique()
 
   sets_neg_test_present = sets_neg_test |>
-    dplyr::filter(!(id %in% na_org)) |>
+    dplyr::filter_out((id %in% na_org)) |>
+    dplyr::filter(subset.neg %in% use_subset) |>
     dplyr::mutate(
       p.value.org = dplyr::case_when(
         p.value.org == 0 ~ 1e-300,
@@ -104,20 +110,40 @@ plot_neg_tests = function(sets_neg_test, nbin = 50) {
       p.value_neg_vs_org = -1 * log10(p.value.neg / p.value.org),
       estimate_neg_vs_org = log2(estimate.neg / estimate.org)
     )
-  p_value_plot = sets_neg_test_present |>
-    ggplot(aes(x = p.value_neg_vs_org)) +
-    geom_histogram(bins = nbin) +
-    geom_vline(xintercept = 0, color = "red") +
-    facet_wrap(~subset.neg, ncol = 1) +
-    labs(x = "-1 x Log10(Neg-p / Missing-p)")
-  estimate_plot = sets_neg_test_present |>
-    ggplot(aes(x = estimate_neg_vs_org)) +
-    geom_histogram(bins = nbin) +
-    geom_vline(xintercept = 0, color = "red") +
-    facet_wrap(~subset.neg, ncol = 1) +
-    labs(x = "Log2(Neg-estimate / Missing-estimate)")
 
-  sets_neg_direction = sets_neg_test_present |>
+  sets_neg_changed = sets_neg_test_present |>
+    dplyr::filter_out(estimate_neg_vs_org == 0)
+  if (length(use_subset) > 1) {
+    p_value_plot = sets_neg_test_present |>
+      ggplot(aes(x = p.value_neg_vs_org)) +
+      geom_histogram(bins = nbin) +
+      geom_vline(xintercept = 0, color = "red") +
+      facet_wrap(~subset.neg, ncol = 1) +
+      labs(x = "-1 x Log10(Neg-p / Missing-p)") +
+      scale_y_continuous(expand = expansion(mult = c(0, NA)))
+    estimate_plot = sets_neg_test_present |>
+      ggplot(aes(x = estimate_neg_vs_org)) +
+      geom_histogram(bins = nbin) +
+      geom_vline(xintercept = 0, color = "red") +
+      facet_wrap(~subset.neg, ncol = 1) +
+      labs(x = "Log2(Neg-estimate / Missing-estimate)") +
+      scale_y_continuous(expand = expansion(mult = c(0, NA)))
+  } else {
+    p_value_plot = sets_neg_test_present |>
+      ggplot(aes(x = p.value_neg_vs_org)) +
+      geom_histogram(bins = nbin) +
+      geom_vline(xintercept = 0, color = "red") +
+      labs(x = "-1 x Log10(Neg-p / Missing-p)") +
+      scale_y_continuous(expand = expansion(mult = c(0, NA)))
+    estimate_plot = sets_neg_test_present |>
+      ggplot(aes(x = estimate_neg_vs_org)) +
+      geom_histogram(bins = nbin) +
+      geom_vline(xintercept = 0, color = "red") +
+      labs(x = "Log2(Neg-estimate / Missing-estimate)") +
+      scale_y_continuous(expand = expansion(mult = c(0, NA)))
+  }
+
+  sets_neg_direction = sets_neg_changed |>
     dplyr::mutate(
       sign_p = sign(p.value_neg_vs_org),
       sign_p2 = dplyr::case_when(

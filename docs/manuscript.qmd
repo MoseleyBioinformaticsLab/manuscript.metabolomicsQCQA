@@ -315,6 +315,8 @@ The dynamic range calculated in the presence of negative values involves first a
 
 This investigation resulted in first checking if the maximum observed value in a dataset is less than 1000, then calculating the mean and median of the data, and if the MMR was between 0.8 and 1.2, the data was exponentiated before further use.
 
+There were a total of **X DATASETS THAT WERE EXPONENTIATED** before further analysis.
+
 ```{r}
 #| label: mmr-plot
 (mmr_logtransform_plot$mmr_distribution / (mmr_logtransform_plot$mmr_vs_neg | mmr_logtransform_plot$less1000)) + plot_annotation(tag_levels = "A")
