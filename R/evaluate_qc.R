@@ -482,6 +482,7 @@ check_technical_replicates = function(se_data, use_defaults) {
     identical(t_rep_rle$length, tmp_rle$length)
   })
 
+  technical_replicates_df = replicate_df
   if (any(matches_t_reps)) {
     metadata_factor = compare_factors[matches_t_reps]
     if (!("ssf" %in% metadata_factor)) {
@@ -490,19 +491,11 @@ check_technical_replicates = function(se_data, use_defaults) {
         compare_factors[matches_t_reps],
         collapse = "; "
       )
-      technical_replicates_df = NULL
     } else {
       technical_replicates_metadata = paste0(metadata_factor, collapse = ";")
-      technical_replicates_df = NULL
     }
   } else {
-    new_names = janitor::make_clean_names(c(
-      names(tmp_metadata),
-      "replicate_group"
-    ))
-    technical_replicates_metadata = new_names[length(new_names)]
-    names(replicate_df)[1] = technical_replicates_metadata
-    technical_replicates_df = replicate_df
+    technical_replicate_metadata = "replicate_group"
   }
 
   return(list(

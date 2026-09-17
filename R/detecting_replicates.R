@@ -10,6 +10,7 @@ detect_technical_replicate_samples = function(se_data) {
 
   # se_pca = tar_read(se_pca_g01); se_data = se_pca[["AN006191"]]; tar_source("R")
   # se_pca = tar_read(se_pca_g01); se_data = se_pca[["AN006248"]]; tar_source("R")
+  # se_pca = tar_read(se_pca_g01); se_data = se_pca[["AN000048"]]; tar_source("R")
 
   # need the ici data here too!
   pca_data = get_specific_metadata(se_data, "pca_groups")
@@ -21,9 +22,26 @@ detect_technical_replicate_samples = function(se_data) {
   if (is.null(last_run$pca)) {
     return(NULL)
   }
+
+  has_qc = FALSE
   pca_index = last_run$pca[length(last_run$pca)]
   pca_data_use = pca_data[[pca_index]]
 
+  se_vardata = get_vardata(se_data)
+  se_vardata = se_vardata |>
+    dplyr::filter(is.na(removed))
+  if (any(se_vardata$experiment_or_qc %in% "qc")) {
+    has_qc = TRUE
+    qc_samples = se_vardata |>
+      dplyr::filter(experiment_or_qc %in% "qc", is.na(removed)) |>
+      dplyr::pull(sample_id)
+    if (length(qc_samples) > 2) {
+      possible_pca = c("all", "not_outlier")
+      last_run$pca = base::intersect(last_run$pca, possible_pca)
+      pca_index = last_run$pca[length(last_run$pca)]
+      pca_data_use = pca_data[[pca_index]]
+    }
+  }
   ici_order = pca_data_use$order$ici_order
   ici_square = ici_square[ici_order, ici_order]
   string_dist = calculate_stringdist_distances(ici_order, "cosine")
@@ -115,7 +133,7 @@ detect_technical_replicate_samples = function(se_data) {
 
   n_rep = nrow(replicate_df)
   n_samples = nrow(ici_square)
-  if ((n_rep / n_samples) < 0.5) {
+  if ((n_rep / n_samples) < 0.5 && !has_qc) {
     warning(
       "Number of samples in replicates are not at least 50% of samples, returning NULL."
     )
@@ -219,12 +237,86 @@ technical_replicate_info_analysis = function(not_gray_pca) {
 }
 
 
-sets_subset_technical_replicates = function(sets_pca, sets_qc_color_confounds) {
-  # sets_pca = tar_read(se_pca_g01); tar_load(sets_qc_color_confounds); tar_source("R")
-  has_tech_rep = sets_qc_color_confounds |>
-    dplyr::filter(technical_replicates_detected %in% "yes") |>
-    dplyr::pull(analysis_id)
-  keep_reps = base::intersect(names(sets_pca), has_tech_rep)
-  out_pca = sets_pca[keep_reps]
-  out_pca
+sets_calculate_tr_experimental_rsd = function(
+  sets_pca,
+  sets_qc_color_confounds
+) {
+  out_rsd = purrr::map(
+    sets_pca,
+    calculate_tr_experimental_rsd,
+    sets_qc_color_confounds
+  )
+  out_rsd
+}
+
+
+calculate_tr_experimental_rsd = function(se_data, sets_qc_color_confounds) {
+  last_run = check_qc_outputs(se_data)
+  if (is.null(last_run$pca)) {
+    return(NULL)
+  }
+
+  pca_index = last_run$pca[length(last_run$pca)]
+  pca_data_use = pca_data[[pca_index]]
+
+  bio_rsd = pca_data_use$rsd$all_rsd |>
+    dplyr::filter(data %in% "n") |>
+    dplyr::filter_out(rsd == 0, !is.na(rsd), !is.nan(rsd), !is.infinite(rsd)) |>
+    dplyr::summarise(
+      biological_rsd_mean = mean(rsd, na.rm = TRUE),
+      biological_rsd_median = median(rsd, na.rm = TRUE)
+    )
+
+  use_id = metadata(se_data)$mwtab$ID
+  use_status = sets_qc_color_confounds |>
+    dplyr::filter(analysis_id %in% use_id)
+
+  if (use_status$technical_replicates_detected %in% "yes") {
+    rep_df = use_status$technical_replicates_df
+    tr_rsd = calculate_tr_rsd(se_data, rep_df)
+  } else {
+    tr_rsd = tibble::tibble(
+      technical_replicate_rsd_mean = NA,
+      technical_replicate_rsd_median = NA
+    )
+  }
+  out_rsd = dplyr::bind_cols(bio_rsd, tr_rsd)
+  out_rsd$analysis_id = use_id
+  return(out_rsd)
+}
+
+
+calculate_tr_rsd = function(
+  se_data,
+  rep_df
+) {
+  count_data = assays(se_data)$normalized
+  count_df = count_data |> tibble::as_tibble(rownames = "feature_id")
+  count_long = count_df |>
+    tidyr::pivot_longer(
+      -feature_id,
+      values_to = "counts",
+      names_to = "sample_id"
+    )
+  count_long = dplyr::left_join(count_long, rep_df, by = "sample_id")
+  count_rsd = count_long |>
+    dplyr::group_by(replicate_group, feature_id) |>
+    dplyr::summarise(
+      mean = mean(counts, na.rm = TRUE),
+      sd = sd(counts, na.rm = TRUE),
+      rsd = f_sd / f_mean,
+      n_present = sum(!is.na(counts)),
+      .groups = "drop_last"
+    )
+  tr_summary = dplyr::filter_out(
+    rsd == 0,
+    !is.na(rsd),
+    !is.nan(rsd),
+    !is.infinite(rsd)
+  ) |>
+    dplyr::summarise(
+      technical_replicate_rsd_mean = mean(rsd, na.rm = TRUE),
+      technical_replicate_rsd_median = median(rsd, na.rm = TRUE)
+    )
+  return(tr_summary)
 }
