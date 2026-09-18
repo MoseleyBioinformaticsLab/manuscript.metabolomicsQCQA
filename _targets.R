@@ -205,6 +205,12 @@ actual_analysis_t = tar_assign({
     sets_confounding_factors
   ) |>
     tar_target()
+  sets_qc_confounds_rsd = dplyr::left_join(
+    sets_qc_color_confounds,
+    sets_tr_experimental_rsd,
+    by = "internal_id"
+  ) |>
+    tar_target()
   not_gray_pca = find_pca_remove_gray(sets_qc_color_confounds) |> tar_target()
   parsed_grouped_statuses = parse_statuses(not_gray_pca) |> tar_target()
   parsed_percentage_overall = calculate_percentage_overall(
