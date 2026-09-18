@@ -241,7 +241,8 @@ sets_calculate_tr_experimental_rsd = function(
   sets_pca,
   sets_qc_color_confounds
 ) {
-  # sets_pca = tar_read(se_pca_g01); tar_load(sets_qc_color_confounds)
+  # sets_pca = tar_read(se_pca_g01); tar_load(sets_qc_color_confounds); tar_source("R")
+  # sets_pca = tar_read(se_pca_g30); tar_load(sets_qc_color_confounds); tar_source("R")
   set_size = object.size(sets_pca) * 1e-9
 
   n_cores = future::nbrOfWorkers()
@@ -267,6 +268,10 @@ calculate_tr_experimental_rsd = function(se_data, sets_qc_color_confounds) {
   pca_data = get_specific_metadata(se_data, "pca_groups")
   pca_index = last_run$pca[length(last_run$pca)]
   pca_data_use = pca_data[[pca_index]]
+
+  if (is.null(pca_data_use$rsd$all_rsd)) {
+    return(NULL)
+  }
 
   bio_rsd = pca_data_use$rsd$all_rsd |>
     dplyr::filter(data %in% "n") |>
