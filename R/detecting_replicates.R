@@ -253,13 +253,16 @@ sets_calculate_tr_experimental_rsd = function(
     sets_pca,
     calculate_tr_experimental_rsd,
     sets_qc_color_confounds
-  )
+  ) |>
+    purrr::list_rbind()
   plan(multicore, n_cores)
   out_rsd
 }
 
 
 calculate_tr_experimental_rsd = function(se_data, sets_qc_color_confounds) {
+  # se_data = sets_pca[[17]]
+  # se_data = sets_pca[[18]]
   last_run = check_qc_outputs(se_data)
   if (is.null(last_run$pca)) {
     return(NULL)
@@ -283,10 +286,10 @@ calculate_tr_experimental_rsd = function(se_data, sets_qc_color_confounds) {
 
   use_id = metadata(se_data)$mwtab$ID
   use_status = sets_qc_color_confounds |>
-    dplyr::filter(analysis_id %in% use_id)
+    dplyr::filter(internal_id %in% use_id)
 
   if (use_status$technical_replicates_detected %in% "yes") {
-    rep_df = use_status$technical_replicates_df
+    rep_df = use_status$technical_replicates_df[[1]]
     tr_rsd = calculate_tr_rsd(se_data, rep_df)
   } else {
     tr_rsd = tibble::tibble(
@@ -295,7 +298,7 @@ calculate_tr_experimental_rsd = function(se_data, sets_qc_color_confounds) {
     )
   }
   out_rsd = dplyr::bind_cols(bio_rsd, tr_rsd)
-  out_rsd$analysis_id = use_id
+  out_rsd$internal_id = use_id
   return(out_rsd)
 }
 
@@ -312,7 +315,7 @@ calculate_tr_rsd = function(
       values_to = "counts",
       names_to = "sample_id"
     )
-  count_long = dplyr::left_join(count_long, rep_df, by = "sample_id")
+  count_long = dplyr::left_join(rep_df, count_long, by = "sample_id")
   count_rsd = count_long |>
     dplyr::group_by(replicate_group, feature_id) |>
     dplyr::summarise(
