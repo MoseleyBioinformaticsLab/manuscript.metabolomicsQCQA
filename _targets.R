@@ -98,7 +98,7 @@ sets_map = tar_map(
   tar_target(se_confounds, sets_detect_confounding_factors(se_pca)), #13
   tar_target(
     qcqa_reports,
-    sets_create_qcqa_reports(se_pca, sets_qc_color_confounds, report_files) #14
+    sets_create_qcqa_reports(se_pca, sets_qc_confounds_rsd, report_files) #14
   ),
   tar_target(
     tr_pca,
