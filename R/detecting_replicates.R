@@ -338,3 +338,26 @@ calculate_tr_rsd = function(
     )
   return(tr_summary)
 }
+
+add_rsd_calculate_modes_status = function(
+  sets_qc_color_confounds,
+  sets_tr_experimental_rsd
+) {
+  sets_merged = dplyr::left_join(
+    sets_qc_color_confounds,
+    sets_tr_experimental_rsd,
+    by = "internal_id"
+  )
+
+  mode_technical = calculate_mode(sets_merged$technical_replicate_rsd_median)
+
+  sets_merged = sets_merged |>
+    dplyr::mutate(
+      biological_rsd_vs_tr_mode_status = dplyr::case_when(
+        biological_rsd_median <= mode_technical ~ "lower",
+        is.na(biological_rsd_median) ~ "unknown",
+        TRUE ~ "higher"
+      )
+    )
+  return(sets_merged)
+}

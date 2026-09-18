@@ -205,10 +205,9 @@ actual_analysis_t = tar_assign({
     sets_confounding_factors
   ) |>
     tar_target()
-  sets_qc_confounds_rsd = dplyr::left_join(
+  sets_qc_confounds_rsd = add_rsd_calculate_modes_status(
     sets_qc_color_confounds,
-    sets_tr_experimental_rsd,
-    by = "internal_id"
+    sets_tr_experimental_rsd
   ) |>
     tar_target()
   not_gray_pca = find_pca_remove_gray(sets_qc_color_confounds) |> tar_target()

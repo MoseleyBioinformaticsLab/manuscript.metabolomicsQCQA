@@ -377,3 +377,43 @@ create_mmr_logtransform_plots = function(se_mmr_combine) {
     less1000 = mmr_histogram_less1000
   ))
 }
+
+create_rsd_related_plots = function(sets_qc_confounds_rsd) {
+  rsd_measurement = sets_qc_confounds_rsd |>
+    dplyr::select(
+      internal_id,
+      measurement_type,
+      biological_rsd_median,
+      technical_replicate_rsd_median
+    ) |>
+    tidyr::pivot_longer(
+      c(-internal_id, -measurement_type),
+      values_to = "rsd",
+      names_to = "type"
+    )
+  rsd_plot = rsd_measurement |>
+    dplyr::filter(rsd <= 1) |>
+    ggplot(aes(x = rsd, color = type)) +
+    geom_density(size = 2) +
+    facet_wrap(~measurement_type, ncol = 1) +
+    theme(legend.position = "top")
+
+  rsd_modes_measurement = rsd_measurement |>
+    dplyr::group_by(measurement_type, type) |>
+    dplyr::summarise(mode = calculate_mode(rsd), .groups = "drop")
+  rsd_modes_all = rsd_measurement |>
+    dplyr::group_by(type) |>
+    dplyr::summarise(mode = calculate_mode(rsd), .groups = "drop")
+
+  rsd_summary = rsd_measurement |>
+    dplyr::filter(type %in% "technical_replicate_rsd_median") |>
+    dplyr::filter(rsd <= 1) |>
+    dplyr::summarise(mean = mean(rsd, na.rm = TRUE), sd = sd(rsd, na.rm = TRUE))
+}
+
+calculate_mode = function(values) {
+  values = values[!is.na(values)]
+  density_estimate = stats::density(values)
+  mode_value = density_estimate$x[which.max(density_estimate$y)]
+  mode_value
+}
