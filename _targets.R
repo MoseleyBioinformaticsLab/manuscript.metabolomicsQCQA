@@ -341,7 +341,7 @@ list(
   sets_pc_number_t,
   data_limits_t,
   sets_qc_reports_t,
-  sets_tech_replicates_t,
+  sets_tr_experimental_rsd_t,
   confounding_factors_t,
   actual_analysis_t,
   figures_tables_t,
