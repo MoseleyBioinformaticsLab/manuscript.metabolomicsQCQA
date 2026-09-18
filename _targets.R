@@ -102,7 +102,7 @@ sets_map = tar_map(
   ),
   tar_target(
     tr_pca,
-    sets_subset_technical_replicates(se_pca, sets_qc_color_confounds) #15
+    sets_calculate_tr_experimental_rsd(se_pca, sets_qc_color_confounds) #15
   )
 )
 
@@ -186,10 +186,10 @@ sets_qc_reports_t = tar_combine(
   command = dplyr::bind_rows(!!!.x)
 )
 
-sets_tech_replicates_t = tar_combine(
-  sets_tech_replicates,
+sets_tr_experimental_rsd_t = tar_combine(
+  sets_tr_experimental_rsd,
   sets_map[[15]],
-  command = c(!!!.x)
+  command = dplyr::bind_rows(!!!.x)
 )
 
 confounding_factors_t = tar_combine(

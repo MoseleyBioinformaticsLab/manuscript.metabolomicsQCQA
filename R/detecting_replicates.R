@@ -241,11 +241,19 @@ sets_calculate_tr_experimental_rsd = function(
   sets_pca,
   sets_qc_color_confounds
 ) {
-  out_rsd = purrr::map(
+  # sets_pca = tar_read(se_pca_g01); tar_load(sets_qc_color_confounds)
+  set_size = object.size(sets_pca) * 1e-9
+
+  n_cores = future::nbrOfWorkers()
+  if (set_size > 10) {
+    plan(multicore, workers = ceiling(n_cores / 2))
+  }
+  out_rsd = furrr::future_map(
     sets_pca,
     calculate_tr_experimental_rsd,
     sets_qc_color_confounds
   )
+  plan(multicore, n_cores)
   out_rsd
 }
 
@@ -256,6 +264,7 @@ calculate_tr_experimental_rsd = function(se_data, sets_qc_color_confounds) {
     return(NULL)
   }
 
+  pca_data = get_specific_metadata(se_data, "pca_groups")
   pca_index = last_run$pca[length(last_run$pca)]
   pca_data_use = pca_data[[pca_index]]
 
@@ -304,16 +313,17 @@ calculate_tr_rsd = function(
     dplyr::summarise(
       mean = mean(counts, na.rm = TRUE),
       sd = sd(counts, na.rm = TRUE),
-      rsd = f_sd / f_mean,
+      rsd = sd / mean,
       n_present = sum(!is.na(counts)),
-      .groups = "drop_last"
+      .groups = "drop"
     )
-  tr_summary = dplyr::filter_out(
-    rsd == 0,
-    !is.na(rsd),
-    !is.nan(rsd),
-    !is.infinite(rsd)
-  ) |>
+  tr_summary = count_rsd |>
+    dplyr::filter_out(
+      rsd == 0,
+      !is.na(rsd),
+      !is.nan(rsd),
+      !is.infinite(rsd)
+    ) |>
     dplyr::summarise(
       technical_replicate_rsd_mean = mean(rsd, na.rm = TRUE),
       technical_replicate_rsd_median = median(rsd, na.rm = TRUE)
