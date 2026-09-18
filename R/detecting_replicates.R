@@ -255,7 +255,7 @@ sets_calculate_tr_experimental_rsd = function(
     sets_qc_color_confounds
   ) |>
     purrr::list_rbind()
-  plan(multicore, n_cores)
+  plan(multicore, workers = n_cores)
   out_rsd
 }
 
