@@ -237,7 +237,7 @@ technical_replicate_info_analysis = function(not_gray_pca) {
 }
 
 
-sets_calculate_tr_experimental_rsd = function(
+sets_calculate_tr_total_rsd = function(
   sets_pca,
   sets_qc_color_confounds
 ) {
@@ -251,7 +251,7 @@ sets_calculate_tr_experimental_rsd = function(
   }
   out_rsd = furrr::future_map(
     sets_pca,
-    calculate_tr_experimental_rsd,
+    calculate_tr_total_rsd,
     sets_qc_color_confounds
   ) |>
     purrr::list_rbind()
@@ -260,7 +260,7 @@ sets_calculate_tr_experimental_rsd = function(
 }
 
 
-calculate_tr_experimental_rsd = function(se_data, sets_qc_color_confounds) {
+calculate_tr_total_rsd = function(se_data, sets_qc_color_confounds) {
   # se_data = sets_pca[[17]]
   # se_data = sets_pca[[18]]
   last_run = check_qc_outputs(se_data)
@@ -276,12 +276,12 @@ calculate_tr_experimental_rsd = function(se_data, sets_qc_color_confounds) {
     return(NULL)
   }
 
-  bio_rsd = pca_data_use$rsd$all_rsd |>
+  total_rsd = pca_data_use$rsd$all_rsd |>
     dplyr::filter(data %in% "n") |>
     dplyr::filter_out(rsd == 0, !is.na(rsd), !is.nan(rsd), !is.infinite(rsd)) |>
     dplyr::summarise(
-      biological_rsd_mean = mean(rsd, na.rm = TRUE),
-      biological_rsd_median = median(rsd, na.rm = TRUE)
+      total_rsd_mean = mean(rsd, na.rm = TRUE),
+      total_rsd_median = median(rsd, na.rm = TRUE)
     )
 
   use_id = metadata(se_data)$mwtab$ID
@@ -297,7 +297,7 @@ calculate_tr_experimental_rsd = function(se_data, sets_qc_color_confounds) {
       technical_replicate_rsd_median = NA
     )
   }
-  out_rsd = dplyr::bind_cols(bio_rsd, tr_rsd)
+  out_rsd = dplyr::bind_cols(total_rsd, tr_rsd)
   out_rsd$internal_id = use_id
   return(out_rsd)
 }
@@ -341,11 +341,11 @@ calculate_tr_rsd = function(
 
 add_rsd_calculate_modes_status = function(
   sets_qc_color_confounds,
-  sets_tr_experimental_rsd
+  sets_tr_total_rsd
 ) {
   sets_merged = dplyr::left_join(
     sets_qc_color_confounds,
-    sets_tr_experimental_rsd,
+    sets_tr_total_rsd,
     by = "internal_id"
   )
 
@@ -353,9 +353,9 @@ add_rsd_calculate_modes_status = function(
 
   sets_merged = sets_merged |>
     dplyr::mutate(
-      biological_rsd_vs_tr_mode_status = dplyr::case_when(
-        biological_rsd_median <= mode_technical ~ "lower",
-        is.na(biological_rsd_median) ~ "unknown",
+      total_rsd_vs_tr_mode_status = dplyr::case_when(
+        total_rsd_median <= mode_technical ~ "lower",
+        is.na(total_rsd_median) ~ "unknown",
         TRUE ~ "higher"
       )
     )

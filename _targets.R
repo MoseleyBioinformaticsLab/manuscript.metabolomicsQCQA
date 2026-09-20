@@ -102,7 +102,7 @@ sets_map = tar_map(
   ),
   tar_target(
     tr_pca,
-    sets_calculate_tr_experimental_rsd(se_pca, sets_qc_color_confounds) #15
+    sets_calculate_tr_total_rsd(se_pca, sets_qc_color_confounds) #15
   )
 )
 
@@ -186,8 +186,8 @@ sets_qc_reports_t = tar_combine(
   command = dplyr::bind_rows(!!!.x)
 )
 
-sets_tr_experimental_rsd_t = tar_combine(
-  sets_tr_experimental_rsd,
+sets_tr_total_rsd_t = tar_combine(
+  sets_tr_total_rsd,
   sets_map[[15]],
   command = dplyr::bind_rows(!!!.x)
 )
@@ -207,7 +207,7 @@ actual_analysis_t = tar_assign({
     tar_target()
   sets_qc_confounds_rsd = add_rsd_calculate_modes_status(
     sets_qc_color_confounds,
-    sets_tr_experimental_rsd
+    sets_tr_total_rsd
   ) |>
     tar_target()
   not_gray_pca = find_pca_remove_gray(sets_qc_color_confounds) |> tar_target()
@@ -346,7 +346,7 @@ list(
   sets_pc_number_t,
   data_limits_t,
   sets_qc_reports_t,
-  sets_tr_experimental_rsd_t,
+  sets_tr_total_rsd_t,
   confounding_factors_t,
   actual_analysis_t,
   figures_tables_t,
