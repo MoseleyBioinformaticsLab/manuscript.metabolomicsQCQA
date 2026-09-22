@@ -260,7 +260,8 @@ create_technical_replicate_plot = function(se_data) {
     row_labels = replicate_df$group,
     show_row_names = TRUE,
     cluster_columns = pca_data_use$order$dendrogram$dendrogram,
-    cluster_rows = pca_data_use$order$dendrogram$dendrogram
+    cluster_rows = pca_data_use$order$dendrogram$dendrogram,
+    row_names_gp = grid::gpar(fontsize = 5)
   )
 
   return(list(dotplot = dist_plot, heatmap = out_heatmap))
@@ -378,37 +379,44 @@ create_mmr_logtransform_plots = function(se_mmr_combine) {
   ))
 }
 
-create_rsd_related_plots = function(sets_qc_confounds_rsd) {
+create_total_vs_tr_rsd_plot = function(
+  sets_qc_confounds_rsd,
+  by_measurement = "no"
+) {
   rsd_measurement = sets_qc_confounds_rsd |>
     dplyr::select(
       internal_id,
       measurement_type,
-      biological_rsd_median,
+      total_rsd_median,
       technical_replicate_rsd_median
+    ) |>
+    dplyr::transmute(
+      `Total RSD` = total_rsd_median,
+      `Technical Replicate RSD` = technical_replicate_rsd_median,
+      internal_id = internal_id,
+      measurement_type = measurement_type
     ) |>
     tidyr::pivot_longer(
       c(-internal_id, -measurement_type),
-      values_to = "rsd",
-      names_to = "type"
+      values_to = "RSD",
+      names_to = "Type"
     )
-  rsd_plot = rsd_measurement |>
-    dplyr::filter(rsd <= 1) |>
-    ggplot(aes(x = rsd, color = type)) +
-    geom_density(size = 2) +
-    facet_wrap(~measurement_type, ncol = 1) +
-    theme(legend.position = "top")
+  if (by_measurement %in% "no") {
+    rsd_plot = rsd_measurement |>
+      dplyr::filter(RSD <= 1) |>
+      ggplot(aes(x = RSD, color = Type)) +
+      geom_density(position = "identity", linewidth = 2) +
+      theme(legend.position = "top")
+  } else {
+    rsd_plot = rsd_measurement |>
+      dplyr::filter(RSD <= 1) |>
+      ggplot(aes(x = RSD, color = Type)) +
+      geom_density(linewidth = 2) +
+      theme(legend.position = "top") +
+      facet_wrap(~measurement_type, ncol = 1)
+  }
 
-  rsd_modes_measurement = rsd_measurement |>
-    dplyr::group_by(measurement_type, type) |>
-    dplyr::summarise(mode = calculate_mode(rsd), .groups = "drop")
-  rsd_modes_all = rsd_measurement |>
-    dplyr::group_by(type) |>
-    dplyr::summarise(mode = calculate_mode(rsd), .groups = "drop")
-
-  rsd_summary = rsd_measurement |>
-    dplyr::filter(type %in% "technical_replicate_rsd_median") |>
-    dplyr::filter(rsd <= 1) |>
-    dplyr::summarise(mean = mean(rsd, na.rm = TRUE), sd = sd(rsd, na.rm = TRUE))
+  rsd_plot
 }
 
 calculate_mode = function(values) {
@@ -416,4 +424,13 @@ calculate_mode = function(values) {
   density_estimate = stats::density(values)
   mode_value = density_estimate$x[which.max(density_estimate$y)]
   mode_value
+}
+
+calculate_rsd_modes = function(sets_qc_confounds_rsd) {
+  rsd_modes = sets_qc_confounds_rsd |>
+    dplyr::summarise(
+      tr_mode = calculate_mode(technical_replicate_rsd_median),
+      total_mode = calculate_mode(total_rsd_median)
+    )
+  rsd_modes
 }

@@ -210,6 +210,8 @@ actual_analysis_t = tar_assign({
     sets_tr_total_rsd
   ) |>
     tar_target()
+  rsd_modes = calculate_rsd_modes(sets_qc_confounds_rsd) |>
+    tar_target()
   not_gray_pca = find_pca_remove_gray(sets_qc_color_confounds) |> tar_target()
   parsed_grouped_statuses = parse_statuses(not_gray_pca) |> tar_target()
   parsed_percentage_overall = calculate_percentage_overall(
@@ -235,6 +237,8 @@ figures_tables_t = tar_assign({
   technical_replicates_plot = create_technical_replicate_plot(se_pca_g01[[
     "AN006191"
   ]]) |>
+    tar_target()
+  total_vs_tr_rsd_plot = create_total_vs_tr_rsd_plot(sets_qc_confounds_rsd) |>
     tar_target()
   example_confound_plot = create_example_confound_plot(se_pca_g34[[
     "AN000454"

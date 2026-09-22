@@ -38,6 +38,8 @@ tar_load(c(
 sets_qc_color_confounds,
 potential_confound_info,
 technical_replicate_info,
+rsd_modes,
+not_gray_pca,
 # plots
 nose_reasons_bar_plot,
 loss_waterfall_plot,
@@ -45,7 +47,9 @@ datasets_sizes_plot,
 mmr_logtransform_plot,
 status_heatmap_top90_plot,
 technical_replicates_plot,
-example_confound_plot
+total_vs_tr_rsd_plot,
+example_confound_plot,
+negatives_as_missing_plot
 # tables
 ))
 ```
@@ -302,20 +306,28 @@ In this analysis, we used:
 
 ### Detection of Log-Transformation
 
+```{r}
+#| label: n-exponentiated
+n_exponentiated = sets_qc_color_confounds |>
+  dplyr::filter_out(is.na(transformation)) |>
+  dplyr::summarize(n = dplyr::n(), .by = transformation) |>
+  dplyr::mutate(perc_display = format_percentage(n / sum(n)) |> trimws())
+```
+
 Some deposited dataset abundances are already log-transformed.
 We want to be able to detect them, un-transform them (exponentiate with base 2), and evaluate them in their un-transformed state.
 In our experience, non-transormed dataset distributions tend to be heavily skewed with long-tailed distributions, i.e. look much like a log-normal distribution, and then the log-transformed data appears much more "normal-like".
 Therefore, we can detect already log-transformed data by determining if it is "normal".
 However, tests for normality are notoriously fickle and prone to return non-significant values if the data is at all different from expectations, which is highly likely for these real world datasets.
 One common element of normally distributed data is that the mean and median of the data are relatively close together, whereas for skewed or long-tailed data the mean and median, by definition, are very different.
-Note that we did also investigate a simple definition of skewness $(\mu - \nu) / \sigma$, however it did not provide the discrimination we needed for this application.
+Note that we did also investigate a simple definition of skewness $(\mu - \nu) / \sigma$, however it did not provide the discrimination needed for this application.
 
 We calculated the mean-median-ratio (MMR) across all 7073 datasets that created a summarized experiment object, as well as the number and fraction of negative values, the maximum observed abundance, and the dynamic range (maximum / minimum values).
 The dynamic range calculated in the presence of negative values involves first adding the absolute value of the minimum value, + 1, to transform all values to be positive, and subsequently calcuating the ratio of the maximum and minimum of the transformed values.
 
 This investigation resulted in first checking if the maximum observed value in a dataset is less than 1000, then calculating the mean and median of the data, and if the MMR was between 0.8 and 1.2, the data was exponentiated before further use.
 
-There were a total of **X DATASETS THAT WERE EXPONENTIATED** before further analysis.
+There were a total of `r format_in_sentence(n_exponentiated[2, ])` datasets that the values were exponentiated before further analysis.
 
 ```{r}
 #| label: mmr-plot
@@ -338,15 +350,35 @@ Given that negative values *should* be theoretically impossible, we decided that
 
 Previously, we developed a test for missingness being the result of left-censorship [ref], where we posit that the most likely reason for a value to be missing in metabolomics is the result of left-censorship, where the missing value is the result of being below the limit of detection.
 To verify that the negative values could be interpreted as "missing", for each dataset with at least two negative values present, we calculated the left-censorship test statistic before and after setting values $\le$ 0 to missing.
-We then calculated the ratio of the test-statistic values before and after setting negatives to missing, and calculated a binomial test of the log-ratio, where negative values imply the test statistic is more significant
+We then calculated the ratio of the binomial test p-values and statistic values before and after setting negatives to missing, and calculated a binomial test of the log-ratio, where negative values imply the test statistic is more significant.
 
-#### FIGURE!
+```{r}
+#| label: negatives-as-missing-plot
+(negatives_as_missing_plot$p_histogram | negatives_as_missing_plot$estimate_histogram) + plot_annotation(tag_levels = "A")
+```
+
+**Figure X**.
+**A**: Histogram of the $Log_{10}$ ratio of the left-censorship p-values when considering negative values as missing (Neg-p) compared to just having missing values (Missing-p).
+Red line indicates a log-ratio of 0, or no change.
+**B**: Histogram of the $Log_{10}$ ratio of the left-censorship test estimates when considering negative values as missing (Neg-p) compared to just having actual missing values (Missing-p).
+Red line indicates a log-ratio of 0, or no change.
 
 
 ### Datasets Removed Along The Process
 
 As the data were parsed and transformed into R and Bioconductor data structures, some datasets were removed for various reasons.
-In fact, there were several datasets with no data, 
+The most common reason for rejecting a dataset was for their to be $\lt$ 3 samples, which precluded many of the analyses we wanted to do, including calculating relative standard deviations (RSD), sample-sample correlations, and principal component analysis.
+The next most common was a dataset being classified as "gray PCA", where the ANOVA test of sample scores *vs* SSF returns a missing value, either due to every sample being in it's own SSF, or there being a single SSF.
+Finally, there were the datasets with no feature abundance data (167).
+
+The counts and reasons for missing feature abundance data are shown in Figure XB.
+The most common reason for no feature abundance data is that there was no feature data,
+as in no abundance data in the MWTab file, and no ancillary text data found (115).
+It may be that for many of those, there was data contained in an Excel file or zipped directory, but we limited our search to ancillary text files available on the MW ftp server, as they could be easily examined and loaded.
+Another common reason for no data was not having matching sample identifiers in the SSF block and the abundance data block or ancillary file (30).
+Surprisingly, there are 16 datasets where trying to convert all of the abundances from a character to numeric value results in no numeric values.
+The other reasons for no data include there being no subject sample factor block (3); no matching features between the metabolites abundance data and metadata blocks (2); and duplicated subject sample factor attributes that couldn't be programmatically rectified (1).
+
 
 ```{r}
 #| label: loss-nose-plot
@@ -357,13 +389,35 @@ Figure X.
 **A**: Waterfall loss plot showing how many datasets were initially processed (7240), and then how many were removed as the analysis progressed along each stage. No Data: -167, there was no data to construce the summarized experiment object; < 3 Samples: -622, datasets had less than three samples after checking that each sample had $\ge 10$ non-missing feature abundances; < 3 Samples After Correlation: -5, datasets had less than three samples after removing samples that generated missing sample-sample correlation values; Gray PCA: -247, datasets that had a single SSF for all samples, or each sample had their own SSF, resulting in missing values in the ANOVA test of SSF vs sample scores on principal components; Analyzed: 6199, the number of datasets analyzed.
 **B**: Counts of the various reasons that the 167 datasets had "No Data", and therefore couldn't create a summarized experiment object to be used for further analysis.
 
-### Dataset Sizes
+### Datasets and Their Sizes
 
-The 6199 more useful datasets downloaded from Metabolomics Workbench come in a range of sizes.
+
+```{r}
+#| label: percentage-datasets-type
+data_by_measurement_source = not_gray_pca |>
+  janitor::tabyl(measurement_type, data_source) |>
+  janitor::adorn_totals(c("row", "col")) |>
+  janitor::adorn_percentages("row") |>
+  janitor::adorn_pct_formatting() |>
+  janitor::adorn_ns() |>
+  gt::gt()
+```
+
+The 6199 more useful datasets downloaded from Metabolomics Workbench come in a range of sizes, as shown in Figure X.
 
 ```{r}
 #| label: dataset-sizes-plot
 datasets_sizes_plot
+```
+
+Almost 3/4 of the datasets are measured using MS, and it is very likely that the abundance data is actually embedded in the MWTab file itself, rather than deposited as a separate ancillary file (see Table Y).
+
+Table Y.
+Number of datasets by measurement type (MS or NMR) and abundance data source (MWTab or ancillary).
+
+```{r}
+#| label: datasets-type-source-table
+data_by_measurement_source
 ```
 
 ### Overall Statuses
@@ -428,26 +482,31 @@ example_confound_plot
 Some datasets indicate technical replicates in the sample metadata, many *may* have technical replicates but have no metadata to correlate it, and / or the metadata is not consistently structured.
 Using a dataset with indicated technical replicates, we derived correlation distance and string distance based distributional cutoffs, in combination with the hierarchical dendrogram reordering to determine likely technical replicates.
 
-The correlation distance is calculated as $1 - \text{ICI-K}\tau$, and the string distance is the cosine based distance between sample IDs.
+The correlation distance is calculated as $1 - $ ICI-Kt, and the string distance is the cosine based distance between sample IDs.
 After removal of self distances, the mean, and standard deviation of each set of distances are calculated.
 Those sample-sample correlation distances $\le \mu_{cor} - sd_{cor}\times 2.5$ and $\le \mu_{string} - sd_{string}$ are considered possible replicates (red points in Figure X, black lines indicate cutoffs).
 
 With the pairwise distances ordered according to the hierchical clustering performed for the sample-sample correlation heatmaps, we then look for runs of technical replicate distances, which naturally define the sets.
 However, if the process groups the same sample in multiple technical replicate sets, we assume something has gone wrong and don't report them.
-Additionally, for most datasets, we expect that technical replicates will encompass the **majority** of samples.
-Therefore, if the technical replicate sets account for $\lt$ 50% of the samples, we don't report any technical replicate sets.
+Additionally, for most datasets, we expect that technical replicates will encompass the **majority** of samples, unless they are a small number of pooled or quality-control samples.
+Therefore, if the technical replicate sets include pooled or quality-control samples, we report them, otherwise, they must account for $\gt$ 50% of the samples to be reported.
+
+In addition to the RSD of the technical replicates, we also calculate the RSD of the SSF grouped samples (total RSD).
+The median technical replicate and total RSD values from each dataset are shown in Figure XC.
+As expected, the mode of the technical replicate RSD is much lower for the technical replicates (`r format(rsd_modes$tr_mode, digits = 3)` *vs* `r format(rsd_modes$total_mode, digits = 3)`), implying that methods for detecting them is likely correct (if somewhat conservative).
 
 ```{r}
 #| label: technical-replicates-plot
 heatmap_grob = ComplexHeatmap::draw(technical_replicates_plot$heatmap) |> grid::grid.grabExpr()
-(technical_replicates_plot$dotplot | heatmap_grob) + plot_annotation(tag_levels = "A")
+(technical_replicates_plot$dotplot | heatmap_grob) / total_vs_tr_rsd_plot + plot_annotation(tag_levels = "A")
 ```
 
 Figure X.
-**A**: Sample-sample ICI-K$\tau$ correlation based distances and cosine string distances between all samples in dataset AN006191.
+**A**: Sample-sample ICI-Kt correlation based distances and cosine string distances between all samples in dataset AN006191.
 Black lines indicate cutoffs for correlation and string distances, respectively.
 Red dots are distances that indicate possible technical replicates.
-**B**: Sample-sample ICI-K$\tau$ correlation heatmap, with technical replicate groups indicated on the rows.
+**B**: Sample-sample ICI-Kt correlation heatmap, with technical replicate groups indicated on the rows.
+**C**: Density plot of the median technical replicate RSD from each dataset where technical replicates were detected, and the total RSD using SSF groups from each dataset.
 
 ### Weirdness Encountered
 
