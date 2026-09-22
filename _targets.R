@@ -265,6 +265,9 @@ figures_tables_t = tar_assign({
   ) |>
     tar_target()
 
+  study_status_comparison_table = compare_study_statuses(not_gray_pca) |>
+    tar_target()
+
   parsed_percentage_csv = create_csv_file(
     parsed_percentage_overall,
     out_file = "outputs/parsed_percentage_overall.csv"
