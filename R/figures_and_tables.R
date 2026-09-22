@@ -426,11 +426,31 @@ calculate_mode = function(values) {
   mode_value
 }
 
-calculate_rsd_modes = function(sets_qc_confounds_rsd) {
-  rsd_modes = sets_qc_confounds_rsd |>
-    dplyr::summarise(
-      tr_mode = calculate_mode(technical_replicate_rsd_median),
-      total_mode = calculate_mode(total_rsd_median)
-    )
+calculate_rsd_modes = function(sets_qc_confounds_rsd, measurement = "no") {
+  if (measurement %in% "no") {
+    rsd_modes = sets_qc_confounds_rsd |>
+      dplyr::summarise(
+        tr_mode = calculate_mode(technical_replicate_rsd_median),
+        total_mode = calculate_mode(total_rsd_median)
+      )
+  } else if (measurement %in% "yes") {
+    rsd_modes = sets_qc_confounds_rsd |>
+      dplyr::summarise(
+        tr_mode = calculate_mode(technical_replicate_rsd_median),
+        total_mode = calculate_mode(total_rsd_median),
+        .by = measurement_type
+      )
+  }
+
   rsd_modes
+}
+
+create_non_technical_rsd_plot = function(non_technical_rsd) {
+  # tar_load(non_technical_rsd)
+  non_technical_rsd_plot = non_technical_rsd |>
+    ggplot(aes(x = non_technical_rsd)) +
+    geom_histogram(bins = 50) +
+    scale_y_continuous(expand = expansion(mult = c(0, NA))) +
+    labs(x = "Non-Technical RSD")
+  non_technical_rsd_plot
 }

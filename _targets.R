@@ -210,9 +210,14 @@ actual_analysis_t = tar_assign({
     sets_tr_total_rsd
   ) |>
     tar_target()
-  rsd_modes = calculate_rsd_modes(sets_qc_confounds_rsd) |>
+  rsd_modes_all = calculate_rsd_modes(sets_qc_confounds_rsd) |>
     tar_target()
-  not_gray_pca = find_pca_remove_gray(sets_qc_color_confounds) |> tar_target()
+  rsd_modes_measurement = calculate_rsd_modes(
+    sets_qc_confounds_rsd,
+    measurement = "yes"
+  ) |>
+    tar_target()
+  not_gray_pca = find_pca_remove_gray(sets_qc_confounds_rsd) |> tar_target()
   parsed_grouped_statuses = parse_statuses(not_gray_pca) |> tar_target()
   parsed_percentage_overall = calculate_percentage_overall(
     parsed_grouped_statuses
@@ -221,6 +226,8 @@ actual_analysis_t = tar_assign({
   technical_replicate_info = technical_replicate_info_analysis(not_gray_pca) |>
     tar_target()
   potential_confound_info = confound_info_analysis(not_gray_pca) |>
+    tar_target()
+  non_technical_rsd = calculate_rsd_differences(not_gray_pca) |>
     tar_target()
 })
 
@@ -263,6 +270,9 @@ figures_tables_t = tar_assign({
     nbin = 100,
     use_subset = "all"
   ) |>
+    tar_target()
+
+  non_technical_rsd_plot = create_non_technical_rsd_plot(non_technical_rsd) |>
     tar_target()
 
   study_status_comparison_table = compare_study_statuses(not_gray_pca) |>

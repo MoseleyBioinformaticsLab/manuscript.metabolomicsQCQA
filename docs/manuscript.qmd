@@ -49,8 +49,10 @@ status_heatmap_top90_plot,
 technical_replicates_plot,
 total_vs_tr_rsd_plot,
 example_confound_plot,
-negatives_as_missing_plot
+negatives_as_missing_plot,
+non_technical_rsd_plot,
 # tables
+study_status_comparison_table
 ))
 ```
 
@@ -128,7 +130,7 @@ After datasets were repaired and ancillary datasets downloaded, we attempt to re
 #### Matching Samples and Features Between Data Blocks
 
 The mwtab format contains a subject sample factors (SSF) block, detailing the samples, their metadata (and possible additional sample data) as well as data blocks containing the abundances and metabolite metadata.
-Alternatively, the data could be made available in an external file.
+Alternatively, the data could be made available in an external ancillary file.
 
 After cleaning sample IDs and metabolite feature IDs, only the samples matching between the SSF and metabolite data blocks are kept.
 In addition, if a metabolite metadata block was present, only the metabolite features that matched between the abundances and the metadata are kept.
@@ -165,6 +167,30 @@ If the maximum observed value is $\le$ 1000, and the ratio of the mean to median
 ### Negatives to Missing
 
 Negative values were treated as missing and replaced with the missing value indicator in R of "NA".
+
+### Detecing Technical Replicates
+
+Some datasets indicate technical replicates in the sample metadata, many *may* have technical replicates but have no metadata to correlate it, and / or the metadata is not consistently structured.
+Using a dataset with indicated technical replicates, we derived correlation distance and string distance based distributional cutoffs, in combination with the hierarchical dendrogram reordering to determine likely technical replicates.
+
+The correlation distance is calculated as $1 - $ ICI-Kt, and the string distance is the cosine based distance between sample IDs.
+After removal of self distances, the mean, and standard deviation of each set of distances are calculated.
+Those sample-sample correlation distances $\le \mu_{cor} - sd_{cor}\times 2.5$ and $\le \mu_{string} - sd_{string}$ are considered possible replicates (red points in Figure X, black lines indicate cutoffs).
+
+With the pairwise distances ordered according to the hierchical clustering performed for the sample-sample correlation heatmaps, we then look for runs of technical replicate distances, which naturally define the sets.
+However, if the process groups the same sample in multiple technical replicate sets, we assume something has gone wrong and don't report them.
+Additionally, for most datasets, we expect that technical replicates will encompass the **majority** of samples, unless they are a small number of pooled or quality-control samples.
+Therefore, if the technical replicate sets include pooled or quality-control samples, we report them, otherwise, they must account for $\gt$ 50% of the samples to be reported.
+
+### Calculating Relative Standard Deviation
+
+For each feature, the standard deviation (SD), mean, and then relative standard deviation (RSD) were calculated across samples within the same SSF grouping, for both the raw abundances and median normalized abundances.
+
+One median RSD was calculated within each SSF, for those cases where there were $\ge$ 3 feature values, for both raw and normalized abundances.
+This median RSD was used for plotting in the QC/QA reports, as well as generating the distribution of RSDs to evaluate the RSD based color status of each dataset (see Quality Control Cutoffs).
+A second median RSD was calculated across all features and SSF, for comparison with the technical replicate RSD mode.
+
+A technical replicate median RSD was calculated using all features in all technical replicate groups detected in a dataset, after removing missing, infinite, and zero values.
 
 ### Quality Control Cutoffs
 
@@ -301,6 +327,14 @@ In this analysis, we used:
   * ANOVA p-value $\le 1 \times 10^{-10}$;
   * ANOVA statistic $\ge$ 300;
   * PC percent variance $\ge$ 30%.
+
+### Calculation of Relative Standard Deviation
+
+
+
+### Comparison of Dataset Statuses Within Studies
+
+For each study with multiple datasets, the datasets were ordered by their internal ID (Analysis ID), and then the overall statuses compared among them, starting with dataset one through however many datasets were present, increasing the count for each intersection of green with yellow, green with red, yellow with red, and so on.
 
 ## Results
 
@@ -479,26 +513,17 @@ example_confound_plot
 
 ### Technical Replicates
 
-Some datasets indicate technical replicates in the sample metadata, many *may* have technical replicates but have no metadata to correlate it, and / or the metadata is not consistently structured.
-Using a dataset with indicated technical replicates, we derived correlation distance and string distance based distributional cutoffs, in combination with the hierarchical dendrogram reordering to determine likely technical replicates.
-
-The correlation distance is calculated as $1 - $ ICI-Kt, and the string distance is the cosine based distance between sample IDs.
-After removal of self distances, the mean, and standard deviation of each set of distances are calculated.
-Those sample-sample correlation distances $\le \mu_{cor} - sd_{cor}\times 2.5$ and $\le \mu_{string} - sd_{string}$ are considered possible replicates (red points in Figure X, black lines indicate cutoffs).
-
-With the pairwise distances ordered according to the hierchical clustering performed for the sample-sample correlation heatmaps, we then look for runs of technical replicate distances, which naturally define the sets.
-However, if the process groups the same sample in multiple technical replicate sets, we assume something has gone wrong and don't report them.
-Additionally, for most datasets, we expect that technical replicates will encompass the **majority** of samples, unless they are a small number of pooled or quality-control samples.
-Therefore, if the technical replicate sets include pooled or quality-control samples, we report them, otherwise, they must account for $\gt$ 50% of the samples to be reported.
-
 In addition to the RSD of the technical replicates, we also calculate the RSD of the SSF grouped samples (total RSD).
 The median technical replicate and total RSD values from each dataset are shown in Figure XC.
-As expected, the mode of the technical replicate RSD is much lower for the technical replicates (`r format(rsd_modes$tr_mode, digits = 3)` *vs* `r format(rsd_modes$total_mode, digits = 3)`), implying that methods for detecting them is likely correct (if somewhat conservative).
+As expected, the mode of the technical replicate RSD is much lower than the total RSD (`r format(rsd_modes$tr_mode, digits = 3)` *vs* `r format(rsd_modes$total_mode, digits = 3)`), implying that methods for detecting them is likely correct (if somewhat conservative).
+
+With the technical replicate RSD and total RSD available for 200 datasets, we can subtract them to determine the RSD due to non-technical sources.
+The histogram of this RSD is shown in Figure XD.
 
 ```{r}
 #| label: technical-replicates-plot
 heatmap_grob = ComplexHeatmap::draw(technical_replicates_plot$heatmap) |> grid::grid.grabExpr()
-(technical_replicates_plot$dotplot | heatmap_grob) / total_vs_tr_rsd_plot + plot_annotation(tag_levels = "A")
+(technical_replicates_plot$dotplot | heatmap_grob) / (total_vs_tr_rsd_plot | non_technical_rsd_plot) + plot_annotation(tag_levels = "A")
 ```
 
 Figure X.
@@ -507,6 +532,23 @@ Black lines indicate cutoffs for correlation and string distances, respectively.
 Red dots are distances that indicate possible technical replicates.
 **B**: Sample-sample ICI-Kt correlation heatmap, with technical replicate groups indicated on the rows.
 **C**: Density plot of the median technical replicate RSD from each dataset where technical replicates were detected, and the total RSD using SSF groups from each dataset.
+**D**: Histogram of non-technical-rsd, i.e. the total RSD - technical-replicate RSD.
+
+### Comparison of Dataset Statuses
+
+The counts were aggregated across all dataset comparisons for the `r study_status_comparison_table$n_studies` studies that had multiple datasets.
+Table Y shows that in general, whatever the status a dataset has, the other datasets within that study will more than likely share that same status (70 - 75% in each case).
+Interestingly, starting with a green status, is 2x more likely to encounter a yellow status than a red, and starting with a red status is 2x more likely to share a study with a yellow status than a green.
+
+Table Y.
+Number of datasets that share the initial-status color with another dataset in the same study.
+
+```{r}
+#| label: study-status-count-table
+study_status_comparison_table$status_comparisons |>
+  gt::gt()
+```
+
 
 ### Weirdness Encountered
 
