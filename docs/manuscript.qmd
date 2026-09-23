@@ -143,10 +143,14 @@ Among the `{r} n_total` remaining, `{r} format_in_sentence(n_green)` had all **g
 
 ## Introduction
 
+Data repositories, and in particular, -omics level data repositories are a net good.
+Theoretically, they encourage and allow the reuse of data that has historically been expensive to obtain (although most costs have dropped significantly).
+Notable -omics data repositories include the gene expression omnibus and sequence read archive for transcriptomics, and the Metabolomics Workbench and Metabolights for metabolomics.
+Various groups have found ways to reuse and reanalyze transcriptomics data, for example, by combining and aggregating datasets for single diseases, among others.
 However, as with all data, and most especially -omics level data, there are issues both with the ability to reuse the data that is there, and the data quality.
-As such, we have attempted to assess the quality of a large number of datasets in an open data repository where we are very familiar with the underlying data format, the Metabolomics Workbench.
-
-Previous related publications include
+While some data quality assessments have been carried out on RNA-Seq repositories, to our knowledge no such assessment has been attempted for a metabolomics repository.
+Our lab has previously developed the JSON format for metabolomics workbench (MW) data, the mwtab python package for downloading and validating MW datasets, and ??? (**TOTALLY BLANKING HERE, I KNOW THERE IS ANOTHER ONE**). 
+Therefore, we have performed a quality-control and quality-assurance assessment of all datasets (analyses) available from the MW.
 
 The measures we have used to assess the quality of each dataset include:
 
