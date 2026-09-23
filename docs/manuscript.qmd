@@ -2,7 +2,11 @@
 title: "Evaluation of the quality of deposited datasets in a metabolomics data repository."
 author: "Robert M Flight, P Travis Thompson and Hunter NB Moseley"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
-format: html
+format: 
+  html: 
+    toc: true
+    embed-resources: true
+  docx: default
 ---
 
 ```{r}
@@ -78,6 +82,19 @@ n_no_se = summary_qc |>
 n_few = summary_qc |>
   dplyr::filter(failed_steps %in% "none", failed_why %in% "too few samples")
 
+n_parsed = nrow(sets_qc_color_confounds)
+
+n_completed = summary_qc |>
+  dplyr::filter(completed_steps %in% "se; dynamic_range; correlation; pca")
+
+n_no_se = summary_qc |>
+  dplyr::filter(is.na(failed_why) & completed_steps %in% "none")
+
+n_dropped = summary_qc |>
+  dplyr::filter(failed_steps %in% "correlation")
+
+n_few = summary_qc |>
+  dplyr::filter(failed_steps %in% "none", failed_why %in% "too few samples")
 
 gray_status = sets_qc_color_confounds |>
   dplyr::filter(
@@ -90,6 +107,7 @@ color_status = sets_qc_color_confounds |>
     !overall_status %in% "gray"
   )
 
+n_total = nrow(color_status)
 n_color = summarize_status(color_status)
 n_green = n_color |> dplyr::filter(overall_status %in% "green")
 n_yellow = n_color |> dplyr::filter(overall_status %in% "yellow")
@@ -97,11 +115,34 @@ n_red = n_color |> dplyr::filter(overall_status %in% "red")
 n_gray = nrow(gray_status)
 ```
 
+## Abstract
+
+**Introduction:** While depositing omics data into public repositories is frequently required by grant funders and journals, the quality of deposited data is not uniform, limiting their reuse in large meta-analyses.
+Here we present a comprehensive evaluation of data quality across all available datasets in Metabolomics Workbench.
+
+**Methods:** We downloaded 7240 datasets from  Metabolomics Workbench in July 2026.
+Needed harmonizations and repairs were made to downloaded analysis files.
+
+For each dataset, we attempted to:
+
+* convert to a summarized experiment R object containing metabolite metadata, abundances, and sample metadata;
+* detect any quality-control samples;
+* determine if the data were log-transformed;
+* evaluate the number of metabolite features and usable samples in each group of subject-sample-factors (SSF);
+* calculate sample-sample information-content-informed Kendall-$\tau$ (ICI-Kt) correlations;
+* calculate the relative standard deviations (RSD) within each SSF group;
+* perform principal component analysis (PCA) and calculate an analysis of variance (ANOVA) for  sample PC scores based on SSF groups.
+
+For each successful step, we assigned a color-based data quality grade: **red**, think twice before using; **yellow**, probably OK; and **green**,  looks good for that step.
+In addition, we generated an HTML QC/QA report for each of the datasets.
+
+**Results:** Of the `{r} n_parsed` datasets that could be parsed, `{r} format_in_sentence(n_no_se)` could not be coerced into a summarized experiment object for various reasons; `{r} format_in_sentence(n_few)` had <3 samples, and therefore could not undergo PCA and RSD calculations; another `{r} format_in_sentence(n_dropped)` started correlation but could not complete all steps, and `{r} format_in_sentence(n_completed)` were able to go through all steps to PCA.
+For successful PCA, `{r} n_gray` had either a single SSF, or every sample was its own SSF, making them inappropriate for differential analyses.
+Among the `{r} n_total` remaining, `{r} format_in_sentence(n_green)` had all **green** statuses; `{r} format_in_sentence(n_yellow)` had one or more **yellow** statuses; and `{r} format_in_sentence(n_red)` had one or more **red** statuses across the QC/QA evaluations.
+
+
 ## Introduction
 
-Data repositories are good.
-They theoretically encourage the reuse of data.
-Some groups have found very, very cool ways to reuse and reanalyze transcriptomics data, for examples.
 However, as with all data, and most especially -omics level data, there are issues both with the ability to reuse the data that is there, and the data quality.
 As such, we have attempted to assess the quality of a large number of datasets in an open data repository where we are very familiar with the underlying data format, the Metabolomics Workbench.
 
@@ -119,7 +160,7 @@ The measures we have used to assess the quality of each dataset include:
   * Results of principal components analysis of each dataset; 
   * Comparing within SSF correlations of samples to between SSF correlations.
   
-We also provide quality-control reports and the processed, analysis ready summarized experiment RDS files for all of the datasets.
+We also provide HTML quality-control reports and the processed, analysis ready summarized experiment in serialized *.rds files for all of the datasets.
 
 ## Methods
 
@@ -166,14 +207,22 @@ If the maximum observed value is $\le$ 1000, and the ratio of the mean to median
 
 ### Negatives to Missing
 
-Negative values were treated as missing and replaced with the missing value indicator in R of "NA".
+Negative and zero values were treated as missing and replaced with the missing value indicator in R of "NA".
+Percent data missingness was calculated as the fraction of NA values over the total number of features and samples.
+The missingness being the result of left-censorship was tested using the left_censorship_test function from the ICIKendallTau package (vXXX)[reference].
+This test calculates the ranks of every feature in every sample, and checks the non-missing rank of features that have missingness in any sample, and records their rank as above or below the median rank in the non-missing instances.
+Those above and below counts are aggregated across the features, and tested using a binomial test.
+We expect if features are not being left-censored, then being above or below the median rank would have a probability of 0.5.
+Deviation from that probability indicates that the missing features are due to left-censorship.
+
+The percentage of missing values across all datasets was also evaluated, and the distribution of non-zero percentages used to calculate a standard deviation and set cutoffs at two and four times the standard deviation for yellow and red statuses, respectively.
 
 ### Detecing Technical Replicates
 
 Some datasets indicate technical replicates in the sample metadata, many *may* have technical replicates but have no metadata to correlate it, and / or the metadata is not consistently structured.
 Using a dataset with indicated technical replicates, we derived correlation distance and string distance based distributional cutoffs, in combination with the hierarchical dendrogram reordering to determine likely technical replicates.
 
-The correlation distance is calculated as $1 - $ ICI-Kt, and the string distance is the cosine based distance between sample IDs.
+The correlation distance is calculated as 1 - ICI-Kt, and the string distance is the cosine based distance between sample IDs.
 After removal of self distances, the mean, and standard deviation of each set of distances are calculated.
 Those sample-sample correlation distances $\le \mu_{cor} - sd_{cor}\times 2.5$ and $\le \mu_{string} - sd_{string}$ are considered possible replicates (red points in Figure X, black lines indicate cutoffs).
 
@@ -191,6 +240,25 @@ This median RSD was used for plotting in the QC/QA reports, as well as generatin
 A second median RSD was calculated across all features and SSF, for comparison with the technical replicate RSD mode.
 
 A technical replicate median RSD was calculated using all features in all technical replicate groups detected in a dataset, after removing missing, infinite, and zero values.
+
+### Calculating Sample-Sample Correlations
+
+Sample-sample correlations were calculated using the information-content-informed Kendall-$\tau$ (ICI-Kt)[reference], which incorporates missing values directly into the correlation coefficient.
+The R package ICIKendallTau vXXX was used for all calculations.
+
+### Removing Outliers and QC/QA Samples
+
+Using the median sample-sample ICI-Kt values within each SSF group, we define outliers as samples that fall outside the lower interquartile range of ICI-Kt values within the SSF group, using the boxplot.stats function wrapped in visualizationQualityControl::determine_outliers (vXXX)[reference].
+
+### Principal Component Analysis
+
+Principal component analysis (PCA) was performed in three steps if applicable.
+Using all samples, after removing outlier samples, after removing QC/QA samples, and after removing outlier and QC/QA samples.
+In every case, the prcomp function was used with mean centering and no unit variance scaling.
+
+From the output of PCA, the scores for each sample were extracted and added to the sample metadata, the absolute and relative variance contributions of each principal component (PC) computed, and then the association of sample PC scores with sample group metadata using ANOVA (from the visualizationQualityControl::visqc_test_pca_scores function).
+The specific metadata tested by ANOVA included the individual subject-sample factors, the overall SSF group definition, as well as any additional sample data and the combination of SSF and additional sample data.
+P-values were adjusted to control the family wise error rate using the Dunn-Bonferroni procedure across PCs tested within each metadata tested. 
 
 ### Quality Control Cutoffs
 
@@ -328,8 +396,11 @@ In this analysis, we used:
   * ANOVA statistic $\ge$ 300;
   * PC percent variance $\ge$ 30%.
 
-### Calculation of Relative Standard Deviation
+### Creation of QC/QA Reports
 
+After providing color grade statuses and determining possible confounding factors, calculating total and technical replicate RSDs, an HTML quality-control / quality-assurance report was generated for each and every dataset.
+A template report and alternative sections were drafted as quarto documents [reference].
+From the set of completed analysis steps for the dataset, and which varieties of PCA (all samples, QC removed, outliers removed, etc), different report sections are included, and written to a temp file, as well as the analysis data itself, so that the report loads only the required dataset analysis for display in the report.
 
 
 ### Comparison of Dataset Statuses Within Studies
