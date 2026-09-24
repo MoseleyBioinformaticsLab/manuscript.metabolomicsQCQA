@@ -570,7 +570,7 @@ Red line indicates a log-ratio of 0, or no change.
 
 
 
-### Possible Unaccounted Factors
+### Possible Confounding Factors
 
 ```{r}
 #| label: calculate-confounding-percentage
@@ -586,7 +586,7 @@ For the `{r} n_yellow_red` datasets with yellow or red PCA ANOVA p-value statuse
 Figure X shows the sample PC scores plot for dataset AN000454.
 Here, the samples separate into four distinct groups along PC1 and PC2, with all of the groupings containing a mixture of Control and CLFS SSF groups.
 In addition, none of the sample PC scores scored highly on the ANOVA test.
-The combination of this distinct grouping (detected by the confounding factor test we developed), and lack of SSF association with PC scores, indicates there is likely a confounding factor that is not noted in the 
+The combination of this distinct grouping (detected by the confounding factor test we developed), and lack of SSF association with PC scores, indicates there is likely a confounding factor (or batch) that is not noted in the metadata 
 
 
 ```{r}
