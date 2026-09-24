@@ -272,6 +272,11 @@ figures_tables_t = tar_assign({
   ) |>
     tar_target()
 
+  negatives_as_missing_table = create_negatives_as_missing_table(
+    sets_neg_test_result
+  ) |>
+    tar_target()
+
   non_technical_rsd_plot = create_non_technical_rsd_plot(non_technical_rsd) |>
     tar_target()
 

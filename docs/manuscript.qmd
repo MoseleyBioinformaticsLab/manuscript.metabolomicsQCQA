@@ -555,7 +555,10 @@ Given that negative values *should* be theoretically impossible, we decided that
 
 Previously, we developed a test for missingness being the result of left-censorship [ref], where we posit that the most likely reason for a value to be missing in metabolomics is the result of left-censorship, where the missing value is the result of being below the limit of detection.
 To verify that the negative values could be interpreted as "missing", for each dataset with at least two negative values present, we calculated the left-censorship test statistic before and after setting values $\le$ 0 to missing.
-We then calculated the ratio of the binomial test p-values and statistic values before and after setting negatives to missing, and calculated a binomial test of the log-ratio, where negative values imply the test statistic is more significant.
+We then calculated the ratio of the binomial test p-values and statistic values before and after setting negatives to missing, and calculated a binomial test of the log-ratio, where positive values indicate that treating negative values as missing results in more significant p-values or larger estimates in the binomial test.
+Using a binomial test on the ratios equates to a simple toin coss of direction, where we expect if treating negatives as missing would result in a fraction of positive to negative ratios of 0.5, without including the size of the effect on p-values and estimates.
+The results of the binomial test are shown in Table Y.
+
 
 ```{r}
 #| label: negatives-as-missing-plot
@@ -565,9 +568,16 @@ We then calculated the ratio of the binomial test p-values and statistic values 
 **Figure X**.
 **A**: Histogram of the $Log_{10}$ ratio of the left-censorship p-values when considering negative values as missing (Neg-p) compared to just having missing values (Missing-p).
 Red line indicates a log-ratio of 0, or no change.
-**B**: Histogram of the $Log_{10}$ ratio of the left-censorship test estimates when considering negative values as missing (Neg-p) compared to just having actual missing values (Missing-p).
+**B**: Histogram of the $Log_{2}$ ratio of the left-censorship test estimates when considering negative values as missing (Neg-p) compared to just having actual missing values (Missing-p).
 Red line indicates a log-ratio of 0, or no change.
 
+Table Y.
+Results of binomial test on the log-ratios of p-value and estimate of treating negatives as missing vs not in the left-censorship test.
+
+```{r}
+#| label: negatives-as-missing-table
+
+```
 
 
 ### Possible Confounding Factors

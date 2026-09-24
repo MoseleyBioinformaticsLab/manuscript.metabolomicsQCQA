@@ -143,7 +143,7 @@ plot_neg_tests = function(
       scale_y_continuous(expand = expansion(mult = c(0, NA)))
   }
 
-  sets_neg_direction = sets_neg_changed |>
+  sets_neg_direction = sets_neg_test_present |>
     dplyr::mutate(
       sign_p = sign(p.value_neg_vs_org),
       sign_p2 = dplyr::case_when(
@@ -198,4 +198,10 @@ plot_neg_tests = function(
       zero_to_positive = sets_estimate_test_zeropos
     )
   )
+}
+
+
+create_negatives_as_missing_table = function(sets_neg_test_result) {
+  p_test = sets_neg_test_result$p_tests$remove_zero$binom_test[1, ]
+  est_test = sets_neg_test_result$estimate_tests$remove_zero$binom_test[1, ]
 }
