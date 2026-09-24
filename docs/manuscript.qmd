@@ -198,33 +198,33 @@ A technical replicate median RSD was calculated using all features in all techni
 
 Number of SSF Groups (can indicate missing sample metadata): 
   
-  * N SSF > 20 ~ red;
-  * 10 < N SSF < 20 ~ yellow;
+  * N SSF $\gt$ 20 ~ red;
+  * 10 $\le$ N SSF $\le$ 20 ~ yellow;
   * N SSF = 1 ~ yellow;
-  * N SSF < 10 ~ green
+  * N SSF $\lt$ 10 ~ green
 
 
 #### Number of Features and Samples
 
 n-features:
 
-  * n <= 9 ~ low; 
-  * 10 <= n <= 29 ~ medium; 
-  * n >= 30 ~ high
+  * n $\le$ 9 ~ low; 
+  * 10 $\le$ n $\lt$ 30 ~ medium; 
+  * n $\ge$ 30 ~ high
 
 n-samples: 
 
-  * n <= 3 ~ low; 
-  * 3 < n < 10 ~ medium; 
-  * n >= 10 ~ high
+  * n $\le$ 3 ~ low; 
+  * 3 $\lt$ n $\lt$ 10 ~ medium; 
+  * n $\ge$ 10 ~ high
 
 #### Number of Samples in Subject Sample Factors and Number of Subject Sample Factor Groups
 
 Number of samples within each SSF:
   
-  * all SSF have <= 2 samples ~ red;
-  * 3 <= all SSF <= 4 ~ yellow;
-  * all SSF >= 5 samples ~ green;
+  * all SSF have $\le$ 2 samples ~ red;
+  * 3 $\le$ all SSF $\le$ 4 ~ yellow;
+  * all SSF $\ge$ 5 samples ~ green;
  
 
 #### Quality Control Samples
@@ -235,23 +235,23 @@ Number of samples within each SSF:
 
 #### Percent Missing and Left-Censorship
 
-* percent missing <= 2 x SD ~ green;
-* 2 x SD < percent missing < 4 x SD limit ~ yellow;
-* percent missing > 4 x SD limit ~ red
-* percent missing > 10% & lc test p-value <= 0.05 ~ green (can we replace % missing with X number of features missing);
-* percent missing > 10% & lc test p-value > 0.05 ~ yellow;
+* percent missing $\le$ 2 x SD ~ green;
+* 2 x SD $\lt$ percent missing $\le$ 4 x SD limit ~ yellow;
+* percent missing $\gt$ 4 x SD limit ~ red
+* percent missing $\gt$ 10% & lc test p-value $\le$ 0.05 ~ green;
+* percent missing $\gt$ 10% & lc test p-value $\gt$ 0.05 ~ yellow;
 
 #### Maximum Observed Median RSD
 
-* RSD <= median + 2 x SD ~ green;
-* median + 2 x SD < RSD < median + 4 x SD ~ yellow;
-* RSD > median + 4 x SD ~ red
+* RSD $\le$ median + 2 x SD ~ green;
+* median + 2 x SD $\lt$ RSD $\le$ median + 4 x SD ~ yellow;
+* RSD $\gt$ median + 4 x SD ~ red
 
 #### Median Correlations
 
-* Max Med ICI-Kt > median(Max med) - 2 SD ~ green;
-* median(Max med) - 4 SD < Max Med ICI-Kt < median(Max med) - 2 SD ~ yellow;
-* Max Med ICI-Kt < median(Max med) - 4 SD ~ red 
+* Max Med ICI-Kt $\ge$ median(Max med) - 2 SD ~ green;
+* median(Max med) - 4 SD $\ge$ Max Med ICI-Kt $\lt$ median(Max med) - 2 SD ~ yellow;
+* Max Med ICI-Kt $\lt$ median(Max med) - 4 SD ~ red 
 
 #### PCA Scores
 
@@ -260,17 +260,17 @@ This results in a one sided distribution that is roughly log-normal, that we can
 We assume a median of 1, and then calculate the standard deviation.
 To get actual cutoffs, we convert the values to raw space and floor them to the nearest integer.
 
-  * PC-90 <= median + 2 SD ~ green ; 
-  * median + 2 SD < PC-90 <= median + 4 SD ~ yellow; 
-  * PC-90 > median + 4 SD ~ red.
+  * PC-90 $\le$ median + 2 SD ~ green ; 
+  * median + 2 SD $\lt$ PC-90 $\le$ median + 4 SD ~ yellow; 
+  * PC-90 $\gt$ median + 4 SD ~ red.
 
 ANOVA p-adjusted: 
 
-  * p-adjust <= 0.05 && PC-perc >= 5% && factor is SSF or derived ~ green; 
-  * p-adjust <= 0.05 && PC-perc >= 5% && factor is additional sample-data or combination of SSF and additional sample-data ~ yellow;
-  * p-adjust <= 0.05 && 1% <= PC-perc < 5% ~ yellow;
-  * p-adjust <= 0.05 && PC-perc < 1% ~ red;
-  * p-adjusted > 0.05 ~ red.
+  * p-adjust $\le$ 0.05 & PC-perc $\ge$ 5% & factor is SSF or derived ~ green; 
+  * p-adjust $\le$ 0.05 & PC-perc $\ge$ 5% & factor is additional sample-data or combination of SSF and additional sample-data ~ yellow;
+  * p-adjust $\le$ 0.05 & 1% $\le$ PC-perc $\lt$ 5% ~ yellow;
+  * p-adjust $\le$ 0.05 & PC-perc $\lt$ 1% ~ red;
+  * p-adjusted $\gt$ 0.05 ~ red.
 
 #### Median Within vs Inter SSF ICI-Kt
 
@@ -337,66 +337,6 @@ In this analysis, we used:
 For each study with multiple datasets, the datasets were ordered by their internal ID (Analysis ID), and then the overall statuses compared among them, starting with dataset one through however many datasets were present, increasing the count for each intersection of green with yellow, green with red, yellow with red, and so on.
 
 ## Results
-
-### Detection of Log-Transformation
-
-```{r}
-#| label: n-exponentiated
-n_exponentiated = sets_qc_color_confounds |>
-  dplyr::filter_out(is.na(transformation)) |>
-  dplyr::summarize(n = dplyr::n(), .by = transformation) |>
-  dplyr::mutate(perc_display = format_percentage(n / sum(n)) |> trimws())
-```
-
-Some deposited dataset abundances are already log-transformed.
-We want to be able to detect them, un-transform them (exponentiate with base 2), and evaluate them in their un-transformed state.
-In our experience, non-transormed dataset distributions tend to be heavily skewed with long-tailed distributions, i.e. look much like a log-normal distribution, and then the log-transformed data appears much more "normal-like".
-Therefore, we can detect already log-transformed data by determining if it is "normal".
-However, tests for normality are notoriously fickle and prone to return non-significant values if the data is at all different from expectations, which is highly likely for these real world datasets.
-One common element of normally distributed data is that the mean and median of the data are relatively close together, whereas for skewed or long-tailed data the mean and median, by definition, are very different.
-Note that we did also investigate a simple definition of skewness $(\mu - \nu) / \sigma$, however it did not provide the discrimination needed for this application.
-
-We calculated the mean-median-ratio (MMR) across all 7073 datasets that created a summarized experiment object, as well as the number and fraction of negative values, the maximum observed abundance, and the dynamic range (maximum / minimum values).
-The dynamic range calculated in the presence of negative values involves first adding the absolute value of the minimum value, + 1, to transform all values to be positive, and subsequently calcuating the ratio of the maximum and minimum of the transformed values.
-
-This investigation resulted in first checking if the maximum observed value in a dataset is less than 1000, then calculating the mean and median of the data, and if the MMR was between 0.8 and 1.2, the data was exponentiated before further use.
-
-There were a total of `r format_in_sentence(n_exponentiated[2, ])` datasets that the values were exponentiated before further analysis.
-
-```{r}
-#| label: mmr-plot
-(mmr_logtransform_plot$mmr_distribution / (mmr_logtransform_plot$mmr_vs_neg | mmr_logtransform_plot$less1000)) + plot_annotation(tag_levels = "A")
-```
-
-Figure X.
-All plots used datasets with an MMR $\ge$ 0.2 and MMR $\le$ 200.
-**A**: Histogram of Log10(MMR).
-**B**: Log10(MMR) vs fraction of negative data values, after excluding all datasets with zero negative values.
-**C**: Histogram of Log10(MMF) for datasets with a maximum observed intensity $\le$ 1000.
-Vertical lines indicate the MMR cutoffs used of 0.8 and 1.2 to decide that a dataset should undergo exponentiation.
-
-### Negative Values and Left-Censorship
-
-The detection of log-transformed datasets and exponentiating them back to *raw* space removes any negative values present.
-This is important, as measuring physical entities should not result in negative values.
-However, only a small fraction of datasets containing negative values match the criteria we used to detect log-transformation.
-Given that negative values *should* be theoretically impossible, we decided that they should be interpreted as missing values for all subsequent calculations.
-
-Previously, we developed a test for missingness being the result of left-censorship [ref], where we posit that the most likely reason for a value to be missing in metabolomics is the result of left-censorship, where the missing value is the result of being below the limit of detection.
-To verify that the negative values could be interpreted as "missing", for each dataset with at least two negative values present, we calculated the left-censorship test statistic before and after setting values $\le$ 0 to missing.
-We then calculated the ratio of the binomial test p-values and statistic values before and after setting negatives to missing, and calculated a binomial test of the log-ratio, where negative values imply the test statistic is more significant.
-
-```{r}
-#| label: negatives-as-missing-plot
-(negatives_as_missing_plot$p_histogram | negatives_as_missing_plot$estimate_histogram) + plot_annotation(tag_levels = "A")
-```
-
-**Figure X**.
-**A**: Histogram of the $Log_{10}$ ratio of the left-censorship p-values when considering negative values as missing (Neg-p) compared to just having missing values (Missing-p).
-Red line indicates a log-ratio of 0, or no change.
-**B**: Histogram of the $Log_{10}$ ratio of the left-censorship test estimates when considering negative values as missing (Neg-p) compared to just having actual missing values (Missing-p).
-Red line indicates a log-ratio of 0, or no change.
-
 
 ### Datasets Removed Along The Process
 
@@ -493,7 +433,69 @@ In Figure X, we show a heatmap of the statuses for those that account for 90% of
 status_heatmap_top90_plot
 ```
 
-### Possible Confounding Factors
+
+### Detection of Log-Transformation
+
+```{r}
+#| label: n-exponentiated
+n_exponentiated = sets_qc_color_confounds |>
+  dplyr::filter_out(is.na(transformation)) |>
+  dplyr::summarize(n = dplyr::n(), .by = transformation) |>
+  dplyr::mutate(perc_display = format_percentage(n / sum(n)) |> trimws())
+```
+
+Some deposited dataset abundances are already log-transformed.
+We want to be able to detect them, un-transform them (exponentiate with base 2), and evaluate them in their un-transformed state.
+In our experience, non-transormed dataset distributions tend to be heavily skewed with long-tailed distributions, i.e. look much like a log-normal distribution, and then the log-transformed data appears much more "normal-like".
+Therefore, we can detect already log-transformed data by determining if it is "normal".
+However, tests for normality are notoriously fickle and prone to return non-significant values if the data is at all different from expectations, which is highly likely for these real world datasets.
+One common element of normally distributed data is that the mean and median of the data are relatively close together, whereas for skewed or long-tailed data the mean and median, by definition, are very different.
+Note that we did also investigate a simple definition of skewness $(\mu - \nu) / \sigma$, however it did not provide the discrimination needed for this application.
+
+We calculated the mean-median-ratio (MMR) across all 7073 datasets that created a summarized experiment object, as well as the number and fraction of negative values, the maximum observed abundance, and the dynamic range (maximum / minimum values).
+The dynamic range calculated in the presence of negative values involves first adding the absolute value of the minimum value, + 1, to transform all values to be positive, and subsequently calcuating the ratio of the maximum and minimum of the transformed values.
+
+This investigation resulted in first checking if the maximum observed value in a dataset is less than 1000, then calculating the mean and median of the data, and if the MMR was between 0.8 and 1.2, the data was exponentiated before further use.
+
+There were a total of `r format_in_sentence(n_exponentiated[2, ])` datasets that the values were exponentiated before further analysis.
+
+```{r}
+#| label: mmr-plot
+(mmr_logtransform_plot$mmr_distribution / (mmr_logtransform_plot$mmr_vs_neg | mmr_logtransform_plot$less1000)) + plot_annotation(tag_levels = "A")
+```
+
+Figure X.
+All plots used datasets with an MMR $\ge$ 0.2 and MMR $\le$ 200.
+**A**: Histogram of Log10(MMR).
+**B**: Log10(MMR) vs fraction of negative data values, after excluding all datasets with zero negative values.
+**C**: Histogram of Log10(MMF) for datasets with a maximum observed intensity $\le$ 1000.
+Vertical lines indicate the MMR cutoffs used of 0.8 and 1.2 to decide that a dataset should undergo exponentiation.
+
+### Negative Values and Left-Censorship
+
+The detection of log-transformed datasets and exponentiating them back to *raw* space removes any negative values present.
+This is important, as measuring physical entities should not result in negative values.
+However, only a small fraction of datasets containing negative values match the criteria we used to detect log-transformation.
+Given that negative values *should* be theoretically impossible, we decided that they should be interpreted as missing values for all subsequent calculations.
+
+Previously, we developed a test for missingness being the result of left-censorship [ref], where we posit that the most likely reason for a value to be missing in metabolomics is the result of left-censorship, where the missing value is the result of being below the limit of detection.
+To verify that the negative values could be interpreted as "missing", for each dataset with at least two negative values present, we calculated the left-censorship test statistic before and after setting values $\le$ 0 to missing.
+We then calculated the ratio of the binomial test p-values and statistic values before and after setting negatives to missing, and calculated a binomial test of the log-ratio, where negative values imply the test statistic is more significant.
+
+```{r}
+#| label: negatives-as-missing-plot
+(negatives_as_missing_plot$p_histogram / negatives_as_missing_plot$estimate_histogram) + plot_annotation(tag_levels = "A")
+```
+
+**Figure X**.
+**A**: Histogram of the $Log_{10}$ ratio of the left-censorship p-values when considering negative values as missing (Neg-p) compared to just having missing values (Missing-p).
+Red line indicates a log-ratio of 0, or no change.
+**B**: Histogram of the $Log_{10}$ ratio of the left-censorship test estimates when considering negative values as missing (Neg-p) compared to just having actual missing values (Missing-p).
+Red line indicates a log-ratio of 0, or no change.
+
+
+
+### Possible Unaccounted Factors
 
 ```{r}
 #| label: calculate-confounding-percentage
@@ -502,14 +504,24 @@ n_confound = nrow(sets_qc_color_confounds |> dplyr::filter(confounding_factor_de
 perc_confound = format_percentage(n_confound / n_yellow_red)
 ```
 
+
+
 From the datasets with a yellow or red status for the PCA ANOVA p-value, we used a series of ad-hoc cutoffs and clustering to try and determine if their might be a potential confounding factor present (see Methods).
 For the `{r} n_yellow_red` datasets with yellow or red PCA ANOVA p-value statuses, `{r} n_confound` (`{r} perc_confound`) *likely* have a confounding factor present.
+Figure X shows the sample PC scores plot for dataset AN000454.
+Here, the samples separate into four distinct groups along PC1 and PC2, with all of the groupings containing a mixture of Control and CLFS SSF groups.
+In addition, none of the sample PC scores scored highly on the ANOVA test.
+The combination of this distinct grouping (detected by the confounding factor test we developed), and lack of SSF association with PC scores, indicates there is likely a confounding factor that is not noted in the 
 
 
 ```{r}
 #| label: confounding-example-plot
 example_confound_plot
 ```
+
+**Figure X**.
+Sample PC scores plot for dataset AN000454, with samples colored by their SSF.
+
 
 ### Technical Replicates
 
