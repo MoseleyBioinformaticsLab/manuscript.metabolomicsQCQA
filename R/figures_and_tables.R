@@ -454,3 +454,114 @@ create_non_technical_rsd_plot = function(non_technical_rsd) {
     labs(x = "Non-Technical RSD")
   non_technical_rsd_plot
 }
+
+
+create_percent_missingness_plot = function(not_gray_pca) {
+  # tar_load(not_gray_pca)
+  nmr_max = not_gray_pca |>
+    dplyr::filter(measurement_type %in% "NMR") |>
+    dplyr::pull(percent_missing) |>
+    max()
+  ms_max = not_gray_pca |>
+    dplyr::filter(measurement_type %in% "MS") |>
+    dplyr::pull(percent_missing) |>
+    max()
+
+  max_subtitle = glue::glue(
+    "Max % Missing, NMR: {round(nmr_max, digits = 0)}%, MS: {round(ms_max, digits = 0)}%"
+  )
+  p_miss_plot = not_gray_pca |>
+    ggplot(aes(x = percent_missing, y = measurement_type)) +
+    geom_sina() +
+    labs(x = "% Missingness", y = "Measurement Type", subtitle = max_subtitle)
+  p_miss_plot
+}
+
+create_databased_cutoffs_plot = function(
+  sets_percent_missing_result,
+  sets_median_correlation_result,
+  sets_rsd_result,
+  sets_pc_number_result,
+  data_limits
+) {
+  # tar_load(c(
+  #   sets_percent_missing_result,
+  #   sets_median_correlation_result,
+  #   sets_rsd_result,
+  #   sets_pc_number_result,
+  #   data_limits
+  # ))
+  color_list = c("red" = "#D81B60", "green" = "#004D40", "yellow" = "#FFC107")
+  pm_plot = sets_percent_missing_result |>
+    dplyr::filter_out(is.na(missing) | missing == 0) |>
+    ggplot(aes(x = missing)) +
+    geom_histogram(bins = 100) +
+    geom_vline(
+      xintercept = data_limits$missing,
+      color = color_list[c("yellow", "red")],
+      linewidth = 2
+    ) +
+    geom_vline(xintercept = 0, color = color_list[c("green")], linewidth = 2) +
+    scale_y_continuous(expand = expansion(mult = c(0, NA))) +
+    scale_x_continuous(expand = expansion(mult = c(0, NA))) +
+    labs(x = "% Missingness")
+
+  rsd_plot = sets_rsd_result |>
+    dplyr::filter_out(data %in% "n", (is.na(median) | median == 0)) |>
+    ggplot(aes(x = median)) +
+    geom_histogram(bins = 100) +
+    geom_vline(
+      xintercept = data_limits$rsd,
+      color = color_list[c("yellow", "red")],
+      linewidth = 2
+    ) +
+    geom_vline(
+      aes(xintercept = median(median)),
+      color = color_list["green"],
+      linewidth = 2
+    ) +
+    scale_y_continuous(expand = expansion(mult = c(0, NA))) +
+    scale_x_continuous(expand = expansion(mult = c(0, NA)), limits = c(0, 3)) +
+    labs(x = "Median(RSD)")
+  med_cor_plot = sets_median_correlation_result |>
+    dplyr::summarise(
+      max = max(median_ici_correlation, na.rm = TRUE),
+      .by = id
+    ) |>
+    dplyr::filter(!is.infinite(max)) |>
+    ggplot(aes(x = max)) +
+    geom_histogram(bins = 100) +
+    geom_vline(
+      xintercept = data_limits$median_correlation,
+      color = color_list[c("yellow", "red")],
+      linewidth = 2
+    ) +
+    geom_vline(
+      aes(xintercept = median(max)),
+      color = color_list["green"],
+      linewidth = 2
+    ) +
+    scale_y_continuous(expand = expansion(mult = c(0, NA))) +
+    scale_x_continuous(expand = expansion(mult = c(0, NA))) +
+    labs(x = "Max(Median(Sample-Sample Correlation))")
+  pc_90_plot = sets_pc_number_result |>
+    dplyr::mutate(pc_log = log10(pc_90)) |>
+    dplyr::filter(!is.infinite(pc_90), pc_log >= 1) |>
+    ggplot(aes(x = pc_log)) +
+    geom_histogram(bins = 30) +
+    geom_vline(
+      xintercept = log10(data_limits$pca),
+      color = color_list[c("yellow", "red")],
+      linewidth = 2
+    ) +
+    geom_vline(xintercept = 1, color = color_list["green"], linewidth = 2) +
+    scale_y_continuous(expand = expansion(mult = c(0, NA))) +
+    scale_x_continuous(expand = expansion(mult = c(0, NA))) +
+    labs(x = "Log10(PC-90%)")
+  return(list(
+    pm = pm_plot,
+    rsd = rsd_plot,
+    med_cor = med_cor_plot,
+    pc_90 = pc_90_plot
+  ))
+}

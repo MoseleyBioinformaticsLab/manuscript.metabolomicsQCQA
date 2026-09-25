@@ -204,4 +204,13 @@ plot_neg_tests = function(
 create_negatives_as_missing_table = function(sets_neg_test_result) {
   p_test = sets_neg_test_result$p_tests$remove_zero$binom_test[1, ]
   est_test = sets_neg_test_result$estimate_tests$remove_zero$binom_test[1, ]
+
+  all_test = dplyr::bind_rows(p_test, est_test) |>
+    dplyr::transmute(
+      Variable = c("P-Value", "Estimate"),
+      `N-Pos` = statistic,
+      `N-Neg` = parameter - statistic,
+      `P-Value` = p.value
+    )
+  all_test
 }

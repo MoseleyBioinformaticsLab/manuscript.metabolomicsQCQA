@@ -56,6 +56,7 @@ example_confound_plot,
 negatives_as_missing_plot,
 non_technical_rsd_plot,
 percent_missingnes_plot,
+data_based_cutoffs_plot,
 # tables
 study_status_comparison_table,
 negatives_as_missing_table
@@ -560,6 +561,18 @@ All plots used datasets with an MMR $\ge$ 0.2 and MMR $\le$ 200.
 **B**: Log10(MMR) vs fraction of negative data values, after excluding all datasets with zero negative values.
 **C**: Histogram of Log10(MMF) for datasets with a maximum observed intensity $\le$ 1000.
 Vertical lines indicate the MMR cutoffs used of 0.8 and 1.2 to decide that a dataset should undergo exponentiation.
+
+### Deriving Data Based Cutoffs
+
+Figure X shows the distribution, calculated median, and cutoffs used to determine green, yellow, and red statuses for percent missingness, relative standard deviation (RSD), median sample-sample correlation, and PC that accounts for 90% of the cumulative variance, respectively.
+
+```{r}
+#| label: data-based-cutoffs-plot
+patchwork::wrap_plots(data_based_cutoffs_plot, ncol = 2, nrow = 2) + plot_annotation(tag_levels = "A")
+```
+
+**Figure X**.
+Distributions and cutoff limits for (A) percent missingness; (B) Relative standard deviation; (C) Maximum median sample-sample correlation; (D) PC accounting for 90% of the cumulative variance.
 
 ### Negative Values, Missingness and Left-Censorship
 

@@ -277,9 +277,20 @@ figures_tables_t = tar_assign({
   ) |>
     tar_target()
 
+  percent_missingnes_plot = create_percent_missingness_plot(not_gray_pca) |>
+    tar_target()
+
   non_technical_rsd_plot = create_non_technical_rsd_plot(non_technical_rsd) |>
     tar_target()
 
+  data_based_cutoffs_plot = create_databased_cutoffs_plot(
+    sets_percent_missing_result,
+    sets_median_correlation_result,
+    sets_rsd_result,
+    sets_pc_number_result,
+    data_limits
+  ) |>
+    tar_target()
   study_status_comparison_table = compare_study_statuses(not_gray_pca) |>
     tar_target()
 
