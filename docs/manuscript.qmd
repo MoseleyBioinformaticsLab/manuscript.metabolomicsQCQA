@@ -55,8 +55,10 @@ total_vs_tr_rsd_plot,
 example_confound_plot,
 negatives_as_missing_plot,
 non_technical_rsd_plot,
+percent_missingnes_plot,
 # tables
-study_status_comparison_table
+study_status_comparison_table,
+negatives_as_missing_table
 ))
 ```
 
@@ -263,6 +265,19 @@ In every case, the prcomp function was used with mean centering and no unit vari
 From the output of PCA, the scores for each sample were extracted and added to the sample metadata, the absolute and relative variance contributions of each principal component (PC) computed, and then the association of sample PC scores with sample group metadata using ANOVA (from the visualizationQualityControl::visqc_test_pca_scores function).
 The specific metadata tested by ANOVA included the individual subject-sample factors, the overall SSF group definition, as well as any additional sample data and the combination of SSF and additional sample data.
 P-values were adjusted to control the family wise error rate using the Dunn-Bonferroni procedure across PCs tested within each metadata tested. 
+
+### Deriving Data Based Cutoffs
+
+There are four measures where we used the distribution of values from the datasets to derive cutoffs: 1 - percent missingness; 2 - relative standard deviation (RSD); 3 - median sample-sample correlations; 4 - principal component (PC) at which 90% of the cumulative variance is accounted for.
+For the percent missingness, we removed any missing or zero values, and calculate the standard deviation (SD) of the distribution, treating zero as the mean of a one sided distribution.
+This works even after removing zero, as so many datasets have either a zero or low percentage of missing values.
+Cutoffs use two and four times the SD.
+In the case of RSD, we use all of the recorded median RSDs across datasets, and calculate the median, and SD, and then use the median plus two and four times the SD as cutoffs.
+For median sample-sample correlations, we use the maximum observed median correlation in the dataset to create the distribution across all datasets, and calculate the median and SD.
+In this case, lower values are worse, so we use the median subtracting two and four times the SD to set cutoffs.
+For the PC at which 90% of the cumulative variance is accounted for, this is a direct number from the data.
+Based on the overall distribution, we decided to treat it as a one sided distribution with a median of 10.
+After removing datasets with values $\lt$ 10, we log-transform the values and calculate the SD, setting cutoffs at two and four times the SD.
 
 ### Quality Control Cutoffs
 
@@ -546,7 +561,7 @@ All plots used datasets with an MMR $\ge$ 0.2 and MMR $\le$ 200.
 **C**: Histogram of Log10(MMF) for datasets with a maximum observed intensity $\le$ 1000.
 Vertical lines indicate the MMR cutoffs used of 0.8 and 1.2 to decide that a dataset should undergo exponentiation.
 
-### Negative Values and Left-Censorship
+### Negative Values, Missingness and Left-Censorship
 
 The detection of log-transformed datasets and exponentiating them back to *raw* space removes any negative values present.
 This is important, as measuring physical entities should not result in negative values.
@@ -576,8 +591,21 @@ Results of binomial test on the log-ratios of p-value and estimate of treating n
 
 ```{r}
 #| label: negatives-as-missing-table
-
+negatives_as_missing_table |> 
+  gt::gt() |>
+  gt::fmt_scientific(columns= "P-Value", decimals = 2)
 ```
+
+Figure X shows a sina plot of the percent missingness observed in the analyzed datasets.
+NMR measured datasets range from 0 to 73% missingness, while MS datasets range from 0 to 98% missingness.
+
+```{r}
+#| label: percent-missingness-plot
+percent_missingnes_plot
+```
+
+**Figure X**:
+Sina plot of the percent missing values by measurement type, either NMR or MS.
 
 
 ### Possible Confounding Factors
