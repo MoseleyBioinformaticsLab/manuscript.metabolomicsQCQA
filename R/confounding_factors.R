@@ -12,7 +12,7 @@ detect_confounding_factors = function(se_data) {
 
   pca_scores = use_group[[1]]$pca$pca
   pca_variance = use_group[[1]]$pca$variance
-
+  pca_anova = use_group[[1]]$pca$anova
   # also pull the variances for PC1 and PC2, as I think they
   # will help us determine what is actually *real* and what
   # is not.
@@ -33,18 +33,21 @@ detect_confounding_factors = function(se_data) {
     tidy_aov
   }) |>
     purrr::list_rbind()
-  clustering_pcs$analysis_id = metadata(se_data)$mwtab$ID
-  clustering_pcs = dplyr::left_join(
-    clustering_pcs,
+  clustering_pcs = clustering_pcs |>
+    dplyr::mutate(variable = "confounding", padjust = NA)
+
+  out_pcs = dplyr::bind_rows(pca_anova, clustering_pcs)
+  out_pcs$analysis_id = metadata(se_data)$mwtab$ID
+  out_pcs = dplyr::left_join(
+    out_pcs,
     pca_variance,
     by = c("PC" = "pc")
   )
-  clustering_pcs
+  out_pcs
 }
 
 sets_detect_confounding_factors = function(sets_pca) {
-  out_factors = purrr::map(sets_pca, detect_confounding_factors) |>
-    purrr::list_rbind()
+  out_factors = purrr::map(sets_pca, detect_confounding_factors)
   out_factors
 }
 
