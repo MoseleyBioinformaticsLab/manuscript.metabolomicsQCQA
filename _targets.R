@@ -195,7 +195,7 @@ sets_tr_total_rsd_t = tar_combine(
 confounding_factors_t = tar_combine(
   sets_confounding_factors,
   sets_map[[13]],
-  command = dplyr::bind_rows(!!!.x)
+  command = c(!!!.x)
 )
 
 actual_analysis_t = tar_assign({
