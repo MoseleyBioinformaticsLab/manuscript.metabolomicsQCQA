@@ -17,7 +17,10 @@ detect_confounding_factors = function(se_data) {
   # will help us determine what is actually *real* and what
   # is not.
 
-  clustering_pcs = purrr::map(c("PC1", "PC2"), \(in_pc) {
+  test_pcs = unique(pca_anova$PC)
+
+  ssf_data = pca_scores[, c("sample_id", "ssf")]
+  clustering_pcs = purrr::map(test_pcs, \(in_pc) {
     # in_pc = "PC1"
     pc_scores = pca_scores[[in_pc]]
     names(pc_scores) = pca_scores$sample_id
@@ -27,23 +30,38 @@ detect_confounding_factors = function(se_data) {
     pc_hclust = hclust(pc_dist)
     pc_members = cutree(pc_hclust, k = 2)
 
+    member_df = tibble::tibble(
+      sample_id = names(pc_members),
+      cluster = pc_members
+    )
+
     pc_aov = stats::aov(pc_scores ~ pc_members)
     tidy_aov = broom::tidy(pc_aov)[1, ]
     tidy_aov$PC = in_pc
+
+    member_ssf = dplyr::inner_join(ssf_data, member_df, by = "sample_id")
+    n_ssf = member_ssf |>
+      dplyr::summarise(n = dplyr::n(), .by = ssf)
+    frac_member = member_ssf |>
+      dplyr::summarise(n_each = dplyr::n(), .by = c(ssf, cluster))
+    frac_member2 = dplyr::left_join(frac_member, n_ssf, by = "ssf")
+    frac_values = frac_member2 |>
+      dplyr::mutate(frac = n_each / n)
+    frac_list = split(frac_values$frac, frac_values$cluster)
+
+    tidy_aov$frac = vector("list", 1)
+    tidy_aov$frac[[1]] = frac_list
     tidy_aov
   }) |>
     purrr::list_rbind()
-  clustering_pcs = clustering_pcs |>
-    dplyr::mutate(variable = "confounding", padjust = NA)
 
-  out_pcs = dplyr::bind_rows(pca_anova, clustering_pcs)
-  out_pcs$analysis_id = metadata(se_data)$mwtab$ID
-  out_pcs = dplyr::left_join(
-    out_pcs,
-    pca_variance,
-    by = c("PC" = "pc")
+  list(
+    analysis_id = metadata(se_data)$mwtab$ID,
+    variance = pca_variance,
+    anova = pca_anova,
+    confounds = clustering_pcs,
+    factor_types = get_specific_metadata(se_data, "factor_types")
   )
-  out_pcs
 }
 
 sets_detect_confounding_factors = function(sets_pca) {
@@ -91,4 +109,59 @@ confound_info_analysis = function(not_gray_pca) {
     n_yellow = nrow(confound_yellow),
     n_red = nrow(confound_red)
   )
+}
+
+examine_confounding_pvalues = function(sets_confounding_factors) {
+  # tar_load(sets_confounding_factors)
+  null_factors = purrr::map_lgl(sets_confounding_factors, is.null)
+  keep_confounding = sets_confounding_factors[!null_factors]
+
+  confounding_compare = purrr::map(keep_confounding, \(in_confounding) {
+    # in_confounding = keep_confounding[[1]]
+    # in_confounding = keep_confounding[["se_confounds_g05.AN000262"]]
+    cf_vals = in_confounding |>
+      dplyr::filter(variable %in% "confounding") |>
+      dplyr::mutate(
+        sig = dplyr::case_when(
+          p.value <= 0.05 ~ "yes",
+          TRUE ~ "no"
+        )
+      )
+
+    other_vals = in_confounding |>
+      dplyr::filter_out(variable %in% "confounding") |>
+      dplyr::mutate(
+        sig = dplyr::case_when(
+          p.value <= 0.05 ~ "yes",
+          TRUE ~ "no"
+        )
+      )
+
+    together_vals = dplyr::full_join(
+      other_vals[, c(
+        "statistic",
+        "p.value",
+        "padjust",
+        "percent",
+        "cumulative",
+        "sig",
+        "variable",
+        "PC"
+      )],
+      cf_vals[, c(
+        "statistic",
+        "p.value",
+        "padjust",
+        "sig",
+        "variable",
+        "PC"
+      )],
+      by = "PC",
+      suffix = c(".variable", ".confound")
+    )
+
+    together_vals$analysis_id = cf_vals$analysis_id[1]
+    together_vals
+  }) |>
+    purrr::list_rbind()
 }
