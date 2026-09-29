@@ -93,7 +93,11 @@ detect_confounding_factors = function(se_data) {
   )
 
   if (nrow(dip_pcs) > 1) {
-    dip_pcs$padjust = p.adjust(dip_pcs$p.value, method = "bonferroni")
+    dip_pcs = dip_pcs |>
+      dplyr::mutate(
+        padjust = p.adjust(p.value, method = "bonferroni"),
+        .by = ssf
+      )
   }
 
   list(
