@@ -2,6 +2,8 @@ detect_confounding_factors = function(se_data) {
   # sets_pca = tar_read(se_pca_g34); se_data = sets_pca[["AN000923"]]; tar_source("R")
   # sets_pca = tar_read(se_pca_g05); se_data = sets_pca[["AN000262"]]; tar_source("R")
   # sets_pca = tar_read(se_pca_g25); se_data = sets_pca[["AN005412"]]; tar_source("R")
+  # sets_pca = tar_read(se_pca_g25); se_data = sets_pca[["AN000118"]]; tar_source("R")
+
   report_list = check_qc_outputs(se_data)
 
   pca_groups = get_specific_metadata(se_data, "pca_groups")
@@ -66,7 +68,7 @@ detect_confounding_factors = function(se_data) {
     # in_pc = "PC1"
     dip_ssf = purrr::imap(samples_ssf, \(in_samples, ssf_id) {
       # in_samples = samples_ssf[[1]]
-      if (length(in_samples) < 4) {
+      if (length(in_samples) < 2) {
         return(NULL)
       }
       use_scores = pca_scores |>
@@ -77,7 +79,10 @@ detect_confounding_factors = function(se_data) {
       out_dip
     }) |>
       purrr::list_rbind()
-    dip_ssf$PC = in_pc
+    if (nrow(dip_ssf) > 0) {
+      dip_ssf$PC = in_pc
+    }
+
     dip_ssf
   }) |>
     purrr::list_rbind()
