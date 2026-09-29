@@ -447,12 +447,23 @@ calculate_rsd_modes = function(sets_qc_confounds_rsd, measurement = "no") {
 
 create_non_technical_rsd_plot = function(non_technical_rsd) {
   # tar_load(non_technical_rsd)
-  non_technical_rsd_plot = non_technical_rsd |>
-    ggplot(aes(x = non_technical_rsd)) +
-    geom_histogram(bins = 50) +
+  wide_rsd = non_technical_rsd |>
+    dplyr::filter_out(is.na(non_technical_rsd) | total_rsd_median > 1) |>
+    dplyr::transmute(
+      internal_id = internal_id,
+      `Non Technical RSD` = non_technical_rsd,
+      `Total RSD` = total_rsd_median,
+      `Technical Replicate RSD` = technical_replicate_rsd_median
+    ) |>
+    tidyr::pivot_longer(-internal_id, values_to = "RSD", names_to = "Type")
+  wide_rsd_plot = wide_rsd |>
+    ggplot(aes(x = RSD, color = Type)) +
+    geom_density(position = "identity", linewidth = 2) +
+    theme(legend.position = "top") +
     scale_y_continuous(expand = expansion(mult = c(0, NA))) +
-    labs(x = "Non-Technical RSD")
-  non_technical_rsd_plot
+    labs(x = "RSD")
+
+  wide_rsd_plot
 }
 
 
@@ -564,4 +575,71 @@ create_databased_cutoffs_plot = function(
     med_cor = med_cor_plot,
     pc_90 = pc_90_plot
   ))
+}
+
+create_pipeline_description = function() {
+  mm_graph = DiagrammeR(
+    '
+   graph TB
+   A("JSON")-->B("RDS")
+   B-->C("Matching Samples / Metabolites")
+   C-->D("Filtering Samples")
+   D-->E("Summarized Experiment")
+   E-->F("Mean Median Ratio")
+   F-->G("Dynamic Range")
+   G-->H("Percent Missingness")
+   H-->I("Correlation")
+   I-->K("PCA")
+   K-->L("Data Limits")
+   L-->M("Confounding Factors")
+   M-->N("Color Status")
+'
+  )
+
+  graph_nodes = create_node_df(
+    14,
+    type = "item",
+    label = c(
+      "JSON File",
+      "RDS File",
+      "Match\nSamples & Metabolites",
+      "Filter Samples",
+      "Create\nSummarized Experiment",
+      "Calculate Mean\nMedian Ratio",
+      "Calculate\nDynamic Range",
+      "Calculate\nPercent Missingness",
+      "Calculate\nICI-Kt Correlation",
+      "Calculate\nPCA",
+      "Determine\nData Limits",
+      "Determine\nConfounding Factors",
+      "Assign\nColor Status",
+      "Generate\nQC/QA Reports"
+    )
+  )
+  graph_edges = create_edge_df(
+    from = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13),
+    to = c(2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
+    rel = "leading_to"
+  )
+  out_graph = create_graph(graph_nodes, graph_edges)
+}
+
+alt_pipeline = function() {
+  DiagrammeR::DiagrammeR(
+    "
+sequenceDiagram;
+   customer->>ticket seller: ask for a ticket;
+   ticket seller->>database: seats;
+   alt tickets available
+     database->>ticket seller: ok;
+     ticket seller->>customer: confirm;
+     customer->>ticket seller: ok;
+     ticket seller->>database: book a seat;
+     ticket seller->>printer: print a ticket;
+   else sold out
+     database->>ticket seller: none left;
+     ticket seller->>customer: sorry;
+   end
+"
+  )
 }
