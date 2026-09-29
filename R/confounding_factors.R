@@ -1,6 +1,7 @@
 detect_confounding_factors = function(se_data) {
   # sets_pca = tar_read(se_pca_g34); se_data = sets_pca[["AN000923"]]; tar_source("R")
   # sets_pca = tar_read(se_pca_g05); se_data = sets_pca[["AN000262"]]; tar_source("R")
+  # sets_pca = tar_read(se_pca_g25); se_data = sets_pca[["AN005412"]]; tar_source("R")
   report_list = check_qc_outputs(se_data)
 
   pca_groups = get_specific_metadata(se_data, "pca_groups")
@@ -13,6 +14,10 @@ detect_confounding_factors = function(se_data) {
   pca_scores = use_group[[1]]$pca$pca
   pca_variance = use_group[[1]]$pca$variance
   pca_anova = use_group[[1]]$pca$anova
+
+  if (nrow(pca_scores) < 4) {
+    return(NULL)
+  }
   # also pull the variances for PC1 and PC2, as I think they
   # will help us determine what is actually *real* and what
   # is not.
