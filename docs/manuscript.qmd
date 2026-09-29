@@ -171,14 +171,20 @@ We also provide HTML quality-control reports and the processed, analysis ready s
 
 ## Methods
 
+We developed a QC/QA analysis pipeline as a series of R scripts that totals approximately X lines of code. 
+The pipeline uses the targets vXXX package for workflow management of the execution of pipeline steps. 
+Use of the targets package greatly sped up the many development and testing cycles needed to generate a robust pipeline by minimizing unnecessary recalculation of steps where code had not changed. 
+Figure X provides an overview of the QC/QA analysis pipeline. 
+Individual analysis steps of the pipeline are described below.
+
 ### Parsing and Transformation to Summarized Experiment
 
-After datasets were repaired and ancillary datasets downloaded, we attempt to read in the jsonized data and transform it into an R SummarizedExperiment object, which is ideal for holding feature metadata, abundances, and sample metadata, as well as hold any extra data that does not map directly to features and samples in the metadata slot.
+After datasets were repaired and ancillary data files downloaded, parsed, and repaired, the pipeline attempts to read in the JSONized data and transform it into an R SummarizedExperiment object, which is ideal for holding feature metadata, abundances, and sample metadata, as well as hold any extra data that does not map directly to features and samples in the metadata slot.
 
 #### Matching Samples and Features Between Data Blocks
 
-The mwtab format contains a subject sample factors (SSF) block, detailing the samples, their metadata (and possible additional sample data) as well as data blocks containing the abundances and metabolite metadata.
-Alternatively, the data could be made available in an external ancillary file.
+The mwTab format contains a subject sample factors (SSF) block, detailing the samples, their metadata (and possible additional sample data) as well as data blocks containing the abundances and metabolite metadata.
+Alternatively, the data could be made available in a separate ancillary file.
 
 After cleaning sample IDs and metabolite feature IDs, only the samples matching between the SSF and metabolite data blocks are kept.
 In addition, if a metabolite metadata block was present, only the metabolite features that matched between the abundances and the metadata are kept.
@@ -193,83 +199,88 @@ When reading in the metabolite abundances, the string ".E" had to be replaced wi
 
 ### Removing Factors That Cause Single Sample Grouping
 
-For later correlation and principal component analysis (PCA), it is important to know the experimental groupings of samples.
-The groupings are constructed from the various subject-sample-factors (SSF) into a single character string representing the overall SSF for each sample, easily allowing them to be grouped by a single variable in the data associated with each sample.
-However, some datasets include the replicate (biological, technical, etc) number in one of the SSF, causing each sample to have it's own distinct SSF, i.e. each SSF has only single samples.
-This is sometimes the design of the experiment, but in our investigation, more often than not it was not the intention of those running the experiment, but rather a misunderstanding of how the SSF vs additional sample data should be defined in the sample metadata.
+For later sample-sample correlation and principal component analysis (PCA), it is important to know the experimental groupings of biological samples.
+The groupings are constructed from the various subject-sample-factors (SSF) into a single character string representing the overall SSF group for each sample, easily allowing them to be grouped by a single variable in the data associated with each biological sample.
+However, some datasets include the replicate (biological, technical, etc.) number in one of the SSF, causing each sample to have it's own distinct SSF, i.e. each SSF has only single samples.
+This is sometimes the design of the experiment, but in our investigation, more often than not it was not the intention of those running the experiment, but rather a misunderstanding of how the SSF vs additional sample data should be defined in the sample metadata of the mwTab formatted analysis file.
 
-We attempt to mitigate these by checking the sample to SSF mapping as soon as the data moves from long to wide format (multiple rows per sample, how it is read in from the mwtab JSON, to single rows per sample), by checking for individual SSF columns that result in single sample SSF grouping, removing trailing numbers if possible, and then attempting to remove one of the SSF factors, and subsequently checking the change in the number of samples per SSF grouping.
+The pipeline attempts to mitigate these by checking the sample to SSF mapping as soon as the data moves from long to wide format (multiple rows per sample, how it is read in from the mwTab JSON, to single rows per sample), by checking for individual SSF columns that result in single sample SSF grouping, removing trailing numbers if possible, and then attempting to remove one of the SSF factors, and subsequently checking the change in the number of samples per SSF grouping.
 
 
 ### Detecting Possible Quality-Control Samples
 
 Possible quality-control samples were determined by searching the regular expressions `".*pool.*|.*qc.*|.*blank.*|.*quality.*"` (ignoring case) in the sample ID, subject ID, and item description for each sample.
-If *all* samples in the dataset matched the regular expression, we removed the additional sample data from the sample information, and tried detecting them again.
-If *all* samples were still noted as quality-control, we determined that couldn't be right, and set all the samples to be experimental samples.
+If *all* samples in the dataset matched the regular expression, the pipeline removes the additional sample data from the sample information, and tried detecting them again.
+If *all* samples were still noted as quality-control, the pipeline deems this incorrect, and sets all the samples to be experimental samples.
 
 ### Detection of Log-Transformed Datasets
 
-To detect previously log-transformed data, we calculate the overall mean and median of the non-missing data, as well as the maximum value observed.
+To detect previously log-transformed data in a dataset, the pipeline calculates the overall mean and median of the non-missing values, as well as the maximum value observed.
 If the maximum observed value is $\le$ 1000, and the ratio of the mean to median is between 0.8 and 1.2, the values are exponentiated.
 
 ### Negatives to Missing
 
-Negative and zero values were treated as missing and replaced with the missing value indicator in R of "NA".
-Percent data missingness was calculated as the fraction of NA values over the total number of features and samples.
-The missingness being the result of left-censorship was tested using the left_censorship_test function from the ICIKendallTau package (vXXX)[reference].
+The pipeline treats negative and zero values as missing and replaces them with the missing value indicator in R of "NA".
+Next, the pipeline calculates percent data missingnessas the fraction of NA values over the total number of features and samples.
+The missingness being the result of left-censorship is tested using the left_censorship_test function from the ICIKendallTau package (vXXX)[reference].
 This test calculates the ranks of every feature in every sample, and checks the non-missing rank of features that have missingness in any sample, and records their rank as above or below the median rank in the non-missing instances.
-Those above and below counts are aggregated across the features, and tested using a binomial test.
+The test function aggregates above and below counts across the features and evaluates them using a binomial test.
 We expect if features are not being left-censored, then being above or below the median rank would have a probability of 0.5.
 Deviation from that probability indicates that the missing features are due to left-censorship.
 
-The percentage of missing values across all datasets was also evaluated, and the distribution of non-zero percentages used to calculate a standard deviation and set cutoffs at two and four times the standard deviation for yellow and red statuses, respectively.
+Next, the pipeline evaluates the percentage of missing values across each dataset, and uses the distribution of non-zero percentages to calculate a standard deviation and set cutoffs at two and four times the standard deviation for yellow and red statuses, respectively.
 
-### Detecing Technical Replicates
+### Median Normalization
 
-Some datasets indicate technical replicates in the sample metadata, many *may* have technical replicates but have no metadata to correlate it, and / or the metadata is not consistently structured.
-Using a dataset with indicated technical replicates, we derived correlation distance and string distance based distributional cutoffs, in combination with the hierarchical dendrogram reordering to determine likely technical replicates.
+The pipeline calculates the median abundance of each sample, and the abundance values are divided by the median abundances and saved as the normalized counts.
+
+### Detecting Technical Replicates
+
+Some datasets clearly indicate technical replicates in the sample metadata.
+However, many other datasets may have technical replicates but have no metadata to identify technical replicate sets, and / or the metadata is not consistently structured.
+Using a dataset with clearly indicated technical replicates as a guide, we derived correlation distance and string distance based distributional cutoffs, in combination with the hierarchical dendrogram reordering to determine likely technical replicates.
 
 The correlation distance is calculated as 1 - ICI-Kt, and the string distance is the cosine based distance between sample IDs.
-After removal of self distances, the mean, and standard deviation of each set of distances are calculated.
+After the removal of self distances, the mean and standard deviation of each set of distances are calculated.
 Those sample-sample correlation distances $\le \mu_{cor} - sd_{cor}\times 2.5$ and $\le \mu_{string} - sd_{string}$ are considered possible replicates (red points in Figure X, black lines indicate cutoffs).
 
-With the pairwise distances ordered according to the hierchical clustering performed for the sample-sample correlation heatmaps, we then look for runs of technical replicate distances, which naturally define the sets.
+With the pairwise distances ordered according to the hierchical clustering performed for the sample-sample correlation heatmaps, the pipeline then looks for runs of technical replicate distances, which naturally define the sets.
 However, if the process groups the same sample in multiple technical replicate sets, we assume something has gone wrong and don't report them.
 Additionally, for most datasets, we expect that technical replicates will encompass the **majority** of samples, unless they are a small number of pooled or quality-control samples.
-Therefore, if the technical replicate sets include pooled or quality-control samples, we report them, otherwise, they must account for $\gt$ 50% of the samples to be reported.
+Therefore, if the technical replicate sets include pooled or quality-control samples, the pipeline reports them, otherwise, they must account for $\gt$ 50% of the samples to be reported.
 
 ### Calculating Relative Standard Deviation
 
-For each feature, the standard deviation (SD), mean, and then relative standard deviation (RSD) were calculated across samples within the same SSF grouping, for both the raw abundances and median normalized abundances.
+For each feature, the pipeline calculates the standard deviation (SD), mean, and then relative standard deviation (RSD) across samples within the same SSF group, for both the raw abundances and median normalized abundances.
 
-One median RSD was calculated within each SSF, for those cases where there were $\ge$ 3 feature values, for both raw and normalized abundances.
-This median RSD was used for plotting in the QC/QA reports, as well as generating the distribution of RSDs to evaluate the RSD based color status of each dataset (see Quality Control Cutoffs).
-A second median RSD was calculated across all features and SSF, for comparison with the technical replicate RSD mode.
+Next, the pipeline calculates one median RSD within each SSF group, for those cases where there were $\ge$ 3 feature values, for both raw and normalized abundances.
+The pipeline uses the median RSD for plotting in the QC/QA reports, as well as generating the distribution of median RSDs to evaluate the RSD based color status of each dataset (see Quality Control Cutoffs).
+A second total median RSD was calculated across all features and SSF groups, for comparison with the median technical replicate RSD mode.
 
 A technical replicate median RSD was calculated using all features in all technical replicate groups detected in a dataset, after removing missing, infinite, and zero values.
 
 ### Calculating Sample-Sample Correlations
 
-Sample-sample correlations were calculated using the information-content-informed Kendall-$\tau$ (ICI-Kt)[reference], which incorporates missing values directly into the correlation coefficient.
-The R package ICIKendallTau vXXX was used for all calculations.
+The pipeline calculates sample-sample correlations using the information-content-informed Kendall-$\tau$ (ICI-Kt)[reference], which incorporates missing values directly into the correlation coefficient.
+We used the R package ICIKendallTau vXXX for all calculations.
 
-### Removing Outliers and QC/QA Samples
+### Removing Outliers
 
-Using the median sample-sample ICI-Kt values within each SSF group, we define outliers as samples that fall outside the lower interquartile range of ICI-Kt values within the SSF group, using the boxplot.stats function wrapped in visualizationQualityControl::determine_outliers (vXXX)[reference].
+Using the median sample-sample ICI-Kt correlation values within each SSF group, we define outliers as samples that fall outside the lower interquartile range of median ICI-Kt correlation values within the SSF group, using the boxplot.stats function wrapped in visualizationQualityControl::determine_outliers (vXXX)[reference].
 
 ### Principal Component Analysis
 
-Principal component analysis (PCA) was performed in three steps if applicable.
+The pipeline performs principal component analysis (PCA) up to four times if applicable.
 Using all samples, after removing outlier samples, after removing QC/QA samples, and after removing outlier and QC/QA samples.
 In every case, the prcomp function was used with mean centering and no unit variance scaling.
 
-From the output of PCA, the scores for each sample were extracted and added to the sample metadata, the absolute and relative variance contributions of each principal component (PC) computed, and then the association of sample PC scores with sample group metadata using ANOVA (from the visualizationQualityControl::visqc_test_pca_scores function).
+The pipeline extracts the scores for each sample from the output of PCA and adds the corresponding sample metadata, and calculates the absolute and relative variance contributions of each principal component (PC) computed, and then the association of sample PC scores with sample group metadata using ANOVA (from the visualizationQualityControl::visqc_test_pca_scores function).
 The specific metadata tested by ANOVA included the individual subject-sample factors, the overall SSF group definition, as well as any additional sample data and the combination of SSF and additional sample data.
-P-values were adjusted to control the family wise error rate using the Dunn-Bonferroni procedure across PCs tested within each metadata tested. 
+All p-values were adjusted to control the family wise error rate using the Dunn-Bonferroni procedure across PCs tested within each metadata variable tested. 
 
 ### Deriving Data Based Cutoffs
 
-There are four measures where we used the distribution of values from the datasets to derive cutoffs: 1 - percent missingness; 2 - relative standard deviation (RSD); 3 - median sample-sample correlations; 4 - principal component (PC) at which 90% of the cumulative variance is accounted for.
+We used the distribution of values across datasets to derive quality-control cutoffs for four measures: 1) percent missingness; 2) relative standard deviation (RSD); 3) median sample-sample correlations; and 4) principal component (PC) at which 90% of the cumulative variance is accounted for.
 For the percent missingness, we removed any missing or zero values, and calculate the standard deviation (SD) of the distribution, treating zero as the mean of a one sided distribution.
 This works even after removing zero, as so many datasets have either a zero or low percentage of missing values.
 Cutoffs use two and four times the SD.
@@ -498,7 +509,7 @@ Using the following quality statuses:
   * ANOVA test of SSF to PC scores;
 
 we obtained the following breakdown of statuses shown in Table X. 
-Although the most common category of statuses contain one or more yellow, two sets of statuses there dominate all others: 1 - datasets where one or more SSF groupings have only 3 or 4 samples (1132 or 44%); 2 - datasets where the PCA ANOVA p-value got a status of yellow (379, 15%).
+Although the most common category of statuses contain one or more yellow, two sets of statuses there dominate all others: 1) datasets where one or more SSF groupings have only 3 or 4 samples (1132 or 44%); and 2) datasets where the PCA ANOVA p-value got a status of yellow (379, 15%).
 In both of those cases, all other statuses are green.
 For the red statuses, the most common category was that the PCA ANOVA p-value has a red status (503, 30%), or PCA ANOVA red status and SSF groupings with only 3 or 4 samples (yellow) (343, 21%) with all other statuses being green.
 
