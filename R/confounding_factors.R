@@ -64,7 +64,7 @@ detect_confounding_factors = function(se_data) {
     purrr::list_rbind()
 
   samples_ssf = split(ssf_data$sample_id, ssf_data$ssf)
-  dip_pcs = purrr::map(test_pcs, \(in_pc) {
+  dip_pcs = furrr::future_map(test_pcs, \(in_pc) {
     # in_pc = "PC1"
     dip_ssf = purrr::imap(samples_ssf, \(in_samples, ssf_id) {
       # in_samples = samples_ssf[[1]]
