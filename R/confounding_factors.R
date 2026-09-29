@@ -56,28 +56,47 @@ detect_confounding_factors = function(se_data) {
 
     tidy_aov$frac = vector("list", 1)
     tidy_aov$frac[[1]] = frac_list
-    names(tidy_aov) = paste0("cluster.", names(tidy_aov))
 
-    tidy_dip = broom::tidy(diptest::dip.test(pc_scores))
-    names(tidy_dip) = paste0("dip.", names(tidy_dip))
-    dplyr::bind_cols(tidy_aov, tidy_dip)
+    tidy_aov
   }) |>
     purrr::list_rbind()
 
-  clustering_pcs$clustering.padjust = p.adjust(
-    clustering_pcs$cluster.p.value,
+  samples_ssf = split(ssf_data$sample_id, ssf_data$ssf)
+  dip_pcs = purrr::map(test_pcs, \(in_pc) {
+    # in_pc = "PC1"
+    dip_ssf = purrr::imap(samples_ssf, \(in_samples, ssf_id) {
+      # in_samples = samples_ssf[[1]]
+      if (length(in_samples) < 4) {
+        return(NULL)
+      }
+      use_scores = pca_scores |>
+        dplyr::filter(sample_id %in% in_samples) |>
+        dplyr::pull(tidyselect::all_of(in_pc))
+      out_dip = broom::tidy(diptest::dip.test(use_scores))
+      out_dip$ssf = ssf_id
+      out_dip
+    }) |>
+      purrr::list_rbind()
+    dip_ssf$PC = in_pc
+    dip_ssf
+  }) |>
+    purrr::list_rbind()
+
+  clustering_pcs$padjust = p.adjust(
+    clustering_pcs$p.value,
     method = "bonferroni"
   )
-  clustering_pcs$dip.padjust = p.adjust(
-    clustering_pcs$dip.p.value,
-    method = "bonferroni"
-  )
+
+  if (nrow(dip_pcs) > 1) {
+    dip_pcs$padjust = p.adjust(dip_pcs$p.value, method = "bonferroni")
+  }
 
   list(
     analysis_id = metadata(se_data)$mwtab$ID,
     variance = pca_variance,
     anova = pca_anova,
-    confounds = clustering_pcs,
+    clustering = clustering_pcs,
+    dip = dip_pcs,
     factor_types = get_specific_metadata(se_data, "factor_types")
   )
 }
