@@ -1,5 +1,5 @@
 ---
-title: "Evaluation of the quality of deposited datasets in a metabolomics data repository."
+title: "Evaluation of the quality of deposited datasets in the Metabolomics Workbench data repository."
 author: "Robert M Flight, P Travis Thompson and Hunter NB Moseley"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 format: 
@@ -120,8 +120,8 @@ n_gray = nrow(gray_status)
 
 ## Abstract
 
-**Introduction:** While depositing omics data into public repositories is frequently required by grant funders and journals, the quality of deposited data is not uniform, limiting their reuse in large meta-analyses.
-Here we present a comprehensive evaluation of data quality across all available datasets in Metabolomics Workbench.
+**Introduction:** While depositing omics data into public repositories is frequently required by grant funders and journals, the quality of deposited data and metadata is not uniform, limiting their reuse in large meta-analyses.
+Here we present a comprehensive evaluation of both data and experimental design metadata quality across all available datasets in Metabolomics Workbench.
 
 **Methods:** We downloaded 7240 datasets from  Metabolomics Workbench in July 2026.
 Needed harmonizations and repairs were made to downloaded analysis files.
@@ -139,8 +139,8 @@ For each dataset, we attempted to:
 For each successful step, we assigned a color-based data quality grade: **red**, think twice before using; **yellow**, probably OK; and **green**,  looks good for that step.
 In addition, we generated an HTML QC/QA report for each of the datasets.
 
-**Results:** Of the `{r} n_parsed` datasets that could be parsed, `{r} format_in_sentence(n_no_se)` could not be coerced into a summarized experiment object for various reasons; `{r} format_in_sentence(n_few)` had <3 samples, and therefore could not undergo PCA and RSD calculations; another `{r} format_in_sentence(n_dropped)` started correlation but could not complete all steps, and `{r} format_in_sentence(n_completed)` were able to go through all steps to PCA.
-For successful PCA, `{r} n_gray` had either a single SSF, or every sample was its own SSF, making them inappropriate for differential analyses.
+**Results:** Of the `{r} n_parsed` parsable datasets, `{r} format_in_sentence(n_no_se)` could not be coerced into a summarized experiment object for various reasons; `{r} format_in_sentence(n_few)` had <3 samples, and therefore could not undergo PCA and RSD calculations; another `{r} format_in_sentence(n_dropped)` started correlation but could not complete all steps, and `{r} format_in_sentence(n_completed)` were able to go through all steps to PCA.
+For successful PCA, `{r} n_gray` had either a single SSF group, or every sample was its own SSF group, making them inappropriate for differential analyses.
 Among the `{r} n_total` remaining, `{r} format_in_sentence(n_green)` had all **green** statuses; `{r} format_in_sentence(n_yellow)` had one or more **yellow** statuses; and `{r} format_in_sentence(n_red)` had one or more **red** statuses across the QC/QA evaluations.
 
 
@@ -148,24 +148,24 @@ Among the `{r} n_total` remaining, `{r} format_in_sentence(n_green)` had all **g
 
 Data repositories, and in particular, -omics level data repositories are a net good.
 Theoretically, they encourage and allow the reuse of data that has historically been expensive to obtain (although most costs have dropped significantly).
-Notable -omics data repositories include the gene expression omnibus and sequence read archive for transcriptomics, and the Metabolomics Workbench and Metabolights for metabolomics.
-Various groups have found ways to reuse and reanalyze transcriptomics data, for example, by combining and aggregating datasets for single diseases, among others.
+Notable -omics data repositories include the gene expression omnibus (GEO) and sequence read archive (SRA) for transcriptomics, and the Metabolomics Workbench (MW) and Metabolights for metabolomics.
+Various groups have found ways to reuse and reanalyze transcriptomics data, for example, by combining and aggregating datasets for single diseases, among others [**REFS**].
 However, as with all data, and most especially -omics level data, there are issues both with the ability to reuse the data that is there, and the data quality.
 While some data quality assessments have been carried out on RNA-Seq repositories, to our knowledge no such assessment has been attempted for a metabolomics repository.
-Our lab has previously developed the JSON format for metabolomics workbench (MW) data, the mwtab python package for downloading and validating MW datasets, and ??? (**TOTALLY BLANKING HERE, I KNOW THERE IS ANOTHER ONE**). 
-Therefore, we have performed a quality-control and quality-assurance assessment of all datasets (analyses) available from the MW.
+Our lab has previously developed the mwtab python package for parsing and validating mwTab-formatted files and downloading MW deposited datasets [https://doi.org/10.3390/metabo16010076 , https://doi.org/10.3390/metabo11030163 , https://doi.org/10.1007/s11306-018-1356-6], the MESSES package for generating mwTab formatted datasets ready for MW deposition [https://doi.org/10.3390/metabo13070842 ], and the Metabolomics Workbench File Status website [https://doi.org/10.3390/metabo16010076 , https://doi.org/10.1186/s12859-023-05423-9]. 
+Now, we have performed a comprehensive quality-control and quality-assurance assessment analysis of all datasets (analyses) available from the MW.
 
-The measures we have used to assess the quality of each dataset include:
+We used the following measures to assess the data and experimental design metadata quality of each dataset:
 
   * The number of subject sample factor (SSF) groups;
-  * The number of features with non-missing values in at least one sample, and the number of samples with $\ge$ 10 non-missing features;
-  * The number of samples within each SSF grouping;
+  * The number of features with non-missing values in at least one sample, and the number of biological samples with $\ge$ 10 non-missing features;
+  * The number of biological samples within each SSF grouping;
   * The presence of quality-control samples;
-  * The percent missing samples, and the results of a test for missingness being due to left-censorship;
+  * The percent missing values across samples, and the results of a test for missingness being due to left-censorship;
   * Observed relative standard deviations of samples;
   * Median sample-sample correlation;
   * Results of principal components analysis of each dataset; 
-  * Comparing within SSF correlations of samples to between SSF correlations.
+  * Comparing within SSF group correlations of samples to between SSF group correlations.
   
 We also provide HTML quality-control reports and the processed, analysis ready summarized experiment in serialized *.rds files for all of the datasets.
 
