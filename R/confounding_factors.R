@@ -51,9 +51,22 @@ detect_confounding_factors = function(se_data) {
 
     tidy_aov$frac = vector("list", 1)
     tidy_aov$frac[[1]] = frac_list
-    tidy_aov
+    names(tidy_aov) = paste0("cluster.", names(tidy_aov))
+
+    tidy_dip = broom::tidy(diptest::dip.test(pc_scores))
+    names(tidy_dip) = paste0("dip.", names(tidy_dip))
+    dplyr::bind_cols(tidy_aov, tidy_dip)
   }) |>
     purrr::list_rbind()
+
+  clustering_pcs$clustering.padjust = p.adjust(
+    clustering_pcs$cluster.p.value,
+    method = "bonferroni"
+  )
+  clustering_pcs$dip.padjust = p.adjust(
+    clustering_pcs$dip.p.value,
+    method = "bonferroni"
+  )
 
   list(
     analysis_id = metadata(se_data)$mwtab$ID,
