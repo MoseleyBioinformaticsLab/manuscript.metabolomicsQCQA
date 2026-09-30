@@ -643,12 +643,11 @@ perc_confound = format_percentage(n_confound / n_yellow_red)
 
 
 
-From the datasets with a yellow or red status for the PCA ANOVA p-value, we used a series of ad-hoc cutoffs and clustering to try and determine if their might be a potential confounding factor present (see Methods).
-For the `{r} n_yellow_red` datasets with yellow or red PCA ANOVA p-value statuses, `{r} n_confound` (`{r} perc_confound`) *likely* have a confounding factor present.
-Figure X shows the sample PC scores plot for dataset AN000454.
-Here, the samples separate into four distinct groups along PC1 and PC2, with all of the groupings containing a mixture of Control and CLFS SSF groups.
-In addition, none of the sample PC scores scored highly on the ANOVA test.
-The combination of this distinct grouping (detected by the confounding factor test we developed), and lack of SSF association with PC scores, indicates there is likely a confounding factor (or batch) that is not noted in the metadata 
+The pipeline takes the last set of PCA results (all samples, no outliers, no QC/QA samples, or no QC/QA and outliers), the same PCs tested for ANOVA,and tests the sample scores from a PC, within an SSF group for multi-modality using Hartigans dip test (from the diptest package vXXX, [REF]).
+The presence of multi-modality is a possible indicator of the possible presence of a confounding factor in the data that presents visually in the PCA plot. 
+For each SSF group, their test p-values are adjusted for the multiple comparisons across all PCs using the Dunn-Bonferroni correction. 
+Combined p-values are calculated using Fishers method (using the poolr package vXXX [REF]).
+A combined p-value $\le$ 0.05 for PC1 is used to indicate a possible confounding factor.
 
 
 ```{r}
