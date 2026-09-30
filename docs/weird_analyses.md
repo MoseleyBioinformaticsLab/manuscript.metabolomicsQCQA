@@ -52,6 +52,8 @@
   * Has some weird SSF coming up, should investigate
 * AN008018:
   * 18,000 samples, 56 metabolites. Median correlation distributions of training and test healthy look different. Which is weird.
+* AN006863:
+  * Has a very weird confounding factor, probably **cohort** that causes samples to be on the lines in PCA space. Would be very cool to take it and recolor the samples by **cohort**.
 
 ## Really nice examples to highlight
 

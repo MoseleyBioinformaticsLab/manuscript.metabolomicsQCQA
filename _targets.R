@@ -95,7 +95,7 @@ sets_map = tar_map(
   tar_target(se_qc_eval, sets_evaluate_qc(se_pca, data_limits)), #10
   tar_target(se_rsd, sets_rsd(se_pca)), #11
   tar_target(se_pc_number, sets_get_pc(se_pca)), #12
-  tar_target(se_confounds, sets_detect_confounding_factors(se_pca)), #13
+  tar_target(se_diptest, sets_run_pc_ssfgroup_diptest(se_pca)), #13
   tar_target(
     qcqa_reports,
     sets_create_qcqa_reports(se_pca, sets_qc_confounds_rsd, report_files) #14
@@ -192,17 +192,17 @@ sets_tr_total_rsd_t = tar_combine(
   command = dplyr::bind_rows(!!!.x)
 )
 
-confounding_factors_t = tar_combine(
-  sets_confounding_factors,
+diptest_t = tar_combine(
+  sets_diptest,
   sets_map[[13]],
-  command = dplyr::bind_rows(!!!.x)
+  command = c(!!!.x)
 )
 
 actual_analysis_t = tar_assign({
   sets_qc_color = set_overall_color_status(sets_qc_evaluation) |> tar_target()
   sets_qc_color_confounds = add_confounding_factor_status(
     sets_qc_color,
-    sets_confounding_factors
+    sets_diptest
   ) |>
     tar_target()
   sets_qc_confounds_rsd = add_rsd_calculate_modes_status(
@@ -380,7 +380,7 @@ list(
   data_limits_t,
   sets_qc_reports_t,
   sets_tr_total_rsd_t,
-  confounding_factors_t,
+  diptest_t,
   actual_analysis_t,
   figures_tables_t,
   docs_t
