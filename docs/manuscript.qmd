@@ -413,19 +413,12 @@ SSF group size > 10:
 
 ### Detection of Possible Confounding Factors
 
-When a dataset has a **yellow** or **red** status due to the ANOVA test of sample SSF and sample scores from the principal component analysis (PCA), it is possible that there is a confounding factor present that is not listed in the SSF or additional sample data.
-We attempt to detect the presence of possible confounding factors by clustering the samples by them using hiearchical clustering of their PC scores, splitting them into two clusters, and testing the PC scores against cluster membership by ANOVA.
-This is carried out for both PC1 and PC2.
+The pipeline takes the last set of PCA results (all samples, no outliers, no QC/QA samples, or no QC/QA and outliers), the same PCs tested for ANOVA,and tests the sample scores from a PC, within an SSF group for multi-modality using Hartigans dip test (from the diptest package vXXX, [REF]).
+The presence of multi-modality is a possible indicator of the possible presence of a confounding factor in the data that presents visually in the PCA plot. 
+For each SSF group, their test p-values are adjusted for the multiple comparisons across all PCs using the Dunn-Bonferroni correction. 
+Combined p-values are calculated using Fishers method (using the poolr package vXXX [REF]).
+A combined p-value $\le$ 0.05 for PC1 is used to indicate a possible confounding factor.
 
-As the clusters are always completely separated (due to using heiarchical clustering and cutting into two clusters), the p-values are generally small.
-Therefore, we use some heuristic cutoffs across overall color grade, ANOVA p-value, ANOVA statistic, and percent variance accounted for by the PC being tested to detect the presence of **possible** confounding factors.
-
-In this analysis, we used:
-
-  * PCA ANOVA color grade of **yellow** or **red**;
-  * ANOVA p-value $\le 1 \times 10^{-10}$;
-  * ANOVA statistic $\ge$ 300;
-  * PC percent variance $\ge$ 30%.
 
 ### Creation of QC/QA Reports
 
@@ -643,11 +636,8 @@ perc_confound = format_percentage(n_confound / n_yellow_red)
 
 
 
-The pipeline takes the last set of PCA results (all samples, no outliers, no QC/QA samples, or no QC/QA and outliers), the same PCs tested for ANOVA,and tests the sample scores from a PC, within an SSF group for multi-modality using Hartigans dip test (from the diptest package vXXX, [REF]).
-The presence of multi-modality is a possible indicator of the possible presence of a confounding factor in the data that presents visually in the PCA plot. 
-For each SSF group, their test p-values are adjusted for the multiple comparisons across all PCs using the Dunn-Bonferroni correction. 
-Combined p-values are calculated using Fishers method (using the poolr package vXXX [REF]).
-A combined p-value $\le$ 0.05 for PC1 is used to indicate a possible confounding factor.
+We detected XXX datasets with possible confounding factors.
+Figure X gives two examples of datasets with possible confounding factors that were detected.
 
 
 ```{r}
