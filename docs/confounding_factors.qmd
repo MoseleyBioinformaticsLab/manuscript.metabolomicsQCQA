@@ -1,0 +1,95 @@
+---
+title: "Exploring Confounding Factors"
+author: "Robert M Flight"
+date: last-modified
+date-format: YYYY-MM-DD HH:mm
+format: 
+  docx:
+    keep-md: true
+  html:
+    toc: true
+    embed-resources: true
+---
+
+This is a document that lets me sit and explor the results using the new dip test, before I write specific constraints.
+
+```{r}
+#| label: load-stuff
+tar_load(c(not_gray_pca, sets_confounding_factors))
+tar_source("R")
+```
+
+
+```{r}
+#| label: combined-p-value
+library(poolr)
+
+do_fishers_justp = function(p_vals) {
+  out_res = poolr::fisher(p_vals)
+  out_res$p
+}
+
+null_sets = purrr::map_lgl(sets_confounding_factors, is.null)
+keep_sets = sets_confounding_factors[!null_sets]
+keep_sets_combined = purrr::map(keep_sets, \(in_factor){
+  # in_factor = keep_sets[[1]]
+  # in_factor = keep_sets[[162]]
+  # in_factor = keep_sets[[415]]
+  # in_factor = keep_sets[[1725]]
+  
+  if (all(is.na(in_factor$anova$p.value)) || nrow(in_factor$dip) == 0) {
+    return(NULL)
+  }
+  if (nrow(in_factor$dip) == 1) {
+    summarized_dip = tibble::tibble(PC = in_factor$dip$PC, pvalpooled = in_factor$dip$p.value)
+  } else {
+    summarized_dip = in_factor$dip |>
+      dplyr::summarise(pvalpooled = do_fishers_justp(padjust), .by = PC)
+  }
+  
+  in_factor$summarized_dip = summarized_dip
+  in_factor
+})
+
+null_sets2 = purrr::map_lgl(keep_sets_combined, is.null)
+keep_sets_combined2 = keep_sets_combined[!null_sets2]
+```
+
+```{r}
+#| label: range-of-dip
+dip_stats = purrr::map(keep_sets_combined2, \(in_set){
+  in_set$summarized_dip |>
+    dplyr::mutate(internal_id = in_set$analysis_id)
+}) |>
+  purrr::list_rbind()
+
+dip_pc1 = dip_stats |>
+  dplyr::filter(PC %in% "PC1")
+```
+
+```{r}
+#| label: check-colors
+not_gray_pca_confound = dplyr::left_join(not_gray_pca, dip_pc1, by = "internal_id")
+
+not_gray_pca_confound |>
+  ggplot(aes(x = -1 * log10(pvalpooled))) +
+  geom_histogram(bins = 100) +
+  facet_wrap(~ overall_status, ncol = 1) +
+  scale_y_log10()
+
+not_gray_pca_confound |>
+  dplyr::summarise(n_g05 = sum(pvalpooled <= 0.05, na.rm = TRUE), .by = overall_status)
+```
+
+```{r}
+#| label: sex-confounding
+has_confounding = dip_pc1 |>
+  dplyr::filter(!is.na(pvalpooled) & (pvalpooled <= 0.05))
+
+keep_sets_combined2_id = purrr::map_chr(keep_sets_combined2, \(x){x$analysis_id})
+has_confounding_sets = keep_sets_combined2[keep_sets_combined2_id %in% has_confounding$internal_id]
+
+has_male_female = purrr::map_lgl(has_confounding_sets, \(in_set){
+  all(c("male", "female") %in% in_set$factor_types$factor) || all(c("m", "f") %in% in_set$factor_types$factor)
+})
+```

@@ -1,4 +1,4 @@
-detect_confounding_factors = function(se_data) {
+run_pc_ssfgroup_diptest = function(se_data) {
   # sets_pca = tar_read(se_pca_g34); se_data = sets_pca[["AN000923"]]; tar_source("R")
   # sets_pca = tar_read(se_pca_g05); se_data = sets_pca[["AN000262"]]; tar_source("R")
   # sets_pca = tar_read(se_pca_g25); se_data = sets_pca[["AN005412"]]; tar_source("R")
@@ -20,48 +20,10 @@ detect_confounding_factors = function(se_data) {
   if (nrow(pca_scores) < 4) {
     return(NULL)
   }
-  # also pull the variances for PC1 and PC2, as I think they
-  # will help us determine what is actually *real* and what
-  # is not.
 
   test_pcs = unique(pca_anova$PC)
 
   ssf_data = pca_scores[, c("sample_id", "ssf")]
-  clustering_pcs = purrr::map(test_pcs, \(in_pc) {
-    # in_pc = "PC1"
-    pc_scores = pca_scores[[in_pc]]
-    names(pc_scores) = pca_scores$sample_id
-
-    pc_dist = dist(pc_scores)
-
-    pc_hclust = hclust(pc_dist)
-    pc_members = cutree(pc_hclust, k = 2)
-
-    member_df = tibble::tibble(
-      sample_id = names(pc_members),
-      cluster = pc_members
-    )
-
-    pc_aov = stats::aov(pc_scores ~ pc_members)
-    tidy_aov = broom::tidy(pc_aov)[1, ]
-    tidy_aov$PC = in_pc
-
-    member_ssf = dplyr::inner_join(ssf_data, member_df, by = "sample_id")
-    n_ssf = member_ssf |>
-      dplyr::summarise(n = dplyr::n(), .by = ssf)
-    frac_member = member_ssf |>
-      dplyr::summarise(n_each = dplyr::n(), .by = c(ssf, cluster))
-    frac_member2 = dplyr::left_join(frac_member, n_ssf, by = "ssf")
-    frac_values = frac_member2 |>
-      dplyr::mutate(frac = n_each / n)
-    frac_list = split(frac_values$frac, frac_values$cluster)
-
-    tidy_aov$frac = vector("list", 1)
-    tidy_aov$frac[[1]] = frac_list
-
-    tidy_aov
-  }) |>
-    purrr::list_rbind()
 
   samples_ssf = split(ssf_data$sample_id, ssf_data$ssf)
   dip_pcs = purrr::map(test_pcs, \(in_pc) {
@@ -87,32 +49,30 @@ detect_confounding_factors = function(se_data) {
   }) |>
     purrr::list_rbind()
 
-  clustering_pcs$padjust = p.adjust(
-    clustering_pcs$p.value,
-    method = "bonferroni"
-  )
-
   if (nrow(dip_pcs) > 1) {
     dip_pcs = dip_pcs |>
       dplyr::mutate(
         padjust = p.adjust(p.value, method = "bonferroni"),
         .by = ssf
       )
+  } else {
+    dip_pcs = dip_pcs |>
+      dplyr::mutate(padjust = p.value)
   }
 
   list(
     analysis_id = metadata(se_data)$mwtab$ID,
     variance = pca_variance,
     anova = pca_anova,
-    clustering = clustering_pcs,
     dip = dip_pcs,
+    scores = pca_scores,
     factor_types = get_specific_metadata(se_data, "factor_types")
   )
 }
 
-sets_detect_confounding_factors = function(sets_pca) {
-  out_factors = purrr::map(sets_pca, detect_confounding_factors)
-  out_factors
+sets_run_pc_ssfgroup_diptest = function(sets_pca) {
+  out_info = purrr::map(sets_pca, run_pc_ssfgroup_diptest)
+  out_info
 }
 
 
