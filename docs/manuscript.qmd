@@ -293,7 +293,26 @@ After removing datasets with values $\lt$ 10, we log-transform the values and ca
 
 ### Quality Control Cutoffs
 
-#### Metadata Issues
+
+#### Number of Features and Samples
+
+The number of features and samples in a dataset directly indicates the quantity of data present.
+
+N-Features:
+
+  * N $\le$ 9 ~ low; 
+  * 10 $\le$ N $\lt$ 30 ~ medium; 
+  * N $\ge$ 30 ~ high
+
+N-samples: 
+
+  * N $\le$ 3 ~ low; 
+  * 3 $\lt$ N $\lt$ 10 ~ medium; 
+  * N $\ge$ 10 ~ high
+
+#### Experimental Design Metadata Issues
+
+The number of SSF groups indicates the complexity of the experimental design and the correctness of the experimental design metadata.
 
 Number of SSF Groups (can indicate missing sample metadata): 
   
@@ -302,37 +321,28 @@ Number of SSF Groups (can indicate missing sample metadata):
   * N SSF = 1 ~ yellow;
   * N SSF $\lt$ 10 ~ green
 
+#### Number of Samples in Subject Sample Factors 
 
-#### Number of Features and Samples
+Number of samples per SSF group indicates if the experimental design is statistically powerful or not.
 
-n-features:
-
-  * n $\le$ 9 ~ low; 
-  * 10 $\le$ n $\lt$ 30 ~ medium; 
-  * n $\ge$ 30 ~ high
-
-n-samples: 
-
-  * n $\le$ 3 ~ low; 
-  * 3 $\lt$ n $\lt$ 10 ~ medium; 
-  * n $\ge$ 10 ~ high
-
-#### Number of Samples in Subject Sample Factors and Number of Subject Sample Factor Groups
-
-Number of samples within each SSF:
+Number of samples within each SSF group:
   
-  * all SSF have $\le$ 2 samples ~ red;
-  * 3 $\le$ all SSF $\le$ 4 ~ yellow;
-  * all SSF $\ge$ 5 samples ~ green;
+  * all SSF groups have $\le$ 2 samples per group ~ red;
+  * 3 $\le$ all SSF groups $\le$ 4 ~ yellow;
+  * all SSF groups $\ge$ 5 samples ~ green;
  
 
 #### Quality Control Samples
+
+The presence of quality control samples indicates rigor in the experiment.
 
 * Has none ~ yellow;
 * Has some ~ green
 
 
 #### Percent Missing and Left-Censorship
+
+High percent missing, especially without the indication of left-censorship indicates the presence of data quality issues.
 
 * percent missing $\le$ 2 x SD ~ green;
 * 2 x SD $\lt$ percent missing $\le$ 4 x SD limit ~ yellow;
@@ -342,26 +352,33 @@ Number of samples within each SSF:
 
 #### Maximum Observed Median RSD
 
-* RSD $\le$ median + 2 x SD ~ green;
-* median + 2 x SD $\lt$ RSD $\le$ median + 4 x SD ~ yellow;
-* RSD $\gt$ median + 4 x SD ~ red
+High maximum observed median RSD indicates high variability in the measurements.
+
+* median RSD $\le$ median of medians + 2 x SD ~ green;
+* median of medians + 2 x SD $\lt$ median RSD $\le$ median of medians + 4 x SD ~ yellow;
+* median RSD $\gt$ median of medians + 4 x SD ~ red
 
 #### Median Correlations
 
-* Max Med ICI-Kt $\ge$ median(Max med) - 2 SD ~ green;
-* median(Max med) - 4 SD $\ge$ Max Med ICI-Kt $\lt$ median(Max med) - 2 SD ~ yellow;
-* Max Med ICI-Kt $\lt$ median(Max med) - 4 SD ~ red 
+Low maximum median ICI-Kt correlation indicates high biological variance between samples.
+
+* max median ICI-Kt $\ge$ median of max median - 2 SD ~ green;
+* median of max median - 4 SD $\ge$ max median ICI-Kt $\lt$ median of max medians - 2 SD ~ yellow;
+* max median ICI-Kt $\lt$ median of max medians - 4 SD ~ red 
 
 #### PCA Scores
 
-PC that accounts for 90% of variance, we took all the values from the analyses present, log10-transformed the values, and considered only those with a log10(PC-90) >= 1.
+For the number of PCs that account for 90% of variance (PC-90), we took all the values from the analyses present, log10-transformed the values, and considered only those with a $log_{10}(PC-90) \ge$ 1.
 This results in a one sided distribution that is roughly log-normal, that we can calculate the standard deviation of.
 We assume a median of 1, and then calculate the standard deviation.
 To get actual cutoffs, we convert the values to raw space and floor them to the nearest integer.
+A high PC-90 indicates weak signal variance within the dataset in comparison to other sources of variance present.
 
   * PC-90 $\le$ median + 2 SD ~ green ; 
   * median + 2 SD $\lt$ PC-90 $\le$ median + 4 SD ~ yellow; 
   * PC-90 $\gt$ median + 4 SD ~ red.
+
+Lack of separation of SSF groups across meaningful PCs indicates weak signal variance within the dataset.
 
 ANOVA p-adjusted: 
 
@@ -369,47 +386,51 @@ ANOVA p-adjusted:
   * p-adjust $\le$ 0.05 & PC-perc $\ge$ 5% & factor is additional sample-data or combination of SSF and additional sample-data ~ yellow;
   * p-adjust $\le$ 0.05 & 1% $\le$ PC-perc $\lt$ 5% ~ yellow;
   * p-adjust $\le$ 0.05 & PC-perc $\lt$ 1% ~ red;
-  * p-adjusted $\gt$ 0.05 ~ red.
+  * p-adjust $\gt$ 0.05 ~ red.
 
-#### Median Within vs Inter SSF ICI-Kt
+#### Median Within SSF Group vs Inter SSF Group ICI-Kt
 
-SSF group size <= 5:
+The expectation is that within SFF group median ICI-Kt correlations should generally be better (i.e., higher positive correlation) than inter-group correlations.
 
-  * Inter better == 0 ~ green;
-  * 0 < Inter better <= 1 ~ yellow;
-  * Inter better > 1 ~ red;
+SSF group size $\le$ 5:
 
-SSF group size <= 10:
+  * inter better $=$ 0 ~ green;
+  * 0 < inter better $\le$ 1 ~ yellow;
+  * inter better $\gt$ 1 ~ red;
 
-  * Inter better <= 1 ~ green;
-  * 1 < Inter better <= 3 ~ yellow;
-  * Inter better > 3 ~ red;
+SSF group size $\le$ 10:
 
-SSF group size > 10:
+  * inter better $\le$ 1 ~ green;
+  * 1 < inter better $\le$ 3 ~ yellow;
+  * inter better $\gt$ 3 ~ red;
 
-  * Inter better fraction <= 0.1 ~ green;
-  * 0.1 < Inter better fraction <= 0.3 ~ yellow;
-  * Inter better fraction > 0.3 ~ red;
+SSF group size $\gt$ 10:
 
-#### Number of Sample Group Sizes by Hiearchical Clustering Compared to Actual
+  * inter better fraction $\le$ 0.1 ~ green;
+  * 0.1 < inter better fraction $\le$ 0.3 ~ yellow;
+  * inter better fraction $\gt$ 0.3 ~ red;
 
-SSF group size <= 5:
+#### Number of Sample Group Sizes by Hierarchical Clustering Compared to Actual
 
-  * size difference == 0 ~ green;
-  * 0 < size difference < 2 ~ yellow;
-  * size difference > 2 ~ red;
+The expectation is that data clustering should mirror the experimental design.
 
-SSF group size <= 10:
+SSF group size $\le$ 5:
 
-  * size difference <= 1 ~ green;
-  * 1 < size difference <= 4 ~ yellow;
-  * size difference > 4 ~ red;
+  * size difference $=$ 0 ~ green;
+  * 0 < size difference $\lt$ 2 ~ yellow;
+  * size difference $\gt$ 2 ~ red;
 
-SSF group size > 10:
+SSF group size $\le$ 10:
 
-  * size fraction <= 0.25 ~ green;
-  * size fraction > 0.25 ~ yellow;
-  * size fraction > 0.5 ~ red;
+  * size difference $\le$ 1 ~ green;
+  * 1 < size difference $\le$ 4 ~ yellow;
+  * size difference $\gt$ 4 ~ red;
+
+SSF group size $\gt$ 10:
+
+  * size fraction $\le$ 0.25 ~ green;
+  * size fraction $\gt$ 0.25 ~ yellow;
+  * size fraction $\gt$ 0.5 ~ red;
 
 ### Detection of Possible Confounding Factors
 
@@ -424,7 +445,7 @@ A combined p-value $\le$ 0.05 for PC1 is used to indicate a possible confounding
 
 After providing color grade statuses and determining possible confounding factors, calculating total and technical replicate RSDs, an HTML quality-control / quality-assurance report was generated for each and every dataset.
 A template report and alternative sections were drafted as quarto documents [reference].
-From the set of completed analysis steps for the dataset, and which varieties of PCA (all samples, QC removed, outliers removed, etc), different report sections are included, and written to a temp file, as well as the analysis data itself, so that the report loads only the required dataset analysis for display in the report.
+From the set of completed analysis steps for the dataset, and which varieties of PCA (all samples, QC removed, outliers removed, etc.), different report sections are included, and written to a temp file, as well as the analysis data itself, so that the report loads only the required dataset analysis for display in the report.
 
 
 ### Comparison of Dataset Statuses Within Studies
@@ -436,13 +457,13 @@ For each study with multiple datasets, the datasets were ordered by their intern
 ### Datasets Removed Along The Process
 
 As the data were parsed and transformed into R and Bioconductor data structures, some datasets were removed for various reasons.
-The most common reason for rejecting a dataset was for their to be $\lt$ 3 samples, which precluded many of the analyses we wanted to do, including calculating relative standard deviations (RSD), sample-sample correlations, and principal component analysis.
-The next most common was a dataset being classified as "gray PCA", where the ANOVA test of sample scores *vs* SSF returns a missing value, either due to every sample being in it's own SSF, or there being a single SSF.
-Finally, there were the datasets with no feature abundance data (167).
+The most common reason for removing a dataset was for the dataset having $\lt$ 3 samples (622), which precluded many of the analyses in the pipeline, including calculating relative standard deviations (RSD), sample-sample correlations, and principal component analysis.
+The next most common was a dataset being classified as "gray PCA" (247), where the ANOVA test of sample scores *vs* SSF returns a missing value, either due to every sample being in it's own SSF, or there being a single SSF.
+Finally, there were the datasets with no feature metabolite abundance data (167).
 
 The counts and reasons for missing feature abundance data are shown in Figure XB.
 The most common reason for no feature abundance data is that there was no feature data,
-as in no abundance data in the MWTab file, and no ancillary text data found (115).
+as in no abundance data in the mwTab file, and no ancillary text data found (115).
 It may be that for many of those, there was data contained in an Excel file or zipped directory, but we limited our search to ancillary text files available on the MW ftp server, as they could be easily examined and loaded.
 Another common reason for no data was not having matching sample identifiers in the SSF block and the abundance data block or ancillary file (30).
 Surprisingly, there are 16 datasets where trying to convert all of the abundances from a character to numeric value results in no numeric values.
@@ -455,7 +476,7 @@ The other reasons for no data include there being no subject sample factor block
 ```
 
 Figure X.
-**A**: Waterfall loss plot showing how many datasets were initially processed (7240), and then how many were removed as the analysis progressed along each stage. No Data: -167, there was no data to construce the summarized experiment object; < 3 Samples: -622, datasets had less than three samples after checking that each sample had $\ge 10$ non-missing feature abundances; < 3 Samples After Correlation: -5, datasets had less than three samples after removing samples that generated missing sample-sample correlation values; Gray PCA: -247, datasets that had a single SSF for all samples, or each sample had their own SSF, resulting in missing values in the ANOVA test of SSF vs sample scores on principal components; Analyzed: 6199, the number of datasets analyzed.
+**A**: Waterfall loss plot showing how many datasets were initially processed (7240), and then how many were removed as the analysis progressed along each stage. No Data: -167, there was no data to construct the summarized experiment object; $\lt$ 3 Samples: -622, datasets had less than three samples after checking that each sample had $\ge 10$ non-missing feature abundances; < 3 Samples After Correlation: -5, datasets had less than three samples after removing samples that generated missing sample-sample correlation values; Gray PCA: -247, datasets that had a single SSF for all samples, or each sample had their own SSF, resulting in missing values in the ANOVA test of SSF vs sample scores on principal components; Analyzed: 6199, the number of datasets analyzed.
 **B**: Counts of the various reasons that the 167 datasets had "No Data", and therefore couldn't create a summarized experiment object to be used for further analysis.
 
 ### Datasets and Their Sizes
