@@ -3,6 +3,7 @@ run_pc_ssfgroup_diptest = function(se_data) {
   # sets_pca = tar_read(se_pca_g05); se_data = sets_pca[["AN000262"]]; tar_source("R")
   # sets_pca = tar_read(se_pca_g25); se_data = sets_pca[["AN005412"]]; tar_source("R")
   # sets_pca = tar_read(se_pca_g25); se_data = sets_pca[["AN000118"]]; tar_source("R")
+  # sets_pca = tar_read(se_pca_g02); se_data = sets_pca[["AN002914"]]; tar_source("R")
 
   report_list = check_qc_outputs(se_data)
 
@@ -55,9 +56,11 @@ run_pc_ssfgroup_diptest = function(se_data) {
         padjust = p.adjust(p.value, method = "bonferroni"),
         .by = ssf
       )
-  } else {
+  } else if (nrow(dip_pcs) == 1) {
     dip_pcs = dip_pcs |>
       dplyr::mutate(padjust = p.value)
+  } else {
+    return(NULL)
   }
 
   list(
