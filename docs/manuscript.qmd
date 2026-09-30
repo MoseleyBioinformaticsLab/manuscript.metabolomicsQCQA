@@ -215,6 +215,14 @@ If *all* samples were still noted as quality-control, the pipeline deems this in
 
 ### Detection of Log-Transformed Datasets
 
+
+Some deposited dataset abundances are already log-transformed.
+For processing through the pipeline, it needs to be able to detect them, un-transform them (exponentiate with base 2), and pass them to the next step of the pipeline.
+In our experience, non-transformed dataset distributions tend to be heavily skewed with long-tailed distributions, i.e. look much like a log-normal distribution, and then the log-transformed data appears much more "normal-like".
+Therefore, we can detect already log-transformed data by determining if it is "normal".
+However, tests for normality are notoriously fickle and prone to return non-significant values if the data is at all different from expectations, which is highly likely for these real world datasets.
+One common element of normally distributed data is that the mean and median of the data are relatively close together, whereas for skewed or long-tailed data the mean and median, by definition, are very different.
+Note that we did also investigate a simple definition of skewness $(\mu - \nu) / \sigma$, however it did not provide the discrimination needed for this application.
 To detect previously log-transformed data in a dataset, the pipeline calculates the overall mean and median of the non-missing values, as well as the maximum value observed.
 If the maximum observed value is $\le$ 1000, and the ratio of the mean to median is between 0.8 and 1.2, the values are exponentiated.
 
@@ -485,7 +493,12 @@ Figure X.
 ```{r}
 #| label: percentage-datasets-type
 data_by_measurement_source = not_gray_pca |>
-  janitor::tabyl(measurement_type, data_source) |>
+  dplyr::mutate(data_source2 = dplyr::case_when(
+    data_source %in% "ancillary" ~ "ancillary",
+    data_source %in% "mwtab" ~ "mwTab"
+  ),
+  `Measurement Type` = measurement_type) |>
+  janitor::tabyl(`Measurement Type`, data_source2) |>
   janitor::adorn_totals(c("row", "col")) |>
   janitor::adorn_percentages("row") |>
   janitor::adorn_pct_formatting() |>
@@ -500,10 +513,10 @@ The 6199 more useful datasets downloaded from Metabolomics Workbench come in a r
 datasets_sizes_plot
 ```
 
-Almost 3/4 of the datasets are measured using MS, and it is very likely that the abundance data is actually embedded in the MWTab file itself, rather than deposited as a separate ancillary file (see Table Y).
+Almost 3/4 of the datasets are measured using mass spectrometry (MS) with the rest measured by nuclear magnetic resonance (NMR), and it is more likely that the abundance data is actually embedded in the mwTab file itself, rather than deposited as a separate ancillary file (see Table Y).
 
 Table Y.
-Number of datasets by measurement type (MS or NMR) and abundance data source (MWTab or ancillary).
+Number of datasets by measurement type (MS or NMR) and abundance data source (mwTab or ancillary).
 
 ```{r}
 #| label: datasets-type-source-table
@@ -560,20 +573,13 @@ n_exponentiated = sets_qc_color_confounds |>
   dplyr::mutate(perc_display = format_percentage(n / sum(n)) |> trimws())
 ```
 
-Some deposited dataset abundances are already log-transformed.
-We want to be able to detect them, un-transform them (exponentiate with base 2), and evaluate them in their un-transformed state.
-In our experience, non-transormed dataset distributions tend to be heavily skewed with long-tailed distributions, i.e. look much like a log-normal distribution, and then the log-transformed data appears much more "normal-like".
-Therefore, we can detect already log-transformed data by determining if it is "normal".
-However, tests for normality are notoriously fickle and prone to return non-significant values if the data is at all different from expectations, which is highly likely for these real world datasets.
-One common element of normally distributed data is that the mean and median of the data are relatively close together, whereas for skewed or long-tailed data the mean and median, by definition, are very different.
-Note that we did also investigate a simple definition of skewness $(\mu - \nu) / \sigma$, however it did not provide the discrimination needed for this application.
 
 We calculated the mean-median-ratio (MMR) across all 7073 datasets that created a summarized experiment object, as well as the number and fraction of negative values, the maximum observed abundance, and the dynamic range (maximum / minimum values).
 The dynamic range calculated in the presence of negative values involves first adding the absolute value of the minimum value, + 1, to transform all values to be positive, and subsequently calcuating the ratio of the maximum and minimum of the transformed values.
 
-This investigation resulted in first checking if the maximum observed value in a dataset is less than 1000, then calculating the mean and median of the data, and if the MMR was between 0.8 and 1.2, the data was exponentiated before further use.
+This investigation resulted in first checking if the maximum observed value in a dataset is less than 1000, then calculating the mean and median of the data, and if the MMR was between 0.8 (log10 = -0.097) and 1.2 (log10 = 0.079), the data was exponentiated before further use.
 
-There were a total of `r format_in_sentence(n_exponentiated[2, ])` datasets that the values were exponentiated before further analysis.
+There were a total of `r format_in_sentence(n_exponentiated[2, ])` datasets where the values were exponentiated before further analysis.
 
 ```{r}
 #| label: mmr-plot
@@ -585,7 +591,7 @@ All plots used datasets with an MMR $\ge$ 0.2 and MMR $\le$ 200.
 **A**: Histogram of Log10(MMR).
 **B**: Log10(MMR) vs fraction of negative data values, after excluding all datasets with zero negative values.
 **C**: Histogram of Log10(MMF) for datasets with a maximum observed intensity $\le$ 1000.
-Vertical lines indicate the MMR cutoffs used of 0.8 and 1.2 to decide that a dataset should undergo exponentiation.
+Vertical lines indicate the MMR cutoffs used of 0.8 (-0.097 on log10 scale) and 1.2 (0.079 on log10 scale) to decide that a dataset should undergo exponentiation.
 
 ### Deriving Data Based Cutoffs
 
@@ -597,7 +603,7 @@ patchwork::wrap_plots(data_based_cutoffs_plot, ncol = 2, nrow = 2) + plot_annota
 ```
 
 **Figure X**.
-Distributions and cutoff limits for (A) percent missingness; (B) Relative standard deviation; (C) Maximum median sample-sample correlation; (D) PC accounting for 90% of the cumulative variance.
+Distributions and cutoff limits for (A) Percent missingness; (B) Relative standard deviation; (C) Maximum median sample-sample correlation; (D) PC accounting for 90% of the cumulative variance.
 
 ### Negative Values, Missingness and Left-Censorship
 
@@ -609,7 +615,7 @@ Given that negative values *should* be theoretically impossible, we decided that
 Previously, we developed a test for missingness being the result of left-censorship [ref], where we posit that the most likely reason for a value to be missing in metabolomics is the result of left-censorship, where the missing value is the result of being below the limit of detection.
 To verify that the negative values could be interpreted as "missing", for each dataset with at least two negative values present, we calculated the left-censorship test statistic before and after setting values $\le$ 0 to missing.
 We then calculated the ratio of the binomial test p-values and statistic values before and after setting negatives to missing, and calculated a binomial test of the log-ratio, where positive values indicate that treating negative values as missing results in more significant p-values or larger estimates in the binomial test.
-Using a binomial test on the ratios equates to a simple toin coss of direction, where we expect if treating negatives as missing would result in a fraction of positive to negative ratios of 0.5, without including the size of the effect on p-values and estimates.
+Using a binomial test on the ratios equates to a simple coin toss of direction, where we expect if treating negatives as missing would result in a fraction of positive to negative ratios of 0.5, without including the size of the effect on p-values and estimates.
 The results of the binomial test are shown in Table Y.
 
 
@@ -657,8 +663,11 @@ perc_confound = format_percentage(n_confound / n_yellow_red)
 
 
 
-We detected XXX datasets with possible confounding factors.
-Figure X gives two examples of datasets with possible confounding factors that were detected.
+Using Hartigans dip test, we detected XXX datasets with likely confounding factors.
+Figure X shows the sample PC scores plot for dataset AN000454. 
+Here, the samples separate into four distinct groups along PC1 and PC2, with all of the groupings containing a mixture of Control and CLFS SSF groups. In addition, none of the sample PC scores scored highly on the ANOVA test. 
+The detection of multi-modal sample scores on PC1 (detected by the dip test), indicates there is likely a confounding factor present that is not noted in the metadata. 
+Moreover, Figure X is a prime example of a dataset with a potential confounding factor that is likely due to multiple processed batches being present, since each cluster includes samples from the two SSF groups in arrangements that cannot be separated into the two SSF groups.
 
 
 ```{r}
@@ -674,10 +683,10 @@ Sample PC scores plot for dataset AN000454, with samples colored by their SSF.
 
 In addition to the RSD of the technical replicates, we also calculate the RSD of the SSF grouped samples (total RSD).
 The median technical replicate and total RSD values from each dataset are shown in Figure XC.
-As expected, the mode of the technical replicate RSD is much lower than the total RSD (`r format(rsd_modes$tr_mode, digits = 3)` *vs* `r format(rsd_modes$total_mode, digits = 3)`), implying that methods for detecting them is likely correct (if somewhat conservative).
+As expected, the mode of the technical replicate RSD is much lower than the total RSD (`r format(rsd_modes$tr_mode, digits = 3)` *vs* `r format(rsd_modes$total_mode, digits = 3)`), implying that methods for detecting them are likely correct (if somewhat conservative).
 
 With the technical replicate RSD and total RSD available for 200 datasets, we can subtract them to determine the RSD due to non-technical sources.
-The histogram of this RSD is shown in Figure XD.
+The density curves of the total, technical, and non-technical RSDs are shown in Figure XD.
 
 ```{r}
 #| label: technical-replicates-plot
@@ -691,7 +700,7 @@ Black lines indicate cutoffs for correlation and string distances, respectively.
 Red dots are distances that indicate possible technical replicates.
 **B**: Sample-sample ICI-Kt correlation heatmap, with technical replicate groups indicated on the rows.
 **C**: Density plot of the median technical replicate RSD from each dataset where technical replicates were detected, and the total RSD using SSF groups from each dataset.
-**D**: Histogram of non-technical-rsd, i.e. the total RSD - technical-replicate RSD.
+**D**: Density plots of the total, technical replicate, and non-technical-RSD, i.e. the total RSD minus the technical-replicate RSD.
 
 ### Comparison of Dataset Statuses
 
@@ -711,7 +720,8 @@ study_status_comparison_table$status_comparisons |>
 
 ### Weirdness Encountered
 
-With any repository wide analysis, there will be datasets encounted that are difficult to parse and determine what is going on, but due to how submitters submit data to the Metabolomics Workbench, there are some very peculiar looking datasets.
+With any repository wide analysis, there will be datasets encountered that are difficult to parse and determine what is going on.
+However, due to how submitters submit data to the Metabolomics Workbench, there are some very peculiar looking datasets.
 Examples we have seen include: 
 
   * the sample IDs in the metabolites measurement block having extra characters tacked onto them, making them impossible to computationally match to the sample IDs used in the subject-sample-factors (SSF) block (AN000112); 
@@ -720,4 +730,5 @@ Examples we have seen include:
   * quality-control samples in the metabolite measurements block, but those samples are not included in the SSF (AN000139); 
   * using ".E" instead of "E" to denote exponents; metabolite ratios in the metabolite measurements (AN005958);
   * metabolite ratios included in the data block, not just metabolite abundances (AN000645);
-  * biological replicate information or number included in the subject-sample-factors or the subject-sample-factor name for each sample, creating groups with one sample each, instead of the three or more samples in each group that is actually present (AN002454, and so, so many others)
+  * biological replicate information or number included in the subject-sample-factors or the subject-sample-factor name for each sample, creating groups with one sample each, instead of the three or more samples in each group that are actually present (AN002454, and so, so many others);
+  * not submitting raw-ish data in the mwTab data file, but rather machine learning feature selected data (AN008161)

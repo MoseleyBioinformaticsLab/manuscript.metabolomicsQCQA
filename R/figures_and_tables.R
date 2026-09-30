@@ -79,7 +79,7 @@ create_dataset_sizes_plot = function(sets_qc_color) {
     ggplot(aes(x = log10(`N-Features`))) +
     geom_histogram(bins = 100) +
     facet_wrap(~Source, ncol = 1) +
-    labs(x = "Log10(N-Features")
+    labs(x = "Log10(N-Features)")
 
   sample_plot = all_sizes |>
     ggplot(aes(x = log10(`N-Samples`))) +
