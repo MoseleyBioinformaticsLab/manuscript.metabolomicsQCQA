@@ -52,7 +52,7 @@ mmr_logtransform_plot,
 status_heatmap_top90_plot,
 technical_replicates_plot,
 total_vs_tr_rsd_plot,
-example_confound_plot,
+example_confound_plot_454,
 negatives_as_missing_plot,
 non_technical_rsd_plot,
 percent_missingnes_plot,
@@ -672,7 +672,7 @@ Moreover, Figure X is a prime example of a dataset with a potential confounding 
 
 ```{r}
 #| label: confounding-example-plot
-example_confound_plot
+wrap_plots(example_confound_plot_454, nrow = 1, tag_level = "A")
 ```
 
 **Figure X**.

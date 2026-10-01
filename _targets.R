@@ -247,7 +247,7 @@ figures_tables_t = tar_assign({
     tar_target()
   total_vs_tr_rsd_plot = create_total_vs_tr_rsd_plot(sets_qc_confounds_rsd) |>
     tar_target()
-  example_confound_plot = create_example_confound_plot(se_pca_g34[[
+  example_confound_plot_454 = create_example_confound_plot(se_pca_g34[[
     "AN000454"
   ]]) |>
     tar_target()

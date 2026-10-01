@@ -276,12 +276,27 @@ create_example_confound_plot = function(se_data) {
 
   pca_scores = pca_data_use$pca$pca
 
+  pc1_dist_plot = pca_scores |>
+    ggplot(aes(x = PC1)) +
+    geom_histogram(bins = 30) +
+    facet_wrap(~ssf, ncol = 1) +
+    theme(strip.background = element_blank())
+  pc2_dist_plot = pca_scores |>
+    ggplot(aes(x = PC2)) +
+    geom_histogram(bins = 30) +
+    facet_wrap(~ssf, ncol = 1) +
+    theme(strip.background = element_blank())
+
   out_plot = pca_scores |>
     ggplot(aes(x = PC1, y = PC2, color = ssf)) +
     geom_point(size = 2) +
     theme(legend.position = "top") +
     labs(subtitle = metadata(se_data)$mwtab$ID)
-  return(out_plot)
+  return(list(
+    pc1_histogram = pc1_dist_plot,
+    pc2_histogram = pc2_dist_plot,
+    scores = out_plot
+  ))
 }
 
 create_status_heatmap = function(
