@@ -78,30 +78,68 @@ sets_run_pc_ssfgroup_diptest = function(sets_pca) {
   out_info
 }
 
+do_fishers_justp = function(p_vals) {
+  out_res = poolr::fisher(p_vals)
+  out_res$p
+}
+
 
 add_confounding_factor_status = function(
   sets_qc_color,
-  sets_confounding_factors
+  sets_diptest
 ) {
-  # tar_load(c(sets_qc_color, sets_confounding_factors))
-  sets_yellow_red = sets_qc_color |>
-    dplyr::filter(pca_anova_pvalue_status %in% c("yellow", "red"))
-  possible_confound = sets_confounding_factors |>
-    dplyr::filter(
-      analysis_id %in% sets_yellow_red$analysis_id,
-      p.value <= 1e-10,
-      statistic >= 300,
-      percent >= 0.3
-    ) |>
-    dplyr::pull(analysis_id)
-  sets_qc_confounds = sets_qc_color |>
+  # tar_load(c(sets_qc_color, sets_diptest)); tar_source("R")
+
+  null_dipres = purrr::map_lgl(sets_diptest, is.null)
+  keep_dipres = sets_diptest[!null_dipres]
+  keep_sets_diptest = purrr::map(keep_dipres, \(in_set) {
+    # in_factor = keep_sets[[1]]
+    # in_factor = keep_sets[[162]]
+    # in_factor = keep_sets[[415]]
+    # in_factor = keep_sets[[1725]]
+
+    if (all(is.na(in_set$anova$p.value)) || nrow(in_set$dip) == 0) {
+      return(NULL)
+    }
+    if (nrow(in_set$dip) == 1) {
+      summarized_dip = tibble::tibble(
+        PC = in_set$dip$PC,
+        dippooled = in_set$dip$p.value
+      )
+    } else {
+      summarized_dip = in_set$dip |>
+        dplyr::summarise(dippooled = do_fishers_justp(padjust), .by = PC)
+    }
+
+    in_set$summarized_dip = summarized_dip
+    in_set
+  })
+
+  null_sets2 = purrr::map_lgl(keep_sets_diptest, is.null)
+  keep_sets_diptest2 = keep_sets_diptest[!null_sets2]
+
+  dip_stats = purrr::map(keep_sets_diptest2, \(in_set) {
+    in_set$summarized_dip |>
+      dplyr::mutate(internal_id = in_set$analysis_id)
+  }) |>
+    purrr::list_rbind()
+
+  dip_pc1 = dip_stats |>
+    dplyr::filter(PC %in% "PC1") |>
     dplyr::mutate(
       confounding_factor_detected = dplyr::case_when(
-        analysis_id %in% possible_confound ~ "yes",
+        dippooled <= 0.05 ~ "yes",
         TRUE ~ "no"
       )
     )
-  sets_qc_confounds
+
+  sets_qc_color_confounds = dplyr::left_join(
+    sets_qc_color,
+    dip_pc1,
+    by = "internal_id"
+  )
+
+  return(sets_qc_color_confounds)
 }
 
 confound_info_analysis = function(not_gray_pca) {
