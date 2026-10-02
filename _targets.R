@@ -251,6 +251,13 @@ figures_tables_t = tar_assign({
     "AN000454"
   ]]) |>
     tar_target()
+  example_confound_plot_6863 = create_example_confound_plot(
+    se_pca_g20[[
+      "AN006863"
+    ]],
+    "cohort"
+  ) |>
+    tar_target()
   status_heatmap_top90_plot = create_status_heatmap(
     parsed_percentage_overall,
     order_n = "yes",

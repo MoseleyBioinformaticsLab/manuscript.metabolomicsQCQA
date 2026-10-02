@@ -267,8 +267,9 @@ create_technical_replicate_plot = function(se_data) {
   return(list(dotplot = dist_plot, heatmap = out_heatmap))
 }
 
-create_example_confound_plot = function(se_data) {
+create_example_confound_plot = function(se_data, confounding_var = NULL) {
   # se_pca = tar_read(se_pca_g34); se_data = se_pca[["AN000454"]]; tar_source("R")
+  # se_pca = tar_read(se_pca_g20); se_data = se_pca[["AN006863"]]; tar_source("R")
   pca_data = get_specific_metadata(se_data, "pca_groups")
   last_run = check_qc_outputs(se_data)
   pca_index = last_run$pca[length(last_run$pca)]
@@ -287,16 +288,30 @@ create_example_confound_plot = function(se_data) {
     facet_wrap(~ssf, ncol = 1) +
     theme(strip.background = element_blank())
 
-  out_plot = pca_scores |>
+  scores_plot = pca_scores |>
     ggplot(aes(x = PC1, y = PC2, color = ssf)) +
     geom_point(size = 2) +
     theme(legend.position = "top") +
     labs(subtitle = metadata(se_data)$mwtab$ID)
-  return(list(
-    pc1_histogram = pc1_dist_plot,
-    pc2_histogram = pc2_dist_plot,
-    scores = out_plot
-  ))
+
+  if (!is.null(confounding_var)) {
+    confound_plot = pca_scores |>
+      ggplot(aes(x = PC1, y = .data[[confounding_var]])) +
+      geom_sina() +
+      geom_boxplot(alpha = 0)
+    return(list(
+      pc1_histogram = pc1_dist_plot,
+      pc2_histogram = pc2_dist_plot,
+      scores = scores_plot,
+      confound_sinaplot = confound_plot
+    ))
+  } else {
+    return(list(
+      pc1_histogram = pc1_dist_plot,
+      pc2_histogram = pc2_dist_plot,
+      scores = scores_plot
+    ))
+  }
 }
 
 create_status_heatmap = function(
@@ -470,13 +485,17 @@ create_non_technical_rsd_plot = function(non_technical_rsd) {
       `Total RSD` = total_rsd_median,
       `Technical Replicate RSD` = technical_replicate_rsd_median
     ) |>
-    tidyr::pivot_longer(-internal_id, values_to = "RSD", names_to = "Type")
+    tidyr::pivot_longer(-internal_id, values_to = "RSD", names_to = "Type") |>
+    dplyr::mutate(
+      Type = factor(
+        Type,
+        levels = c("Non Technical RSD", "Technical Replicate RSD", "Total RSD")
+      )
+    )
   wide_rsd_plot = wide_rsd |>
-    ggplot(aes(x = RSD, color = Type)) +
-    geom_density(position = "identity", linewidth = 2) +
-    theme(legend.position = "top") +
-    scale_y_continuous(expand = expansion(mult = c(0, NA))) +
-    labs(x = "RSD")
+    ggplot(aes(x = RSD, y = Type)) +
+    geom_sina() +
+    geom_boxplot(alpha = 0)
 
   wide_rsd_plot
 }

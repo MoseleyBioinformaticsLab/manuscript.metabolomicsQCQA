@@ -42,7 +42,7 @@ tar_load(c(
 sets_qc_color_confounds,
 potential_confound_info,
 technical_replicate_info,
-rsd_modes,
+rsd_modes_all,
 not_gray_pca,
 # plots
 nose_reasons_bar_plot,
@@ -53,6 +53,7 @@ status_heatmap_top90_plot,
 technical_replicates_plot,
 total_vs_tr_rsd_plot,
 example_confound_plot_454,
+example_confound_plot_6863,
 negatives_as_missing_plot,
 non_technical_rsd_plot,
 percent_missingnes_plot,
@@ -656,14 +657,15 @@ Sina plot of the percent missing values by measurement type, either NMR or MS.
 
 ```{r}
 #| label: calculate-confounding-percentage
-n_yellow_red = nrow(sets_qc_color_confounds |> dplyr::filter(pca_anova_pvalue_status %in% c("yellow", "red")))
-n_confound = nrow(sets_qc_color_confounds |> dplyr::filter(confounding_factor_detected %in% "yes"))
-perc_confound = format_percentage(n_confound / n_yellow_red)
+n_confounded = sets_qc_color_confounds |>
+  dplyr::summarise(n = sum(confounding_factor_detected %in% "yes", na.rm = TRUE), all = dplyr::n(), .by = overall_status) |>
+  dplyr::mutate(perc = n / all, perc_display = paste0(format(perc * 100, digits = 2), "%"))
+
 ```
 
 
 
-Using Hartigans dip test, we detected XXX datasets with likely confounding factors.
+Using Hartigans dip test, we detected `r n_confounded |> dplyr::filter(overall_status %in% "green") |> format_in_sentence()`, `r n_confounded |> dplyr::filter(overall_status %in% "yellow") |> format_in_sentence()`, and `r n_confounded |> dplyr::filter(overall_status %in% "red") |> format_in_sentence()` green, yellow, and red datasets with likely confounding factors.
 Figure X shows the sample PC scores plot for dataset AN000454. 
 Here, the samples separate into four distinct groups along PC1 and PC2, with all of the groupings containing a mixture of Control and CLFS SSF groups. In addition, none of the sample PC scores scored highly on the ANOVA test. 
 The detection of multi-modal sample scores on PC1 (detected by the dip test), indicates there is likely a confounding factor present that is not noted in the metadata. 
@@ -671,19 +673,34 @@ Moreover, Figure X is a prime example of a dataset with a potential confounding 
 
 
 ```{r}
-#| label: confounding-example-plot
-wrap_plots(example_confound_plot_454, nrow = 1, tag_level = "A")
+#| label: confounding-example-plot-454
+(example_confound_plot_454$pc1_histogram | example_confound_plot_454$pc2_histogram) / (example_confound_plot_454$scores) + plot_annotation(tag_levels = "A")
 ```
 
 **Figure X**.
-Sample PC scores plot for dataset AN000454, with samples colored by their SSF.
+PCA plots for dataset AN000454.
+**A**: Histogram of sample scores for the two SSF groups on PC1.
+**B**: Histogram of sample scores for the two SSF groups on PC2.
+**C**: Sample scores on PC1 and PC2, colored by SSF group.
+
+```{r}
+#| label: confounding-example-plot-6863
+example_confound_plot_6863$pc1_histogram + example_confound_plot_6863$pc2_histogram + example_confound_plot_6863$scores + free(example_confound_plot_6863$confound_sinaplot) + plot_layout(ncol = 2, nrow = 2) + plot_annotation(tag_levels = "A")
+```
+
+**Figure X**.
+PCA plots for dataset AN006863.
+**A**: Histogram of sample scores for the two SSF groups on PC1.
+**B**: Histogram of sample scores for the two SSF groups on PC2.
+**C**: Sample scores on PC1 and PC2, colored by SSF group.
+**D**: Sina and boxplots of sample scores on PC1 by an additional sample subject data, cohort.
 
 
 ### Technical Replicates
 
 In addition to the RSD of the technical replicates, we also calculate the RSD of the SSF grouped samples (total RSD).
 The median technical replicate and total RSD values from each dataset are shown in Figure XC.
-As expected, the mode of the technical replicate RSD is much lower than the total RSD (`r format(rsd_modes$tr_mode, digits = 3)` *vs* `r format(rsd_modes$total_mode, digits = 3)`), implying that methods for detecting them are likely correct (if somewhat conservative).
+As expected, the mode of the technical replicate RSD is much lower than the total RSD (`r format(rsd_modes_all$tr_mode, digits = 3)` *vs* `r format(rsd_modes_all$total_mode, digits = 3)`), implying that methods for detecting them are likely correct (if somewhat conservative).
 
 With the technical replicate RSD and total RSD available for 200 datasets, we can subtract them to determine the RSD due to non-technical sources.
 The density curves of the total, technical, and non-technical RSDs are shown in Figure XD.
