@@ -178,6 +178,8 @@ Use of the targets package greatly sped up the many development and testing cycl
 Figure X provides an overview of the QC/QA analysis pipeline. 
 Individual analysis steps of the pipeline are described below.
 
+![Overall QC/QA pipeline steps.](../resources/pipeline_diagram.svg)
+
 ### Parsing and Transformation to Summarized Experiment
 
 After datasets were repaired and ancillary data files downloaded, parsed, and repaired, the pipeline attempts to read in the JSONized data and transform it into an R SummarizedExperiment object, which is ideal for holding feature metadata, abundances, and sample metadata, as well as hold any extra data that does not map directly to features and samples in the metadata slot.
@@ -665,7 +667,7 @@ n_confounded = sets_qc_color_confounds |>
 
 
 
-Using Hartigans dip test, we detected `r n_confounded |> dplyr::filter(overall_status %in% "green") |> format_in_sentence()`, `r n_confounded |> dplyr::filter(overall_status %in% "yellow") |> format_in_sentence()`, and `r n_confounded |> dplyr::filter(overall_status %in% "red") |> format_in_sentence()` green, yellow, and red datasets with likely confounding factors.
+Using Hartigans dip test, we detected `r n_confounded |> dplyr::filter(overall_status %in% "green") |> format_in_sentence()` green, `r n_confounded |> dplyr::filter(overall_status %in% "yellow") |> format_in_sentence()` yellow, and `r n_confounded |> dplyr::filter(overall_status %in% "red") |> format_in_sentence()` red datasets with likely confounding factors.
 Figure X shows the sample PC scores plot for dataset AN000454. 
 Here, the samples separate into four distinct groups along PC1 and PC2, with all of the groupings containing a mixture of Control and CLFS SSF groups. In addition, none of the sample PC scores scored highly on the ANOVA test. 
 The detection of multi-modal sample scores on PC1 (detected by the dip test), indicates there is likely a confounding factor present that is not noted in the metadata. 
