@@ -1,3 +1,21 @@
+count_code = function() {
+  all_r_files = fs::dir_ls(
+    "~/Documents/manuscripts/in_progress/rmflight_metabolomicsDatabaseQCQA/R"
+  )
+
+  n_r_files = length(all_r_files)
+
+  file_contents = purrr::map(all_r_files, \(in_file) {
+    # in_file = all_r_files[25]
+    tmp_contents = readLines(in_file)
+    no_comment = grep("\\# ", tmp_contents, value = TRUE, invert = TRUE)
+    n_line = length(no_comment)
+    n_function = length(grep("function\\(", no_comment))
+    tibble::tibble(lines = n_line, functions = n_function)
+  }) |>
+    purrr::list_rbind()
+}
+
 find_analysis_in_group = function(analysis_id) {
   group_sets = readRDS("resources/group_sets.rds")
   all_ids = purrr::map(group_sets$set, \(in_set) {
