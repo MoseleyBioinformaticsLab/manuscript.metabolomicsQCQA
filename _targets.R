@@ -265,6 +265,17 @@ figures_tables_t = tar_assign({
     use_log = "no"
   ) |>
     tar_target()
+
+  status_heatmap_top90_presentation_plot = create_status_heatmap(
+    parsed_percentage_overall,
+    order_n = "yes",
+    trim_90 = "yes",
+    use_log = "no",
+    column_title = "Overall Statuses   Green: 33%   Yellow: 41%   Red: 26%",
+    column_title_side = "top",
+    column_title_gp = grid::gpar(fontsize = 20, fontface = "bold")
+  ) |>
+    tar_target()
   status_heatmap_all_plot = create_status_heatmap(
     parsed_percentage_overall,
     order_n = "yes",
@@ -298,6 +309,24 @@ figures_tables_t = tar_assign({
     data_limits
   ) |>
     tar_target()
+  example_raw_log_plot = create_example_raw_log_plot() |>
+    tar_target()
+
+  count_nmostcommon_barplot = create_count_nmostcommon_barplot(
+    sets_qc_color_confounds
+  ) |>
+    tar_target()
+
+  pca_example_green_1 = create_pca_example_plots(
+    se_pca_g01[["AN002342"]]
+  ) |>
+    tar_target()
+  pca_example_green_2 = create_pca_example_plots(se_pca_g25[["AN007332"]]) |>
+    tar_target()
+  pca_example_green_3 = create_pca_example_plots(
+    se_pca_g03[["AN004948"]]
+  ) |>
+    tar_target()
   study_status_comparison_table = compare_study_statuses(not_gray_pca) |>
     tar_target()
 
@@ -325,6 +354,7 @@ docs_t = tar_assign({
     "docs/setting_databased_cutoffs.qmd"
   )
   iecm2026_abstract = tar_quarto("docs/iecm2026_abstract.qmd")
+  iecm2026_presentation = tar_quarto("docs/iecm_presentation.qmd")
 })
 
 # manuscript_t = tar_quarto(
