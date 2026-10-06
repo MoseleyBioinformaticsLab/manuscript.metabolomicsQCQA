@@ -50,7 +50,7 @@ find_matching_status_index = function(keep_status, status_definition) {
 setup_statuses = function(status_names) {
   status_cols = grep("status$", status_names, value = TRUE)
   status_cols = grep(
-    "^summarized|^has_qc|^score_icikt|^score_rle|^ssf_metadata|^overall|^technical_replicate|^biological_rsd",
+    "^summarized|^has_qc|^score_icikt|^score_rle|^ssf_metadata|^overall|^technical_replicate|^biological_rsd|^total_rsd",
     status_cols,
     invert = TRUE,
     value = TRUE

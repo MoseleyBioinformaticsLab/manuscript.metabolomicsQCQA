@@ -314,14 +314,21 @@ create_example_confound_plot = function(se_data, confounding_var = NULL) {
   }
 }
 
+create_color_list = function() {
+  color_list = c("red" = "#D81B60", "green" = "#004D40", "yellow" = "#FFC107")
+  color_list
+}
+
+
 create_status_heatmap = function(
   parsed_percentage_overall,
   order_n = "yes",
   trim_90 = "yes",
-  use_log = "no"
+  use_log = "no",
+  ...
 ) {
-  color_list = c("red" = "#D81B60", "green" = "#004D40", "yellow" = "#FFC107")
-
+  # tar_load(parsed_percentage_overall); order_n = "yes"; trim_90 = "yes"; use_log = "no"
+  color_list = create_color_list()
   if (order_n %in% "yes") {
     parsed_percentage_overall = parsed_percentage_overall |>
       dplyr::arrange(dplyr::desc(N))
@@ -348,11 +355,13 @@ create_status_heatmap = function(
   row_counts = parsed_percentage_overall$N
   if (use_log %in% "yes") {
     row_ha = ComplexHeatmap::rowAnnotation(
-      `Log10(N)` = ComplexHeatmap::anno_barplot(log10(row_counts))
+      `Log10(N)` = ComplexHeatmap::anno_barplot(log10(row_counts)),
+      annotation_width = unit(3, "cm")
     )
   } else {
     row_ha = ComplexHeatmap::rowAnnotation(
-      N = ComplexHeatmap::anno_barplot(row_counts)
+      N = ComplexHeatmap::anno_barplot(row_counts),
+      annotation_width = unit(3, "cm")
     )
   }
 
@@ -369,7 +378,8 @@ create_status_heatmap = function(
     column_names_side = "top",
     column_names_rot = 0,
     column_names_centered = TRUE,
-    column_names_gp = grid::gpar(fontsize = 14, fontface = "bold")
+    column_names_gp = grid::gpar(fontsize = 14, fontface = "bold"),
+    ...
   )
 
   out_heatmap
@@ -522,6 +532,43 @@ create_percent_missingness_plot = function(not_gray_pca) {
   p_miss_plot
 }
 
+create_example_raw_log_plot = function() {
+  # se_data = tar_read(se_pca_g01)[["AN002054"]]
+  values = tibble::tibble(
+    id = seq(1, 10000),
+    raw = rlnorm(10000, meanlog = 2, sdlog = 1.5)
+  ) |>
+    dplyr::mutate(log = log10(raw)) |>
+    tidyr::pivot_longer(
+      cols = c("raw", "log"),
+      names_to = "transform",
+      values_to = "value"
+    ) |>
+    dplyr::mutate(transform = factor(transform, levels = c("raw", "log")))
+  summary = values |>
+    dplyr::summarise(
+      mean = mean(value),
+      median = median(value),
+      .by = transform
+    ) |>
+    tidyr::pivot_longer(-transform, names_to = "statistic", values_to = "value")
+
+  out_plot = values |>
+    dplyr::filter(value <= 250) |>
+    ggplot(aes(x = value)) +
+    geom_histogram(bins = 100) +
+    geom_vline(data = summary, aes(xintercept = value, color = statistic)) +
+    facet_wrap(~transform, nrow = 1, scales = "free") +
+    scale_y_continuous(expand = expansion(mult = c(0, NA))) +
+    theme(
+      strip.background = element_blank(),
+      legend.position = "inside",
+      legend.position.inside = c(0.2, 0.6)
+    )
+  out_plot
+}
+
+
 create_databased_cutoffs_plot = function(
   sets_percent_missing_result,
   sets_median_correlation_result,
@@ -611,69 +658,85 @@ create_databased_cutoffs_plot = function(
   ))
 }
 
-create_pipeline_description = function() {
-  mm_graph = DiagrammeR(
-    '
-   graph TB
-   A("JSON")-->B("RDS")
-   B-->C("Matching Samples / Metabolites")
-   C-->D("Filtering Samples")
-   D-->E("Summarized Experiment")
-   E-->F("Mean Median Ratio")
-   F-->G("Dynamic Range")
-   G-->H("Percent Missingness")
-   H-->I("Correlation")
-   I-->K("PCA")
-   K-->L("Data Limits")
-   L-->M("Confounding Factors")
-   M-->N("Color Status")
-'
-  )
 
-  graph_nodes = create_node_df(
-    14,
-    type = "item",
-    label = c(
-      "JSON File",
-      "RDS File",
-      "Match\nSamples & Metabolites",
-      "Filter Samples",
-      "Create\nSummarized Experiment",
-      "Calculate Mean\nMedian Ratio",
-      "Calculate\nDynamic Range",
-      "Calculate\nPercent Missingness",
-      "Calculate\nICI-Kt Correlation",
-      "Calculate\nPCA",
-      "Determine\nData Limits",
-      "Determine\nConfounding Factors",
-      "Assign\nColor Status",
-      "Generate\nQC/QA Reports"
+create_count_nmostcommon_barplot = function(sets_qc_color_confounds) {
+  # tar_load(sets_qc_color_confounds); tar_source("R")
+  n_sample_statuses = sets_qc_color_confounds |>
+    dplyr::filter_out(overall_status %in% "gray") |>
+    dplyr::filter_out(failed_steps %in% "create_se") |>
+    dplyr::filter_out(is.na(most_common_n)) |>
+    dplyr::select(n_sample_status, most_common_n)
+  count_most_common = rle_2_df(sort(n_sample_statuses$most_common_n) |> rle())
+  count_most_common = count_most_common |>
+    dplyr::filter_out(value > 25)
+
+  color_list = create_color_list()
+  color_df = tibble::tibble(status = names(color_list), color = color_list)
+
+  count_most_common = count_most_common |>
+    dplyr::mutate(
+      status = dplyr::case_when(
+        value < 3 ~ "red",
+        value >= 3 & value < 5 ~ "yellow",
+        TRUE ~ "green"
+      )
     )
-  )
-  graph_edges = create_edge_df(
-    from = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13),
-    to = c(2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
-    rel = "leading_to"
-  )
-  out_graph = create_graph(graph_nodes, graph_edges)
+
+  out_plot = count_most_common |>
+    ggplot(aes(x = value, y = length, fill = status)) +
+    geom_col() +
+    scale_fill_manual(values = color_list) +
+    theme(legend.position = "none") +
+    scale_y_continuous(expand = expansion(c(0, NA))) +
+    labs(x = "Most Frequent N-Sample / SSF Group", y = "Count") +
+    scale_x_continuous(expand = expansion(c(0, NA)))
+  out_plot
 }
 
-alt_pipeline = function() {
-  DiagrammeR::DiagrammeR(
-    "
-sequenceDiagram;
-   customer->>ticket seller: ask for a ticket;
-   ticket seller->>database: seats;
-   alt tickets available
-     database->>ticket seller: ok;
-     ticket seller->>customer: confirm;
-     customer->>ticket seller: ok;
-     ticket seller->>database: book a seat;
-     ticket seller->>printer: print a ticket;
-   else sold out
-     database->>ticket seller: none left;
-     ticket seller->>customer: sorry;
-   end
-"
-  )
+
+find_pca_examples = function(sets_qc_color_confounds) {
+  pca_green = sets_qc_color_confounds |>
+    dplyr::filter(overall_status %in% "green") |>
+    dplyr::filter(most_common_n > 10, pca_anova_pvalue <= 1e-8, n_ssf_n < 5)
+  pca_red = sets_qc_color_confounds |>
+    dplyr::filter(overall_status %in% "red") |>
+    dplyr::filter(most_common_n > 10, pca_anova_pvalue >= 0.5, n_ssf_n < 5)
+}
+
+
+create_pca_example_plots = function(se_data, out_file = NULL, ...) {
+  # se_data = tar_read(se_pca_g01)[["AN002342"]]; tar_source("R")
+  pca_data_use = get_last_pca(se_data)
+  id = metadata(se_data)$mwtab$ID
+
+  pca_scores = pca_data_use$pca$pca
+  pca_pvalue = pca_data_use$pca$anova |>
+    dplyr::filter(variable %in% "ssf", PC %in% "PC1") |>
+    dplyr::pull(padjust) |>
+    format(digits = 3)
+
+  out_plot = pca_scores |>
+    ggplot(aes(x = PC1, y = PC2, color = ssf)) +
+    geom_point(size = 2) +
+    labs(subtitle = paste0(id, ", SSF Adjusted P-Value: ", pca_pvalue)) +
+    theme(legend.position = "top")
+
+  if (is.null(out_file)) {
+    return(out_plot)
+  } else {
+    ragg::agg_png(filename = out_file, ...)
+    print(out_plot)
+    dev.off()
+    return(out_file)
+  }
+}
+
+
+get_last_pca = function(se_data) {
+  pca_data = get_specific_metadata(se_data, "pca_groups")
+  last_run = check_qc_outputs(se_data)
+  pca_index = last_run$pca[length(last_run$pca)]
+  pca_data_use = pca_data[[pca_index]]
+
+  pca_data_use
 }

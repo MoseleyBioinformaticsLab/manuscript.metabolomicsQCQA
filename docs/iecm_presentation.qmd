@@ -5,7 +5,7 @@ format:
   revealjs:
     chalkboard: true
     smaller: true
-    theme: night
+    theme: [night, custom.scss]
     include-in-header:
       - text: |
           <style>
@@ -62,11 +62,21 @@ count_nmostcommon_barplot,
 pca_example_green_1,
 pca_example_green_2,
 pca_example_green_3,
+pca_example_red_1,
+pca_example_red_2,
+pca_example_red_3,
 # tables
 study_status_comparison_table,
 negatives_as_missing_table
 ))
 ```
+
+## Results of This Work
+
+* Hosted on Zenodo at xxxxx
+* Includes:
+  * HTML QC/QA reports for every dataset
+  * Processed summarized experiments saved as R serialized rds files for every dataset
 
 ## Omics Data Repositories
 
@@ -98,12 +108,11 @@ negatives_as_missing_table
 - Currently hosts 4261 studies
 - We downloaded **7240 analyses** on 2026-07-21
 
-## What Does Good Data Look Like?
+## Hypothesis
 
-- Well defined experimental groups with a good number of replicates in each group
-- Sufficient metadata for samples and metabolites
-- Not too many missing values
-- 
+- The majority of data within Metabolomics Workbench (MW) is good.
+- Many of the datasets within MW are part of peer-reviewed, published studies.
+- Everyone who submits data to MW is trying to do good science.
 
 ## QC/QA Pipeline
 
@@ -125,7 +134,7 @@ negatives_as_missing_table
 ::::
 
 
-## Reasons Datasets "Fail"
+## Reasons Datasets Are Removed
 
 ```{r}
 #| label: loss-plot
@@ -140,6 +149,220 @@ loss_waterfall_plot
 #| fig-cap: Counts of the various reasons that the 167 datasets had "No Data", and therefore couldn't create a summarized experiment object to be used for further analysis.
 nose_reasons_bar_plot
 ```
+
+
+# Color Grade Evaluation
+
+## Number of Samples in Subject Sample Factors
+
+The number of samples per SSF group indicates if the experimental design is statistically powerful or not.
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+  * all SSF groups have $\le$ 2 samples per group ~ [red]{.my-red};
+  * 3 $\le$ all SSF groups $\le$ 4 ~ [yellow]{.my-yellow};
+  * all SSF groups $\ge$ 5 samples ~ [green]{.my-green};
+:::
+
+::: {.column width="50%"}
+
+```{r}
+#| label: n-per-group
+count_nmostcommon_barplot
+```
+
+:::
+
+::::
+
+## Percent Missing and Left-Censorship
+
+High percent missing, especially without the indication of left-censorship indicates the presence of data quality issues.
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+* percent missing $\le$ 2 x SD ~ [green]{.my-green};
+* 2 x SD $\lt$ percent missing $\le$ 4 x SD limit ~ [yellow]{.my-yellow};
+* percent missing $\gt$ 4 x SD limit ~ [red]{.my-red}
+* percent missing $\gt$ 10% & lc test p-value $\le$ 0.05 ~ [green]{.my-green};
+* percent missing $\gt$ 10% & lc test p-value $\gt$ 0.05 ~ [yellow]{.my-yellow};
+
+:::
+
+::: {.column width="50%"}
+
+```{r}
+#| label: percent-missing-plot
+data_based_cutoffs_plot$pm
+```
+
+:::
+
+::::
+
+## Maximum Observed Median RSD
+
+High maximum observed median RSD indicates high variability in the measurements.
+
+:::: {.columns}
+
+::: {.column width="50%"}
+
+* median RSD $\le$ median of medians + 2 x SD ~ [green]{.my-green};
+* median of medians + 2 x SD $\lt$ median RSD $\le$ median of medians + 4 x SD ~ [yellow]{.my-yellow};
+* median RSD $\gt$ median of medians + 4 x SD ~ [red]{.my-red}
+:::
+
+::: {.column width="50%"}
+
+```{r}
+#| label: max-observed-rsd
+data_based_cutoffs_plot$rsd
+```
+
+:::
+
+::::
+
+## Median Correlations
+
+Low maximum median ICI-Kt correlation indicates high biological variance between samples.
+
+:::: {.columns}
+
+::: {.column}
+
+* max median ICI-Kt $\ge$ median of max median - 2 SD ~ [green]{.my-green};
+* median of max median - 4 SD $\ge$ max median ICI-Kt $\lt$ median of max medians - 2 SD ~ [yellow]{.my-yellow};
+* max median ICI-Kt $\lt$ median of max medians - 4 SD ~ [red]{.my-red}
+
+:::
+
+::: {.column}
+
+```{r}
+#| label: median-cor-plot
+data_based_cutoffs_plot$med_cor
+```
+
+:::
+
+::::
+
+## PCA Scores - PC 90
+
+A high PC-90 indicates weak signal variance within the dataset in comparison to other sources of variance present.
+
+:::: {.columns}
+
+::: {.column}
+
+  * PC-90 $\le$ median + 2 SD ~ [green]{.my-green} ; 
+  * median + 2 SD $\lt$ PC-90 $\le$ median + 4 SD ~ [yellow]{.my-yellow}; 
+  * PC-90 $\gt$ median + 4 SD ~ [red]{.my-red}
+
+::: 
+
+::: {.column}
+
+```{r}
+#| label: pc-90-plot
+data_based_cutoffs_plot$pc_90
+```
+
+:::
+
+::::
+
+## PCA Scores - ANOVA
+
+Lack of separation of SSF groups across meaningful PCs indicates weak signal variance within the dataset.
+
+ANOVA p-adjusted: 
+
+  * p-adjust $\le$ 0.05 & PC-perc $\ge$ 5% & factor is SSF or derived ~ [green]{.my-green}; 
+  * p-adjust $\le$ 0.05 & PC-perc $\ge$ 5% & factor is additional sample-data or combination of SSF and additional sample-data ~ [yellow]{.my-yellow};
+  * p-adjust $\le$ 0.05 & 1% $\le$ PC-perc $\lt$ 5% ~ [yellow]{.my-yellow};
+  * p-adjust $\le$ 0.05 & PC-perc $\lt$ 1% ~ [red]{.my-red};
+  * p-adjust $\gt$ 0.05 ~ [red]{.my-red}.
+
+## Overall Color Status
+
+```{r}
+#| label: status-heatmap
+#| fig-width: 18
+#| fig-height: 9
+#| fig-cap: Top 90% of status combinations. 
+status_heatmap_top90_presentation_plot
+```
+
+## Red: PCA ANOVA P-Value
+
+- Principal component analysis (PCA) sample scores tested against SSF groups.
+- Easy way to test if there is the expected separation of SSF groups in PCA plots.
+
+```{r}
+#| label: pca-green-1
+pca_example_green_1
+```
+
+## Red: PCA ANOVA P-Value
+
+- Principal component analysis (PCA) sample scores tested against SSF groups.
+- Easy way to test if there is the expected separation of SSF groups in PCA plots.
+
+![](../resources/pca_example_green_2.png)
+
+## Red: PCA ANOVA P-Value
+
+- Principal component analysis (PCA) sample scores tested against SSF groups.
+- Easy way to test if there is the expected separation of SSF groups in PCA plots.
+
+```{r}
+#| label: pca-green-3
+pca_example_green_3
+```
+
+## Red: PCA ANOVA P-Value
+
+- Principal component analysis (PCA) sample scores tested against SSF groups.
+- Easy way to test if there is the expected separation of SSF groups in PCA plots.
+
+```{r}
+#| label: pca-red-1
+pca_example_red_1
+```
+
+## Red: PCA ANOVA P-Value
+
+- Principal component analysis (PCA) sample scores tested against SSF groups.
+- Easy way to test if there is the expected separation of SSF groups in PCA plots.
+
+```{r}
+#| label: pca-red-2
+pca_example_red_2
+```
+
+## Red: PCA ANOVA P-Value
+
+- Principal component analysis (PCA) sample scores tested against SSF groups.
+- Easy way to test if there is the expected separation of SSF groups in PCA plots.
+
+```{r}
+#| label: pca-red-3
+pca_example_red_3
+```
+
+
+## Next Slide
+
+- Just a placeholder so we always see what happens on the next hit.
+
+# Extra
 
 ## Detection of Log-Transformation
 
@@ -167,87 +390,3 @@ Mean - median ratio (MMR)
 * MMR and transformation change only a fraction of datasets
 * Negative valuse withough log-transformation should be physically impossible?
 * What if we treat negative values as missing?
-
-## Color Grade Evaluation
-
-* Number of samples within each subject-sample-factor (SSF);
-* Percent missingness;
-* Left-censorship test;
-* Maximum median ICI-Kt correlation;
-* Relative-standard deviation (RSD);
-* Principal components accounting for 90% of the variance;
-* ANOVA test of SSF to PC scores;
-
-## Overall Color Status
-
-```{r}
-#| label: status-colors
-color_status = sets_qc_color_confounds |>
-  dplyr::filter(
-    completed_steps %in% "se; dynamic_range; correlation; pca",
-    !overall_status %in% "gray"
-  )
-n_color = summarize_status(color_status)
-tmp_color = n_color |>
-  dplyr::transmute(`Overall Status` = overall_status, N = n, `%` = perc_display)
-
-display_color = tibble::tibble(`Overall Status` = c("green", "yellow", "red"))
-display_color = dplyr::left_join(display_color, tmp_color, by = "Overall Status")
-display_color |>
-  gt::gt()
-```
-
-## Overall Status
-
-```{r}
-#| label: status-heatmap
-#| fig-width: 18
-#| fig-height: 9
-#| fig-cap: Top 90% of status combinations. 
-status_heatmap_top90_presentation_plot
-```
-
-
-## Yellow: N-Samples
-
-```{r}
-#| label: count-mostcommon-barplot
-#| fig-cap: Counts of the most frequently observed number of samples per SSF group in each dataset, with the bar colored by which color status that corresponds to.
-count_nmostcommon_barplot
-```
-
-## Red: PCA ANOVA P-Value
-
-- Principal component analysis (PCA) sample scores tested against SSF groups.
-- Easy way to test if there is the expected separation of SSF groups in PCA plots.
-
-::: {.r-stack}
-
-::: {.fragment width="600" height="400"}
-
-```{r}
-#| label: pca-green-1
-#| fig-width: 6
-#| fig-height: 4
-pca_example_green_1
-```
-
-:::
-
-::: {.fragment width="600" height="400"}
-
-```{r}
-#| label: pca-green-2
-#| fig-width: 6
-#| fig-height: 4
-pca_example_green_2
-```
-
-:::
-
-:::
-
-
-## Next Slide
-
-- Just a placeholder so we always see what happens on the next hit.

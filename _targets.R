@@ -321,10 +321,29 @@ figures_tables_t = tar_assign({
     se_pca_g01[["AN002342"]]
   ) |>
     tar_target()
-  pca_example_green_2 = create_pca_example_plots(se_pca_g25[["AN007332"]]) |>
+  pca_example_green_2 = create_pca_example_plots(
+    se_pca_g25[["AN007332"]],
+    "resources/pca_example_green_2.png",
+    width = 9,
+    height = 6,
+    units = "in",
+    res = 300
+  ) |>
     tar_target()
   pca_example_green_3 = create_pca_example_plots(
     se_pca_g03[["AN004948"]]
+  ) |>
+    tar_target()
+  pca_example_red_1 = create_pca_example_plots(
+    se_pca_g01[["AN000694"]]
+  ) |>
+    tar_target()
+  pca_example_red_2 = create_pca_example_plots(
+    se_pca_g01[["AN002902"]]
+  ) |>
+    tar_target()
+  pca_example_red_3 = create_pca_example_plots(
+    se_pca_g01[["AN006263"]]
   ) |>
     tar_target()
   study_status_comparison_table = compare_study_statuses(not_gray_pca) |>
