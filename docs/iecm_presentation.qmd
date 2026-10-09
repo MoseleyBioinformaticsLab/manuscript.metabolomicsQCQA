@@ -3,7 +3,6 @@ title: "Evaluation of the quality of deposited datasets in the Metabolomics Work
 author: "Robert M Flight*, P Travis Thompson and Hunter NB Moseley"
 format: 
   revealjs:
-    chalkboard: true
     smaller: true
     theme: [night, custom.scss]
     include-in-header:
@@ -71,60 +70,65 @@ negatives_as_missing_table
 ))
 ```
 
+## Achnowledgements
+
+
+
+![](../resources/acknowledgements_slide_dark.png)
+
+This work was supported by: NSF 2020026 (PI Moseley); NIH P42 ES007380 (PD Pennell); NIH 1R03LM014928-01 (PI Moseley)
+
 ## Results of This Work
 
 * Hosted on Zenodo at xxxxx
 * Includes:
-  * HTML QC/QA reports for every dataset
-  * Processed summarized experiments saved as R serialized rds files for every dataset
+  * A single table with much of the summary data for each dataset, as well as the statuses and metrics of our quality control and quality assessment (QC/QA) criteria.
+  * HTML QC/QA reports for every dataset.
+  * Processed summarized experiments saved as R serialized rds files for every dataset.
 
 ## Omics Data Repositories
 
 - Journals and funders now require processed data to be deposited in a repository.
 - Many support the deposition of raw data in addition to processed data.
-- General repositories:
-  - Data dryad
-  - Zenodo
-  - Figshare
-- Specific repositories:
-  - Gene expression omnibus (GEO): microarrays, gene expression
-  - Sequence read archive (SRA): next-gen sequencing
-  - Metabolights: metabolomics
-  - Metabolomics Workbench: metabolomics
+- Gene expression:
+  - Gene Expression Omnibus (GEO)
+  - Sequence Read Archive (SRA)
+  - ArrayExpress
+- Proteomics
+  - Proteomics Identifications (PRIDE)
+  - Mass Spectrometry Interactive Virtual Environment (MassIVE)
+- Metabolomics
+  - MetaboLights
+  - Metabolomics Workbench
 
-## Metabolomics Workbench
+## Metabolomics Workbench (MW)
 
-#### Why?
+- NIH Common Fund's National Metabolomics Data Repository.
+- Established in 2012.
+- Currently hosts 4261 studies, from 60 countries.
+- Organized by:
+  - Project: a biological question, contains one or more **related** studies.
+  - Study: contains one or more analyses.
+  - Analysis: typically one analysis method or sample type, e.g. NMR, MS + chromatography, +ve / -ve mode, etc.
+- Our lab has years of experience working with MW data.
 
-- Because we have a lot of experience downloading, uploading, parsing their files
+## Hypothesis: There Are Significant Numbers of Reusable Datasets in Metabolomics Workbench
 
-#### Stats
-
-- Started in XXXX
-- Organized by
-  - Project: a biological question, contains 1 or more studies
-  - Study: further narrowed (maybe), contains 1 or more analyses
-  - Analysis: one anlysis method or sample type, NMR, MS + chromatography, +ve / -ve mode, etc
-- Currently hosts 4261 studies
-- We downloaded **7240 analyses** on 2026-07-21
-
-## Hypothesis
-
-- The majority of data within Metabolomics Workbench (MW) is good.
+- The majority of data within MW is expected to be of good quality.
 - Many of the datasets within MW are part of peer-reviewed, published studies.
-- Everyone who submits data to MW is trying to do good science.
+- Researchers depositing data into MW are trying to do good science.
+
 
 ## QC/QA Pipeline
 
 :::: {.columns}
 
 ::: {.column width="30%"}
-- 7240 datasets
-- grouped into 37 sets
-- 5 days of computation
-- 6900 lines of R
-- 230 custom functions
-- all managed by `targets`
+- 7240 analysis datasets (2026-07-21).
+- 7000 lines of R.
+- 230 custom functions.
+- Execution workflow managed by the `targets` R package.
+- Took 5 days of execution.
 :::
 
 ::: {.column width="70%"}
@@ -134,7 +138,7 @@ negatives_as_missing_table
 ::::
 
 
-## Reasons Datasets Are Removed
+## Reasons Datasets Were Removed
 
 ```{r}
 #| label: loss-plot
@@ -153,9 +157,19 @@ nose_reasons_bar_plot
 
 # Color Grade Evaluation
 
-## Number of Samples in Subject Sample Factors
+## Subject Sample Factors (SSF)
 
-The number of samples per SSF group indicates if the experimental design is statistically powerful or not.
+- One or more experimentally important metadata about the samples.
+  - E.g. Cancerous vs normal, high-fat diet vs normal diet, etc.
+- Additional sample data includes things like the raw file name, biological replicate.
+- We combine multiple SSF to make a unique label that defines the **experimental groups** of samples.
+
+![](../resources/example_ssf_data.png)
+
+## Number of Samples in Subject Sample Factor Groups
+
+- The number of samples per SSF group indicates if the experimental design is statistically powerful or not, based on general rule of thumb.
+- The counts are **after** removing samples with < 10 present metabolites and any outliers.
 
 :::: {.columns}
 
@@ -170,6 +184,8 @@ The number of samples per SSF group indicates if the experimental design is stat
 
 ```{r}
 #| label: n-per-group
+#| fig-width: 4
+#| fig-height: 2.8
 count_nmostcommon_barplot
 ```
 
@@ -177,16 +193,23 @@ count_nmostcommon_barplot
 
 ::::
 
+
+## Using Data Distributions to Define Color Grades
+
+- We can use the full set of datasets themselves to define green (good), yellow (useable), red (double check).
+
+
+
 ## Percent Missing and Left-Censorship
 
-High percent missing, especially without the indication of left-censorship indicates the presence of data quality issues.
+High percent missingness, especially without the indication of left-censorship; indicates the presence of possible data quality issues.
 
 :::: {.columns}
 
 ::: {.column width="50%"}
 
-* percent missing $\le$ 2 x SD ~ [green]{.my-green};
-* 2 x SD $\lt$ percent missing $\le$ 4 x SD limit ~ [yellow]{.my-yellow};
+* percent missing $\le$ 2 x SD ~ [green]{.my-green} (40.8%);
+* 2 x SD $\lt$ percent missing $\le$ 4 x SD limit ~ [yellow]{.my-yellow} (81.7%);
 * percent missing $\gt$ 4 x SD limit ~ [red]{.my-red}
 * percent missing $\gt$ 10% & lc test p-value $\le$ 0.05 ~ [green]{.my-green};
 * percent missing $\gt$ 10% & lc test p-value $\gt$ 0.05 ~ [yellow]{.my-yellow};
@@ -197,6 +220,8 @@ High percent missing, especially without the indication of left-censorship indic
 
 ```{r}
 #| label: percent-missing-plot
+#| fig-width: 4.5
+#| fig-height: 4
 data_based_cutoffs_plot$pm
 ```
 
@@ -204,7 +229,7 @@ data_based_cutoffs_plot$pm
 
 ::::
 
-## Maximum Observed Median RSD
+## Maximum Observed Median Relative Standard Deviation (RSD)
 
 High maximum observed median RSD indicates high variability in the measurements.
 
@@ -212,8 +237,8 @@ High maximum observed median RSD indicates high variability in the measurements.
 
 ::: {.column width="50%"}
 
-* median RSD $\le$ median of medians + 2 x SD ~ [green]{.my-green};
-* median of medians + 2 x SD $\lt$ median RSD $\le$ median of medians + 4 x SD ~ [yellow]{.my-yellow};
+* median RSD $\le$ median of medians + 2 x SD ~ [green]{.my-green} (0.89);
+* median of medians + 2 x SD $\lt$ median RSD $\le$ median of medians + 4 x SD ~ [yellow]{.my-yellow} (1.48);
 * median RSD $\gt$ median of medians + 4 x SD ~ [red]{.my-red}
 :::
 
@@ -221,6 +246,8 @@ High maximum observed median RSD indicates high variability in the measurements.
 
 ```{r}
 #| label: max-observed-rsd
+#| fig-width: 4.5
+#| fig-height: 3.3
 data_based_cutoffs_plot$rsd
 ```
 
@@ -228,16 +255,16 @@ data_based_cutoffs_plot$rsd
 
 ::::
 
-## Median Correlations
+## Median Within SSF Group Sample-Sample Correlations
 
-Low maximum median ICI-Kt correlation indicates high biological variance between samples.
+Low maximum median within SSF group sample-sample ICI-Kt correlations indicate high biological variance between samples.
 
 :::: {.columns}
 
 ::: {.column}
 
-* max median ICI-Kt $\ge$ median of max median - 2 SD ~ [green]{.my-green};
-* median of max median - 4 SD $\ge$ max median ICI-Kt $\lt$ median of max medians - 2 SD ~ [yellow]{.my-yellow};
+* max median ICI-Kt $\ge$ median of max median - 2 SD ~ [green]{.my-green} (0.54);
+* median of max median - 4 SD $\ge$ max median ICI-Kt $\lt$ median of max medians - 2 SD ~ [yellow]{.my-yellow} (0.19);
 * max median ICI-Kt $\lt$ median of max medians - 4 SD ~ [red]{.my-red}
 
 :::
@@ -246,6 +273,8 @@ Low maximum median ICI-Kt correlation indicates high biological variance between
 
 ```{r}
 #| label: median-cor-plot
+#| fig-width: 4.5
+#| fig-height: 3.5
 data_based_cutoffs_plot$med_cor
 ```
 
@@ -253,16 +282,20 @@ data_based_cutoffs_plot$med_cor
 
 ::::
 
-## PCA Scores - PC 90
+::: footer
+RM Flight, PS Bhatt, HNB Moseley, "Information-Content-Informed Kendall-tau Correlation Methodology: Interpreting Missing Values in Metabolomics as Potentially Useful Information" Metabolites 16, 245 (2026).
+:::
 
-A high PC-90 indicates weak signal variance within the dataset in comparison to other sources of variance present.
+## Principal Component Analysis (PCA) Scores - PC-90
+
+As more principal components (PC) are needed to account for 90% of the variance in the data (PC-90), it indicates weak signal variance within the dataset in comparison to other sources of variance present.
 
 :::: {.columns}
 
 ::: {.column}
 
-  * PC-90 $\le$ median + 2 SD ~ [green]{.my-green} ; 
-  * median + 2 SD $\lt$ PC-90 $\le$ median + 4 SD ~ [yellow]{.my-yellow}; 
+  * PC-90 $\le$ median + 2 SD ~ [green]{.my-green} (40); 
+  * median + 2 SD $\lt$ PC-90 $\le$ median + 4 SD ~ [yellow]{.my-yellow} (162); 
   * PC-90 $\gt$ median + 4 SD ~ [red]{.my-red}
 
 ::: 
@@ -271,6 +304,8 @@ A high PC-90 indicates weak signal variance within the dataset in comparison to 
 
 ```{r}
 #| label: pc-90-plot
+#| fig-width: 4.5
+#| fig-height: 3.5
 data_based_cutoffs_plot$pc_90
 ```
 
@@ -282,7 +317,7 @@ data_based_cutoffs_plot$pc_90
 
 Lack of separation of SSF groups across meaningful PCs indicates weak signal variance within the dataset.
 
-ANOVA p-adjusted: 
+Analysis of Variance (ANOVA) p-adjusted: 
 
   * p-adjust $\le$ 0.05 & PC-perc $\ge$ 5% & factor is SSF or derived ~ [green]{.my-green}; 
   * p-adjust $\le$ 0.05 & PC-perc $\ge$ 5% & factor is additional sample-data or combination of SSF and additional sample-data ~ [yellow]{.my-yellow};
@@ -300,71 +335,101 @@ ANOVA p-adjusted:
 status_heatmap_top90_presentation_plot
 ```
 
-## Red: PCA ANOVA P-Value
 
-- Principal component analysis (PCA) sample scores tested against SSF groups.
-- Easy way to test if there is the expected separation of SSF groups in PCA plots.
+## Green: PCA ANOVA P-Value
 
 ```{r}
 #| label: pca-green-1
-pca_example_green_1
+#| fig-width: 16
+#| fig-height: 8
+(pca_example_green_1 + pca_example_green_2) / pca_example_green_3
 ```
 
-## Red: PCA ANOVA P-Value
-
-- Principal component analysis (PCA) sample scores tested against SSF groups.
-- Easy way to test if there is the expected separation of SSF groups in PCA plots.
-
-![](../resources/pca_example_green_2.png)
 
 ## Red: PCA ANOVA P-Value
 
-- Principal component analysis (PCA) sample scores tested against SSF groups.
-- Easy way to test if there is the expected separation of SSF groups in PCA plots.
-
-```{r}
-#| label: pca-green-3
-pca_example_green_3
-```
-
-## Red: PCA ANOVA P-Value
-
-- Principal component analysis (PCA) sample scores tested against SSF groups.
-- Easy way to test if there is the expected separation of SSF groups in PCA plots.
 
 ```{r}
 #| label: pca-red-1
-pca_example_red_1
+#| fig-width: 16
+#| fig-height: 8
+(pca_example_red_1 + pca_example_red_2) / pca_example_red_3
 ```
 
-## Red: PCA ANOVA P-Value
 
-- Principal component analysis (PCA) sample scores tested against SSF groups.
-- Easy way to test if there is the expected separation of SSF groups in PCA plots.
+## Do Analyses Within Studies Share the Same Overall Status?
+
+- MW groups analyses into studies;
+  - multiple polarities for MS
+  - multiple types of samples (blood, plasma, saliva)
+  - etc
 
 ```{r}
-#| label: pca-red-2
-pca_example_red_2
+#| label: study-status-count-table
+study_status_comparison_table$status_comparisons |>
+  gt::gt() |>
+  gt::tab_style(
+    style = list(
+      gt::cell_text(size = "x-large")
+    ),
+    locations = list(
+      gt::cells_body(),
+      gt::cells_column_labels()
+    )
+  )
 ```
 
-## Red: PCA ANOVA P-Value
 
-- Principal component analysis (PCA) sample scores tested against SSF groups.
-- Easy way to test if there is the expected separation of SSF groups in PCA plots.
+## Possible Confounding Factors
+
+- Easy to see!
 
 ```{r}
-#| label: pca-red-3
-pca_example_red_3
+#| label: confounding-plot-1
+#| fig-width: 11
+example_confound_plot_6863$scores
+```
+
+## Possible Confounding Factors
+
+- Hartigans dip-test for multi-modality.
+
+```{r}
+#| label: confounding-plot-2
+#| fig-width: 11
+(example_confound_plot_6863$pc1_histogram | example_confound_plot_6863$pc2_histogram) / free(example_confound_plot_6863$confound_sinaplot)
+```
+
+## Technical Replicates Detection
+
+- Low correlation distance
+- Low string distance
+- Runs in clustering by correlation distance
+
+```{r}
+#| label: technical-replicates-plot
+#| fig-width: 11
+#| fig-height: 5
+heatmap_grob = grid::grid.grabExpr(ComplexHeatmap::draw(technical_replicates_plot$heatmap))
+
+wrap_plots(heatmap_grob, technical_replicates_plot$dotplot, nrow = 1)
 ```
 
 
-## Next Slide
+## Allows Estimations of Different RSD
 
-- Just a placeholder so we always see what happens on the next hit.
+```{r}
+#| label: other-rsd
+#| fig-width: 12
+non_technical_rsd_plot
+```
+
+# Thank you!
+
 
 # Extra
 
-## Detection of Log-Transformation
+## Detection of Log-Transformed Data
 
 ```{r}
 #| label: raw-log-histograms
@@ -376,7 +441,7 @@ example_raw_log_plot
 Mean - median ratio (MMR)
 :::
 
-## Detection of Log-Transformation
+## Detection of Log-Transformed Data
 
 
 ```{r}
@@ -385,8 +450,17 @@ Mean - median ratio (MMR)
 (mmr_logtransform_plot$mmr_distribution / (mmr_logtransform_plot$mmr_vs_neg | mmr_logtransform_plot$less1000)) + plot_annotation(tag_levels = "A")
 ```
 
-## Negative & Missing Values
+## Negatives & Missing Values
 
-* MMR and transformation change only a fraction of datasets
+* MMR and transformation change only a fraction of datasets.
 * Negative valuse withough log-transformation should be physically impossible?
 * What if we treat negative values as missing?
+
+## Test
+
+$$\text{status} = \begin{cases} 
+  \text{green} & \text{if } x \le \tilde{y} \pm 2 \times SD \\
+  \text{yellow} & \text{if } \tilde{y} \pm 2 \times SD \lt x \le \tilde{y} \pm 4 \times SD\\
+  \text{red} & \text{if } x \gt \tilde{y} \pm 4 \times SD
+   \end{cases}
+  $$
