@@ -272,7 +272,7 @@ figures_tables_t = tar_assign({
     order_n = "yes",
     trim_90 = "yes",
     use_log = "no",
-    column_title = "Overall Statuses   Green: 33%   Yellow: 41%   Red: 26%",
+    column_title = "Overall Statuses   Green: 2016 (33%)   Yellow: 2543 (41%)   Red: 1640 (26%)",
     column_title_side = "top",
     column_title_gp = grid::gpar(fontsize = 20, fontface = "bold")
   ) |>

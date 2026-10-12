@@ -79,14 +79,34 @@ report_list = check_qc_outputs(se_data)
 
 ## Overall QC/QA Summary
 
+```{r}
+#| label: summary-graphic
+#| fig-height: 0.6
+#| fig-width: 18
+#| fig-cap: Status color codes.
+summary_data = get_specific_metadata(se_data, "summary")
+summary_heatmap = create_single_status_heatmap(summary_data)
+summary_heatmap
+```
+
 ::: {.callout-tip title = "Summary Table (click me to see the summary)" collapse = "true"}
 
 
 ```{r}
 #| label: tbl-qc-qa-summary
-#| tbl-cap: Overall results summary table.
-summary_table = transform_summary_to_useful_table(metadata(se_data)$summary)
-gt::gt(summary_table)
+#| tbl-cap: Overall results summary table. The ones used for assigning an overall status are in bold.
+summary_table = transform_summary_to_useful_table(summary_data)
+bold_status = c("overall_status", setup_statuses(summary_table$original_status))
+bold_status_loc = which(summary_table$original_status %in% bold_status)
+summary_table |> 
+  dplyr::select(-original_status) |>
+  gt::gt() |>
+  gt::tab_style(style = list(
+    gt::cell_text(weight = "bold")
+  ),
+  locations = gt::cells_body(
+    rows = bold_status_loc
+  ))
 ```
 
 :::

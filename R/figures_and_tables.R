@@ -317,7 +317,7 @@ create_example_confound_plot = function(
         ggplot(aes(x = PC1, y = PC2, color = ssf2)) +
         geom_jitter(size = 2, width = 2, height = 2) +
         theme(legend.position = "top") +
-        labs(stubtitle = metadata(se_data)$mwtab$ID)
+        labs(subtitle = metadata(se_data)$mwtab$ID)
       pca_plot_confound = pca_scores |>
         ggplot(aes(x = PC1, y = PC2, color = .data[[confounding_var]])) +
         geom_jitter(size = 2, width = 2, height = 2) +
@@ -328,7 +328,7 @@ create_example_confound_plot = function(
         ggplot(aes(x = PC1, y = PC2, color = ssf2)) +
         geom_point(size = 2, width = 2, height = 2) +
         theme(legend.position = "top") +
-        labs(stubtitle = metadata(se_data)$mwtab$ID)
+        labs(subtitle = metadata(se_data)$mwtab$ID)
       pca_plot_confound = pca_scores |>
         ggplot(aes(x = PC1, y = PC2, color = .data[[confounding_var]])) +
         geom_jitter(size = 2, width = 2, height = 2) +
@@ -354,10 +354,52 @@ create_example_confound_plot = function(
 }
 
 create_color_list = function() {
-  color_list = c("red" = "#D81B60", "green" = "#004D40", "yellow" = "#FFC107")
+  color_list = c(
+    "red" = "#D81B60",
+    "green" = "#004D40",
+    "yellow" = "#FFC107",
+    "gray" = "#9a9191"
+  )
   color_list
 }
 
+
+create_single_status_heatmap = function(in_status, ...) {
+  # tar_load(sets_qc_color_confounds); in_status = sets_qc_color_confounds[1, ]; tar_source("R"), ... = NULL
+  status_cols = setup_statuses(names(in_status))
+  color_list = create_color_list()
+
+  status_matrix = in_status[, status_cols, drop = FALSE] |> as.matrix()
+  factor_matrix = factor(
+    status_matrix,
+    levels = c("green", "yellow", "red", "gray")
+  ) |>
+    as.numeric() |>
+    matrix(nrow = 1, ncol = length(status_cols))
+  colnames(factor_matrix) = gsub("_status", "", colnames(status_matrix)) |>
+    purrr::map_chr(convert_description_to_sentence)
+
+  color_factor = c(
+    "1" = color_list[["green"]],
+    "2" = color_list[["yellow"]],
+    "3" = color_list[["red"]],
+    "4" = color_list[["gray"]]
+  )
+
+  out_heatmap = ComplexHeatmap::Heatmap(
+    factor_matrix,
+    col = color_factor,
+    cluster_rows = FALSE,
+    cluster_columns = FALSE,
+    show_heatmap_legend = FALSE,
+    column_names_side = "top",
+    column_names_rot = 0,
+    column_names_centered = TRUE,
+    column_names_gp = grid::gpar(fontsize = 14, fontface = "bold"),
+    ...
+  )
+  out_heatmap
+}
 
 create_status_heatmap = function(
   parsed_percentage_overall,

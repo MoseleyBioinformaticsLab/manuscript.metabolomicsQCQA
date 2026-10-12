@@ -457,6 +457,7 @@ transform_summary_to_useful_table = function(summary_info) {
     value = TRUE,
     invert = TRUE
   )
+  status_cols = setup_statuses(names(summary_info))
   use_info = summary_info[, use_cols, drop = FALSE]
   summary_text = purrr::imap(use_info, \(x, id) {
     if (
@@ -475,7 +476,8 @@ transform_summary_to_useful_table = function(summary_info) {
       names(summary_text),
       convert_description_to_sentence
     ),
-    Value = unlist(summary_text)
+    Value = unlist(summary_text),
+    original_status = names(summary_text)
   )
   return(out_table)
 }
