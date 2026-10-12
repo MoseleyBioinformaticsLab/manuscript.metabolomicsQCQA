@@ -267,13 +267,14 @@ create_technical_replicate_plot = function(se_data) {
   return(list(dotplot = dist_plot, heatmap = out_heatmap))
 }
 
-create_example_confound_plot = function(se_data, confounding_var = NULL) {
+create_example_confound_plot = function(
+  se_data,
+  confounding_var = NULL,
+  jitter = "no"
+) {
   # se_pca = tar_read(se_pca_g34); se_data = se_pca[["AN000454"]]; tar_source("R")
-  # se_pca = tar_read(se_pca_g20); se_data = se_pca[["AN006863"]]; tar_source("R")
-  pca_data = get_specific_metadata(se_data, "pca_groups")
-  last_run = check_qc_outputs(se_data)
-  pca_index = last_run$pca[length(last_run$pca)]
-  pca_data_use = pca_data[[pca_index]]
+  # se_pca = tar_read(se_pca_g20); se_data = se_pca[["AN006863"]]; tar_source("R"); confounding_var = "cohort"; jitter = "yes"
+  pca_data_use = grab_last_pca_data(se_data)
 
   pca_scores = pca_data_use$pca$pca
 
@@ -288,22 +289,60 @@ create_example_confound_plot = function(se_data, confounding_var = NULL) {
     facet_wrap(~ssf, ncol = 1) +
     theme(strip.background = element_blank())
 
-  scores_plot = pca_scores |>
-    ggplot(aes(x = PC1, y = PC2, color = ssf)) +
-    geom_point(size = 2) +
-    theme(legend.position = "top") +
-    labs(subtitle = metadata(se_data)$mwtab$ID)
+  if (jitter %in% "yes") {
+    scores_plot = pca_scores |>
+      ggplot(aes(x = PC1, y = PC2, color = ssf)) +
+      geom_jitter(size = 2, width = 2, height = 2) +
+      theme(legend.position = "top") +
+      labs(subtitle = metadata(se_data)$mwtab$ID)
+  } else {
+    scores_plot = pca_scores |>
+      ggplot(aes(x = PC1, y = PC2, color = ssf)) +
+      geom_point(size = 2) +
+      theme(legend.position = "top") +
+      labs(subtitle = metadata(se_data)$mwtab$ID)
+  }
 
   if (!is.null(confounding_var)) {
     confound_plot = pca_scores |>
       ggplot(aes(x = PC1, y = .data[[confounding_var]])) +
       geom_sina() +
       geom_boxplot(alpha = 0)
+
+    new_ssf = paste0(pca_scores$ssf, "|", pca_scores[[confounding_var]])
+    pca_scores$ssf2 = new_ssf
+
+    if (jitter %in% "yes") {
+      pca_plot_ssf2 = pca_scores |>
+        ggplot(aes(x = PC1, y = PC2, color = ssf2)) +
+        geom_jitter(size = 2, width = 2, height = 2) +
+        theme(legend.position = "top") +
+        labs(stubtitle = metadata(se_data)$mwtab$ID)
+      pca_plot_confound = pca_scores |>
+        ggplot(aes(x = PC1, y = PC2, color = .data[[confounding_var]])) +
+        geom_jitter(size = 2, width = 2, height = 2) +
+        theme(legend.position = "top") +
+        labs(subtitle = metadata(se_data)$mwtab$ID)
+    } else {
+      pca_plot_ssf2 = pca_scores |>
+        ggplot(aes(x = PC1, y = PC2, color = ssf2)) +
+        geom_point(size = 2, width = 2, height = 2) +
+        theme(legend.position = "top") +
+        labs(stubtitle = metadata(se_data)$mwtab$ID)
+      pca_plot_confound = pca_scores |>
+        ggplot(aes(x = PC1, y = PC2, color = .data[[confounding_var]])) +
+        geom_jitter(size = 2, width = 2, height = 2) +
+        theme(legend.position = "top") +
+        labs(subtitle = metadata(se_data)$mwtab$ID)
+    }
+
     return(list(
       pc1_histogram = pc1_dist_plot,
       pc2_histogram = pc2_dist_plot,
       scores = scores_plot,
-      confound_sinaplot = confound_plot
+      confound_sinaplot = confound_plot,
+      ssf2_plot = pca_plot_ssf2,
+      confound_scores = pca_plot_confound
     ))
   } else {
     return(list(
@@ -502,10 +541,18 @@ create_non_technical_rsd_plot = function(non_technical_rsd) {
         levels = c("Non Technical RSD", "Technical Replicate RSD", "Total RSD")
       )
     )
+  wide_rsd_summary = wide_rsd |>
+    dplyr::summarise(mode = calculate_mode(RSD), .by = Type) |>
+    dplyr::mutate(text_val = format(mode, digits = 2), x = 0.9)
   wide_rsd_plot = wide_rsd |>
     ggplot(aes(x = RSD, y = Type)) +
     geom_sina() +
-    geom_boxplot(alpha = 0)
+    geom_boxplot(alpha = 0) +
+    geom_text(
+      data = wide_rsd_summary,
+      aes(x = x, label = text_val),
+      vjust = -.5
+    )
 
   wide_rsd_plot
 }
@@ -576,80 +623,142 @@ create_databased_cutoffs_plot = function(
   sets_pc_number_result,
   data_limits
 ) {
-  # tar_load(c(
-  #   sets_percent_missing_result,
-  #   sets_median_correlation_result,
-  #   sets_rsd_result,
-  #   sets_pc_number_result,
-  #   data_limits
-  # ))
-  color_list = c("red" = "#D81B60", "green" = "#004D40", "yellow" = "#FFC107")
-  pm_plot = sets_percent_missing_result |>
-    dplyr::filter_out(is.na(missing) | missing == 0) |>
-    ggplot(aes(x = missing)) +
-    geom_histogram(bins = 100) +
-    geom_vline(
-      xintercept = data_limits$missing,
-      color = color_list[c("yellow", "red")],
-      linewidth = 2
-    ) +
-    geom_vline(xintercept = 0, color = color_list[c("green")], linewidth = 2) +
-    scale_y_continuous(expand = expansion(mult = c(0, NA))) +
-    scale_x_continuous(expand = expansion(mult = c(0, NA))) +
-    labs(x = "% Missingness")
+  # tar_load(c(sets_percent_missing_result, sets_median_correlation_result, sets_rsd_result, sets_pc_number_result, data_limits)); tar_source("R")
+  color_list = create_color_list()
 
-  rsd_plot = sets_rsd_result |>
-    dplyr::filter_out(data %in% "n", (is.na(median) | median == 0)) |>
-    ggplot(aes(x = median)) +
-    geom_histogram(bins = 100) +
-    geom_vline(
-      xintercept = data_limits$rsd,
-      color = color_list[c("yellow", "red")],
-      linewidth = 2
-    ) +
-    geom_vline(
-      aes(xintercept = median(median)),
-      color = color_list["green"],
-      linewidth = 2
-    ) +
+  pm_histogram = ggplot_build(
+    sets_percent_missing_result |>
+      dplyr::filter_out(is.na(missing) | missing == 0) |>
+      ggplot(aes(x = missing)) +
+      geom_histogram(bins = 100)
+  )
+  pm_data = pm_histogram$data[[1]]
+
+  pm_data = pm_data |>
+    dplyr::mutate(
+      status = dplyr::case_when(
+        x <= data_limits$missing[1] ~ "green",
+        x > data_limits$missing[2] ~ "red",
+        x > data_limits$missing[1] & x <= data_limits$missing[2] ~ "yellow"
+      )
+    )
+
+  pm_limits = format(data_limits$missing, digits = 4)
+  pm_limit_string = glue::glue(
+    "Cutoffs of <span style='color:{color_list['green']};'>{pm_limits[1]}</span>; <span style='color:{color_list['yellow']};'>{pm_limits[2]}</span>"
+  )
+  pm_plot = pm_data |>
+    ggplot(aes(x = x, y = y, fill = status)) +
+    geom_col() +
+    scale_fill_manual(values = color_list) +
+    labs(x = "% Missingness", y = "# Datasets", subtitle = pm_limit_string) +
+    theme(legend.position = "none", plot.subtitle = element_markdown()) +
     scale_y_continuous(expand = expansion(mult = c(0, NA))) +
-    scale_x_continuous(expand = expansion(mult = c(0, NA)), limits = c(0, 3)) +
-    labs(x = "Median(RSD)")
-  med_cor_plot = sets_median_correlation_result |>
-    dplyr::summarise(
-      max = max(median_ici_correlation, na.rm = TRUE),
-      .by = id
-    ) |>
-    dplyr::filter(!is.infinite(max)) |>
-    ggplot(aes(x = max)) +
-    geom_histogram(bins = 100) +
-    geom_vline(
-      xintercept = data_limits$median_correlation,
-      color = color_list[c("yellow", "red")],
-      linewidth = 2
-    ) +
-    geom_vline(
-      aes(xintercept = median(max)),
-      color = color_list["green"],
-      linewidth = 2
-    ) +
+    scale_x_continuous(expand = expansion(mult = c(0, NA)))
+
+  rsd_histogram = ggplot_build(
+    sets_rsd_result |>
+      dplyr::filter(data %in% "r") |>
+      dplyr::filter_out(
+        is.na(median) | median == 0 | median > 2
+      ) |>
+      ggplot(aes(x = median)) +
+      geom_histogram(bins = 100)
+  )
+
+  rsd_data = rsd_histogram$data[[1]]
+  rsd_data = rsd_data |>
+    dplyr::mutate(
+      status = dplyr::case_when(
+        x <= data_limits$rsd[1] ~ "green",
+        x > data_limits$rsd[1] & x <= data_limits$rsd[2] ~ "yellow",
+        x > data_limits$rsd[2] ~ "red"
+      )
+    )
+
+  rsd_limits = format(data_limits$rsd, digits = 2)
+  rsd_limit_string = glue::glue(
+    "Cutoffs of <span style='color:{color_list['green']};'>{rsd_limits[1]}</span>; <span style='color:{color_list['yellow']};'>{rsd_limits[2]}</span>"
+  )
+  rsd_plot = rsd_data |>
+    ggplot(aes(x = x, y = y, fill = status)) +
+    geom_col() +
+    scale_fill_manual(values = color_list) +
     scale_y_continuous(expand = expansion(mult = c(0, NA))) +
     scale_x_continuous(expand = expansion(mult = c(0, NA))) +
-    labs(x = "Max(Median(Sample-Sample Correlation))")
-  pc_90_plot = sets_pc_number_result |>
-    dplyr::mutate(pc_log = log10(pc_90)) |>
-    dplyr::filter(!is.infinite(pc_90), pc_log >= 1) |>
-    ggplot(aes(x = pc_log)) +
-    geom_histogram(bins = 30) +
-    geom_vline(
-      xintercept = log10(data_limits$pca),
-      color = color_list[c("yellow", "red")],
-      linewidth = 2
-    ) +
-    geom_vline(xintercept = 1, color = color_list["green"], linewidth = 2) +
+    labs(x = "Median(RSD)", y = "# Datasets", subtitle = rsd_limit_string) +
+    theme(legend.position = "none", plot.subtitle = element_markdown())
+
+  med_cor_histogram = ggplot_build(
+    sets_median_correlation_result |>
+      dplyr::summarise(
+        max = max(median_ici_correlation, na.rm = TRUE),
+        .by = id
+      ) |>
+      dplyr::filter(!is.infinite(max)) |>
+      ggplot(aes(x = max)) +
+      geom_histogram(bins = 100)
+  )
+  med_cor_data = med_cor_histogram$data[[1]]
+
+  med_cor_data = med_cor_data |>
+    dplyr::mutate(
+      status = dplyr::case_when(
+        x >= data_limits$median_correlation[1] ~ "green",
+        x >= data_limits$median_correlation[2] &
+          x < data_limits$median_correlation[1] ~ "yellow",
+        x < data_limits$median_correlation[2] ~ "red"
+      )
+    )
+
+  med_cor_limits = format(data_limits$median_correlation, digits = 2)
+  med_cor_limit_string = glue::glue(
+    "Cutoffs of <span style='color:{color_list['green']};'>{med_cor_limits[1]}</span>; <span style='color:{color_list['yellow']};'>{med_cor_limits[2]}</span>"
+  )
+  med_cor_plot = med_cor_data |>
+    ggplot(aes(x = x, y = y, fill = status)) +
+    geom_col() +
+    scale_fill_manual(values = color_list) +
     scale_y_continuous(expand = expansion(mult = c(0, NA))) +
     scale_x_continuous(expand = expansion(mult = c(0, NA))) +
-    labs(x = "Log10(PC-90%)")
+    labs(
+      x = "Max(Median(Correlation))",
+      y = "# Datasets",
+      subtitle = med_cor_limit_string
+    ) +
+    theme(legend.position = "none", plot.subtitle = element_markdown())
+
+  pc_90_histogram = ggplot_build(
+    sets_pc_number_result |>
+      dplyr::mutate(pc_log = log10(pc_90)) |>
+      dplyr::filter(!is.infinite(pc_90), pc_log >= 1) |>
+      ggplot(aes(x = pc_log)) +
+      geom_histogram(bins = 30)
+  )
+
+  pca_limits = log10(data_limits$pca)
+  pc_90_data = pc_90_histogram$data[[1]]
+  pc_90_data = pc_90_data |>
+    dplyr::mutate(
+      status = dplyr::case_when(
+        x <= pca_limits[1] ~ "green",
+        x > pca_limits[1] & x <= pca_limits[2] ~ "yellow",
+        x > pca_limits[2] ~ "red"
+      )
+    )
+
+  pca_limits = format(data_limits$pca) |> trimws()
+  pca_limit_string = glue::glue(
+    "Cutoffs of <span style='color:{color_list['green']};'>{pca_limits[1]}</span>; <span style='color:{color_list['yellow']};'>{pca_limits[2]}</span>"
+  )
+  pc_90_plot = pc_90_data |>
+    ggplot(aes(x = x, y = y, fill = status)) +
+    geom_col() +
+    scale_fill_manual(values = color_list) +
+    scale_y_continuous(expand = expansion(mult = c(0, NA))) +
+    scale_x_continuous(expand = expansion(mult = c(0, NA))) +
+    labs(x = "Log10(PC-90%)", y = "# Datasets", subtitle = pca_limit_string) +
+    theme(legend.position = "none", plot.subtitle = element_markdown())
   return(list(
     pm = pm_plot,
     rsd = rsd_plot,

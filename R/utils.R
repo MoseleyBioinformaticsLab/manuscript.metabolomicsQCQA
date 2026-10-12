@@ -1,3 +1,22 @@
+grab_last_pca_data = function(se_data) {
+  pca_data = get_specific_metadata(se_data, "pca_groups")
+  last_run = check_qc_outputs(se_data)
+  pca_index = last_run$pca[length(last_run$pca)]
+  pca_data_use = pca_data[[pca_index]]
+  pca_data_use
+}
+
+count_ancillary_missing = function() {
+  tar_load(sets_qc_color_confounds)
+
+  ancillary_and_no_data = sets_qc_color_confounds |>
+    dplyr::filter(
+      data_source %in% c("ancillary", "none")
+    )
+  n_data = nrow(ancillary_and_no_data)
+  n_miss = sum(ancillary_and_no_data$data_source %in% "none")
+}
+
 count_code = function() {
   all_r_files = fs::dir_ls(
     "~/Documents/manuscripts/in_progress/rmflight_metabolomicsDatabaseQCQA/R"

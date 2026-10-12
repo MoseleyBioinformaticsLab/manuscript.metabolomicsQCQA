@@ -12,6 +12,9 @@ format:
               font-size: 2.5em; 
             }
           </style>
+    pointer-sync: true
+revealjs-plugins: 
+  - pointer-sync
 ---
 
 ```{r}
@@ -74,13 +77,13 @@ negatives_as_missing_table
 
 
 
-![](../resources/acknowledgements_slide_dark.png)
+![Moseley Group, current and past members.](../resources/acknowledgements_slide_dark.png)
 
 This work was supported by: NSF 2020026 (PI Moseley); NIH P42 ES007380 (PD Pennell); NIH 1R03LM014928-01 (PI Moseley)
 
 ## Results of This Work
 
-* Hosted on Zenodo at xxxxx
+* Hosted on Zenodo at 10.5281/zenodo.23269018
 * Includes:
   * A single table with much of the summary data for each dataset, as well as the statuses and metrics of our quality control and quality assessment (QC/QA) criteria.
   * HTML QC/QA reports for every dataset.
@@ -89,15 +92,15 @@ This work was supported by: NSF 2020026 (PI Moseley); NIH P42 ES007380 (PD Penne
 ## Omics Data Repositories
 
 - Journals and funders now require processed data to be deposited in a repository.
-- Many support the deposition of raw data in addition to processed data.
+- Many repositories support the deposition of raw data in addition to processed data.
 - Gene expression:
   - Gene Expression Omnibus (GEO)
   - Sequence Read Archive (SRA)
   - ArrayExpress
-- Proteomics
+- Proteomics:
   - Proteomics Identifications (PRIDE)
   - Mass Spectrometry Interactive Virtual Environment (MassIVE)
-- Metabolomics
+- Metabolomics:
   - MetaboLights
   - Metabolomics Workbench
 
@@ -146,13 +149,6 @@ This work was supported by: NSF 2020026 (PI Moseley); NIH P42 ES007380 (PD Penne
 loss_waterfall_plot
 ```
 
-## No Data??
-
-```{r}
-#| label: nodata-reasons
-#| fig-cap: Counts of the various reasons that the 167 datasets had "No Data", and therefore couldn't create a summarized experiment object to be used for further analysis.
-nose_reasons_bar_plot
-```
 
 
 # Color Grade Evaluation
@@ -164,7 +160,7 @@ nose_reasons_bar_plot
 - Additional sample data includes things like the raw file name, biological replicate.
 - We combine multiple SSF to make a unique label that defines the **experimental groups** of samples.
 
-![](../resources/example_ssf_data.png)
+![Sample metadata from AN006863.](../resources/example_ssf_data.png)
 
 ## Number of Samples in Subject Sample Factor Groups
 
@@ -175,9 +171,14 @@ nose_reasons_bar_plot
 
 ::: {.column width="50%"}
 
-  * all SSF groups have $\le$ 2 samples per group ~ [red]{.my-red};
-  * 3 $\le$ all SSF groups $\le$ 4 ~ [yellow]{.my-yellow};
-  * all SSF groups $\ge$ 5 samples ~ [green]{.my-green};
+$$\text{status}_{n} = \begin{cases} 
+  \text{red} & \text{if}\  \ N \le 2 \\
+  \text{yellow} & \text{if}\ \ N \gt 2 \\
+  \text{yellow} & \text{if}\ \ N \le 4 \\
+  \text{green} & \text{if}\ \ N \ge 5
+   \end{cases}
+  $$
+
 :::
 
 ::: {.column width="50%"}
@@ -197,22 +198,38 @@ count_nmostcommon_barplot
 ## Using Data Distributions to Define Color Grades
 
 - We can use the full set of datasets themselves to define green (good), yellow (useable), red (double check).
+- $\tilde{x}$, median of values.
+- $SD$, standard deviation of values.
 
 
+## Percent Missing and Left-Censorship (LC)
 
-## Percent Missing and Left-Censorship
-
-High percent missingness, especially without the indication of left-censorship; indicates the presence of possible data quality issues.
+High percent missingness, especially without the indication of left-censorship (LC); indicates the presence of possible data quality issues.
 
 :::: {.columns}
 
 ::: {.column width="50%"}
 
-* percent missing $\le$ 2 x SD ~ [green]{.my-green} (40.8%);
-* 2 x SD $\lt$ percent missing $\le$ 4 x SD limit ~ [yellow]{.my-yellow} (81.7%);
-* percent missing $\gt$ 4 x SD limit ~ [red]{.my-red}
-* percent missing $\gt$ 10% & lc test p-value $\le$ 0.05 ~ [green]{.my-green};
-* percent missing $\gt$ 10% & lc test p-value $\gt$ 0.05 ~ [yellow]{.my-yellow};
+::: {style="font-size: 80%;"}
+
+$$\text{status}_{pm} = \begin{cases} 
+  \text{green} & \text{if}\  \ x \le \tilde{x} + 2  SD \\
+  \text{yellow} & \text{if}\ \ x \gt \tilde{x} + 2  SD \ \And \\
+  \text{yellow} & \text{if}\ \ x \le \tilde{x} + 4  SD\\
+  \text{red} & \text{if}\ \ x \gt \tilde{x} + 4  SD
+   \end{cases}
+  $$
+:::
+
+::: {style="font-size: 70%;"}
+
+$$\text{status}_{lc} = \begin{cases} 
+  \text{green} & \text{if}\  \ \text{pm} \gt 10\% \ \& \ \text{P}_{LC} \le 0.05 \\
+  \text{yellow} & \text{if}\  \ \text{pm} \gt 10\% \ \& \ \text{P}_{LC} \gt 0.05 \\
+   \end{cases}
+  $$
+:::
+
 
 :::
 
@@ -237,9 +254,17 @@ High maximum observed median RSD indicates high variability in the measurements.
 
 ::: {.column width="50%"}
 
-* median RSD $\le$ median of medians + 2 x SD ~ [green]{.my-green} (0.89);
-* median of medians + 2 x SD $\lt$ median RSD $\le$ median of medians + 4 x SD ~ [yellow]{.my-yellow} (1.48);
-* median RSD $\gt$ median of medians + 4 x SD ~ [red]{.my-red}
+::: {style="font-size: 80%;"}
+
+$$\text{status}_{rsd} = \begin{cases} 
+  \text{green} & \text{if}\  \ x \le \tilde{x} + 2  SD \\
+  \text{yellow} & \text{if}\ \ x \gt \tilde{x} + 2  SD \ \And \\
+  \text{yellow} & \text{if}\ \ x \le \tilde{x} + 4  SD\\
+  \text{red} & \text{if}\ \ x \gt \tilde{x} + 4  SD
+   \end{cases}
+  $$
+:::
+
 :::
 
 ::: {.column width="50%"}
@@ -263,9 +288,17 @@ Low maximum median within SSF group sample-sample ICI-Kt correlations indicate h
 
 ::: {.column}
 
-* max median ICI-Kt $\ge$ median of max median - 2 SD ~ [green]{.my-green} (0.54);
-* median of max median - 4 SD $\ge$ max median ICI-Kt $\lt$ median of max medians - 2 SD ~ [yellow]{.my-yellow} (0.19);
-* max median ICI-Kt $\lt$ median of max medians - 4 SD ~ [red]{.my-red}
+::: {style="font-size: 80%;"}
+
+$$\text{status}_{cor} = \begin{cases} 
+  \text{green} & \text{if}\  \ x \ge \tilde{x} - 2  SD \\
+  \text{yellow} & \text{if}\ \ x \lt \tilde{x} - 2  SD \ \And \\
+  \text{yellow} & \text{if}\ \ x \ge \tilde{x} - 4  SD\\
+  \text{red} & \text{if}\ \ x \lt \tilde{x} - 4  SD
+   \end{cases}
+  $$
+
+:::
 
 :::
 
@@ -294,9 +327,17 @@ As more principal components (PC) are needed to account for 90% of the variance 
 
 ::: {.column}
 
-  * PC-90 $\le$ median + 2 SD ~ [green]{.my-green} (40); 
-  * median + 2 SD $\lt$ PC-90 $\le$ median + 4 SD ~ [yellow]{.my-yellow} (162); 
-  * PC-90 $\gt$ median + 4 SD ~ [red]{.my-red}
+::: {style="font-size: 80%;"}
+
+$$\text{status}_{90} = \begin{cases} 
+  \text{green} & \text{if}\  \ x \le \tilde{x} + 2  SD \\
+  \text{yellow} & \text{if}\ \ x \gt \tilde{x} + 2  SD \ \And \\
+  \text{yellow} & \text{if}\ \ x \le \tilde{x} + 4  SD\\
+  \text{red} & \text{if}\ \ x \gt \tilde{x} + 4  SD
+   \end{cases}
+  $$
+
+:::
 
 ::: 
 
@@ -319,11 +360,15 @@ Lack of separation of SSF groups across meaningful PCs indicates weak signal var
 
 Analysis of Variance (ANOVA) p-adjusted: 
 
-  * p-adjust $\le$ 0.05 & PC-perc $\ge$ 5% & factor is SSF or derived ~ [green]{.my-green}; 
-  * p-adjust $\le$ 0.05 & PC-perc $\ge$ 5% & factor is additional sample-data or combination of SSF and additional sample-data ~ [yellow]{.my-yellow};
-  * p-adjust $\le$ 0.05 & 1% $\le$ PC-perc $\lt$ 5% ~ [yellow]{.my-yellow};
-  * p-adjust $\le$ 0.05 & PC-perc $\lt$ 1% ~ [red]{.my-red};
-  * p-adjust $\gt$ 0.05 ~ [red]{.my-red}.
+$$\text{status}_{anova} = \begin{cases} 
+  \text{green} & \text{if}\  \ \text{SSF} \ \text{p}_{adj} \le 0.05 \ \And \ \text{PC}\text{perc} \gt 5 \% \\
+  \text{yellow} & \text{if}\  \ \text{Add} \ \text{p}_{adj} \le 0.05 \ \And \ \text{PC}\text{perc} \gt 5 \% \\
+  \text{yellow} & \text{if}\  \ \text{SSF} \ \text{p}_{adj} \le 0.05 \ \And \ \text{PC}\text{perc} \gt 1 \% \\
+  \text{red} & \text{if}\  \ \text{SSF} \ \text{p}_{adj} \le 0.05 \ \And \ \text{PC}\text{perc} \lt 1 \% \\
+  \text{red} & \text{if}\  \ \text{SSF} \ \text{p}_{adj} \gt 0.05\\
+   \end{cases}
+  $$
+
 
 ## Overall Color Status
 
@@ -340,6 +385,7 @@ status_heatmap_top90_presentation_plot
 
 ```{r}
 #| label: pca-green-1
+#| fig-cap: Examples of low p-value PC scores vs SSF ANOVA (green).
 #| fig-width: 16
 #| fig-height: 8
 (pca_example_green_1 + pca_example_green_2) / pca_example_green_3
@@ -351,13 +397,14 @@ status_heatmap_top90_presentation_plot
 
 ```{r}
 #| label: pca-red-1
+#| fig-cap: Examples of high p-value PC scores vs SSF ANOVA (red).
 #| fig-width: 16
 #| fig-height: 8
 (pca_example_red_1 + pca_example_red_2) / pca_example_red_3
 ```
 
 
-## Do Analyses Within Studies Share the Same Overall Status?
+## Do Analyses Within The Same Study Share the Same Overall Status?
 
 - MW groups analyses into studies;
   - multiple polarities for MS
@@ -366,6 +413,7 @@ status_heatmap_top90_presentation_plot
 
 ```{r}
 #| label: study-status-count-table
+#| tbl-cap: Initial status of dataset vs compared status with another dataset in the same study.
 study_status_comparison_table$status_comparisons |>
   gt::gt() |>
   gt::tab_style(
@@ -380,25 +428,6 @@ study_status_comparison_table$status_comparisons |>
 ```
 
 
-## Possible Confounding Factors
-
-- Easy to see!
-
-```{r}
-#| label: confounding-plot-1
-#| fig-width: 11
-example_confound_plot_6863$scores
-```
-
-## Possible Confounding Factors
-
-- Hartigans dip-test for multi-modality.
-
-```{r}
-#| label: confounding-plot-2
-#| fig-width: 11
-(example_confound_plot_6863$pc1_histogram | example_confound_plot_6863$pc2_histogram) / free(example_confound_plot_6863$confound_sinaplot)
-```
 
 ## Technical Replicates Detection
 
@@ -410,6 +439,7 @@ example_confound_plot_6863$scores
 #| label: technical-replicates-plot
 #| fig-width: 11
 #| fig-height: 5
+#| fig-cap: Sample-sample correlation heatmap, and point plot of correlation distances and string distances between samples, with replicates noted in red.
 heatmap_grob = grid::grid.grabExpr(ComplexHeatmap::draw(technical_replicates_plot$heatmap))
 
 wrap_plots(heatmap_grob, technical_replicates_plot$dotplot, nrow = 1)
@@ -421,13 +451,30 @@ wrap_plots(heatmap_grob, technical_replicates_plot$dotplot, nrow = 1)
 ```{r}
 #| label: other-rsd
 #| fig-width: 12
+#| fig-cap: Sina plot of total RSD, technical RSD, and non-technical RSD for datasets with technical replicates.
 non_technical_rsd_plot
 ```
+
+## Other Considerations
+
+* Why are there datasets with no data?
+* Detecting log-transformed data.
+* What should be done with negative values?
+* Detecting possible confounds or batch effects.
 
 # Thank you!
 
 
 # Extra
+
+## Why Is There No Data??
+
+```{r}
+#| label: nodata-reasons
+#| fig-cap: Counts of the various reasons that the 167 datasets had "No Data", and therefore couldn't create a summarized experiment object to be used for further analysis.
+nose_reasons_bar_plot
+```
+
 
 ## Detection of Log-Transformed Data
 
@@ -456,11 +503,31 @@ Mean - median ratio (MMR)
 * Negative valuse withough log-transformation should be physically impossible?
 * What if we treat negative values as missing?
 
-## Test
 
-$$\text{status} = \begin{cases} 
-  \text{green} & \text{if } x \le \tilde{y} \pm 2 \times SD \\
-  \text{yellow} & \text{if } \tilde{y} \pm 2 \times SD \lt x \le \tilde{y} \pm 4 \times SD\\
-  \text{red} & \text{if } x \gt \tilde{y} \pm 4 \times SD
-   \end{cases}
-  $$
+## Possible Confounding Factors
+
+- Easy to see!
+
+```{r}
+#| label: confounding-plot-1
+#| fig-cap: Sample scores for dataset AN006863, colored by SSF group.
+#| fig-width: 11
+example_confound_plot_6863$scores
+```
+
+## Possible Confounding Factors
+
+- Hartigans dip-test for multi-modality.
+
+```{r}
+#| label: confounding-plot-2
+#| fig-width: 11
+#| fig-cap: Sample scores for PC1 & PC2 for each SSF group (top), and then sample scores on PC1 for the additional factor of 'cohort', that is not part of the SSF group.
+(example_confound_plot_6863$pc1_histogram | example_confound_plot_6863$pc2_histogram) / free(example_confound_plot_6863$confound_sinaplot)
+```
+
+```{r}
+#| label: add-cohort-plot
+#| fig-cap: Sample scores for PC1 & PC2 colored by the possible confound variable 'cohort', as well as the combination of the known SSF and 'cohort'.
+(example_confound_plot_6863$confound_scores | example_confound_plot_6863$ssf2_plot) 
+```

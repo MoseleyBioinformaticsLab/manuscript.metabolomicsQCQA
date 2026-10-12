@@ -255,7 +255,8 @@ figures_tables_t = tar_assign({
     se_pca_g20[[
       "AN006863"
     ]],
-    "cohort"
+    "cohort",
+    jitter = "yes"
   ) |>
     tar_target()
   status_heatmap_top90_plot = create_status_heatmap(
@@ -322,12 +323,7 @@ figures_tables_t = tar_assign({
   ) |>
     tar_target()
   pca_example_green_2 = create_pca_example_plots(
-    se_pca_g25[["AN007332"]],
-    "resources/pca_example_green_2.png",
-    width = 9,
-    height = 6,
-    units = "in",
-    res = 300
+    se_pca_g25[["AN007332"]]
   ) |>
     tar_target()
   pca_example_green_3 = create_pca_example_plots(
