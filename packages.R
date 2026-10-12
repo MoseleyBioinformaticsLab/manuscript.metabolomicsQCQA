@@ -13,7 +13,6 @@ library(ggtext)
 theme_set(cowplot::theme_cowplot())
 library(ggforce)
 library(patchwork)
-library(DiagrammeR)
 
 suppressWarnings(suppressMessages(library(SummarizedExperiment)))
 
