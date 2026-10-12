@@ -83,7 +83,7 @@ This work was supported by: NSF 2020026 (PI Moseley); NIH P42 ES007380 (PD Penne
 
 ## Results of This Work
 
-* Hosted on Zenodo at 10.5281/zenodo.23269018
+* Hosted on Zenodo at [10.5281/zenodo.23269018](https://dx.doi.org/10.5281/zenodo.23269018).
 * Includes:
   * A single table with much of the summary data for each dataset, as well as the statuses and metrics of our quality control and quality assessment (QC/QA) criteria.
   * HTML QC/QA reports for every dataset.
@@ -91,8 +91,7 @@ This work was supported by: NSF 2020026 (PI Moseley); NIH P42 ES007380 (PD Penne
 
 ## Omics Data Repositories
 
-- Journals and funders now require processed data to be deposited in a repository.
-- Many repositories support the deposition of raw data in addition to processed data.
+- Journals and funders require processed data to be deposited in a repository.
 - Gene expression:
   - Gene Expression Omnibus (GEO)
   - Sequence Read Archive (SRA)
@@ -153,16 +152,16 @@ loss_waterfall_plot
 
 # Color Grade Evaluation
 
-## Subject Sample Factors (SSF)
+## Subject Sample Factors (SSFs)
 
 - One or more experimentally important metadata about the samples.
   - E.g. Cancerous vs normal, high-fat diet vs normal diet, etc.
+- We combine multiple SSFs to make a unique label that defines the **experimental groups** of samples.
 - Additional sample data includes things like the raw file name, biological replicate.
-- We combine multiple SSF to make a unique label that defines the **experimental groups** of samples.
 
 ![Sample metadata from AN006863.](../resources/example_ssf_data.png)
 
-## Number of Samples in Subject Sample Factor Groups
+## Number of Samples in SSF Groups
 
 - The number of samples per SSF group indicates if the experimental design is statistically powerful or not, based on general rule of thumb.
 - The counts are **after** removing samples with < 10 present metabolites and any outliers.
@@ -173,7 +172,7 @@ loss_waterfall_plot
 
 $$\text{status}_{n} = \begin{cases} 
   \text{red} & \text{if}\  \ N \le 2 \\
-  \text{yellow} & \text{if}\ \ N \gt 2 \\
+  \text{yellow} & \text{if}\ \ N \gt 2 \ \& \\
   \text{yellow} & \text{if}\ \ N \le 4 \\
   \text{green} & \text{if}\ \ N \ge 5
    \end{cases}
@@ -362,23 +361,12 @@ Analysis of Variance (ANOVA) p-adjusted:
 
 $$\text{status}_{anova} = \begin{cases} 
   \text{green} & \text{if}\  \ \text{SSF} \ \text{p}_{adj} \le 0.05 \ \And \ \text{PC}\text{perc} \gt 5 \% \\
+  \text{yellow} & \text{if}\  \ \text{SSF} \ \text{p}_{adj} \le 0.05 \ \And \ \text{PC}\text{perc} \gt 1 \% \ \text{or}\\
   \text{yellow} & \text{if}\  \ \text{Add} \ \text{p}_{adj} \le 0.05 \ \And \ \text{PC}\text{perc} \gt 5 \% \\
-  \text{yellow} & \text{if}\  \ \text{SSF} \ \text{p}_{adj} \le 0.05 \ \And \ \text{PC}\text{perc} \gt 1 \% \\
   \text{red} & \text{if}\  \ \text{SSF} \ \text{p}_{adj} \le 0.05 \ \And \ \text{PC}\text{perc} \lt 1 \% \\
   \text{red} & \text{if}\  \ \text{SSF} \ \text{p}_{adj} \gt 0.05\\
    \end{cases}
   $$
-
-
-## Overall Color Status
-
-```{r}
-#| label: status-heatmap
-#| fig-width: 18
-#| fig-height: 9
-#| fig-cap: Top 90% of status combinations. 
-status_heatmap_top90_presentation_plot
-```
 
 
 ## Green: PCA ANOVA P-Value
@@ -402,6 +390,18 @@ status_heatmap_top90_presentation_plot
 #| fig-height: 8
 (pca_example_red_1 + pca_example_red_2) / pca_example_red_3
 ```
+
+
+## Overall Color Status
+
+```{r}
+#| label: status-heatmap
+#| fig-width: 18
+#| fig-height: 9
+#| fig-cap: Top 90% of status combinations. 
+status_heatmap_top90_presentation_plot
+```
+
 
 
 ## Do Analyses Within The Same Study Share the Same Overall Status?
@@ -484,7 +484,7 @@ nose_reasons_bar_plot
 example_raw_log_plot
 ```
 
-::: {.fragment style="position: absolute; bottom: 400px; right: 120px; font-size: 2em; color:black;"}
+::: {.fragment style="position: absolute; bottom: 400px; right: 160px; font-size: 2em; color:black;"}
 Mean - median ratio (MMR)
 :::
 
@@ -526,8 +526,11 @@ example_confound_plot_6863$scores
 (example_confound_plot_6863$pc1_histogram | example_confound_plot_6863$pc2_histogram) / free(example_confound_plot_6863$confound_sinaplot)
 ```
 
+## New SSF Including Cohort
+
 ```{r}
 #| label: add-cohort-plot
+#| fig-width: 16
 #| fig-cap: Sample scores for PC1 & PC2 colored by the possible confound variable 'cohort', as well as the combination of the known SSF and 'cohort'.
 (example_confound_plot_6863$confound_scores | example_confound_plot_6863$ssf2_plot) 
 ```
