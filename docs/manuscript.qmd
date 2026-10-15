@@ -178,7 +178,7 @@ Use of the targets package greatly sped up the many development and testing cycl
 Figure X provides an overview of the QC/QA analysis pipeline. 
 Individual analysis steps of the pipeline are described below.
 
-![Overall QC/QA pipeline steps.](../resources/pipeline_diagram.svg)
+![Overall QC/QA pipeline steps.](../resources/qcqa_pipeline_lucid_alt2.png)
 
 ### Parsing and Transformation to Summarized Experiment
 

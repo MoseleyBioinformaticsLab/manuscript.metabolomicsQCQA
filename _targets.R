@@ -351,7 +351,7 @@ figures_tables_t = tar_assign({
   ) |>
     tar_target()
   sets_qc_color_confounds_csv = create_csv_file(
-    sets_qc_color_confounds,
+    sets_qc_confounds_rsd,
     out_file = "outputs/sets_qc_color_status.csv"
   ) |>
     tar_target()

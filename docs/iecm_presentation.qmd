@@ -1,10 +1,13 @@
 ---
 title: "Evaluation of the quality of deposited datasets in the Metabolomics Workbench data repository"
 author: "Robert M Flight*, P Travis Thompson and Hunter NB Moseley"
+date: 2026-10-16
 format: 
   revealjs:
     smaller: true
     theme: [night, custom.scss]
+    slide-number: true
+    show-slide-number: all
     include-in-header:
       - text: |
           <style>
@@ -73,7 +76,7 @@ negatives_as_missing_table
 ))
 ```
 
-## Achnowledgements
+## Acknowledgements
 
 
 
@@ -114,6 +117,10 @@ This work was supported by: NSF 2020026 (PI Moseley); NIH P42 ES007380 (PD Penne
   - Analysis: typically one analysis method or sample type, e.g. NMR, MS + chromatography, +ve / -ve mode, etc.
 - Our lab has years of experience working with MW data.
 
+::: footer
+Huckvale et al, 2026; Flight et al, 2026; Thompson & Moseley, 2026; Thompson & Moseley, 2023;Powell & Moseley, 2023; Powell & Moseley, 2021
+:::
+
 ## Hypothesis: There Are Significant Numbers of Reusable Datasets in Metabolomics Workbench
 
 - The majority of data within MW is expected to be of good quality.
@@ -131,6 +138,7 @@ This work was supported by: NSF 2020026 (PI Moseley); NIH P42 ES007380 (PD Penne
 - 230 custom functions.
 - Execution workflow managed by the `targets` R package.
 - Took 5 days of execution.
+  - Single machine, no HPC.
 :::
 
 ::: {.column width="70%"}
@@ -150,7 +158,7 @@ loss_waterfall_plot
 
 
 
-# Color Grade Evaluation
+# [Color]{.my-green} [Grade]{.my-yellow} [Evaluation]{.my-red}
 
 ## Subject Sample Factors (SSFs)
 
@@ -196,7 +204,7 @@ count_nmostcommon_barplot
 
 ## Using Data Distributions to Define Color Grades
 
-- We can use the full set of datasets themselves to define green (good), yellow (useable), red (double check).
+- We can use the full set of datasets themselves to define [green]{.my-green} (good), [yellow]{.my-yellow} (useable), [red]{.my-red} (double check).
 - $\tilde{x}$, median of values.
 - $SD$, standard deviation of values.
 
@@ -464,10 +472,9 @@ non_technical_rsd_plot
 
 # Thank you!
 
+# Extra {visibility="uncounted"}
 
-# Extra
-
-## Why Is There No Data??
+## Why Is There No Data?? {visibility="uncounted"}
 
 ```{r}
 #| label: nodata-reasons
@@ -476,7 +483,7 @@ nose_reasons_bar_plot
 ```
 
 
-## Detection of Log-Transformed Data
+## Detection of Log-Transformed Data {visibility="uncounted"}
 
 ```{r}
 #| label: raw-log-histograms
@@ -488,7 +495,7 @@ example_raw_log_plot
 Mean - median ratio (MMR)
 :::
 
-## Detection of Log-Transformed Data
+## Detection of Log-Transformed Data {visibility="uncounted"}
 
 
 ```{r}
@@ -497,14 +504,37 @@ Mean - median ratio (MMR)
 (mmr_logtransform_plot$mmr_distribution / (mmr_logtransform_plot$mmr_vs_neg | mmr_logtransform_plot$less1000)) + plot_annotation(tag_levels = "A")
 ```
 
-## Negatives & Missing Values
+## Negatives & Missing Values {visibility="uncounted"}
 
 * MMR and transformation change only a fraction of datasets.
 * Negative valuse withough log-transformation should be physically impossible?
 * What if we treat negative values as missing?
 
+## Negatives & Missing Values {visibility="uncounted"}
 
-## Possible Confounding Factors
+* Compare p-value and estimate of left-censorship test for every dataset with $\ge 2$ negative values:
+  * just with missing, 
+  * and then with negatives as missing.
+
+```{r}
+#| label: negatives-as-missing
+#| fig-width: 11
+#| fig-cap: Histogram of the Log10 ratio of the left-censorship p-values when considering negative values as missing (Neg-p) compared to just having missing values (Missing-p). Red line indicates a log-ratio of 0. Histogram of the Log2 ratio of the left-censorship test estimates when considering negative values as missing (Neg-p) compared to just having actual missing values (Missing-p). Red line indicates a log-ratio of 0, or no change.
+#| fig-cap-location: margin
+negatives_as_missing_plot$p_histogram | negatives_as_missing_plot$estimate_histogram
+```
+
+## Binomial Test P-Values {visibility="uncounted"}
+
+```{r}
+#| label: negatives-as-missing-table
+#| tbl-cap: Results of binomial test on the log-ratios of p-value and estimate of treating negatives as missing vs not in the left-censorship test.
+negatives_as_missing_table |> 
+  gt::gt() |>
+  gt::fmt_scientific(columns= "P-Value", decimals = 2)
+```
+
+## Possible Confounding Factors {visibility="uncounted"}
 
 - Easy to see!
 
@@ -515,7 +545,7 @@ Mean - median ratio (MMR)
 example_confound_plot_6863$scores
 ```
 
-## Possible Confounding Factors
+## Possible Confounding Factors {visibility="uncounted"}
 
 - Hartigans dip-test for multi-modality.
 
@@ -526,7 +556,7 @@ example_confound_plot_6863$scores
 (example_confound_plot_6863$pc1_histogram | example_confound_plot_6863$pc2_histogram) / free(example_confound_plot_6863$confound_sinaplot)
 ```
 
-## New SSF Including Cohort
+## New SSF Including Cohort {visibility="uncounted"}
 
 ```{r}
 #| label: add-cohort-plot
@@ -534,3 +564,7 @@ example_confound_plot_6863$scores
 #| fig-cap: Sample scores for PC1 & PC2 colored by the possible confound variable 'cohort', as well as the combination of the known SSF and 'cohort'.
 (example_confound_plot_6863$confound_scores | example_confound_plot_6863$ssf2_plot) 
 ```
+
+## Time Created {visibility="uncounted"}
+
+`{r} Sys.time()`
