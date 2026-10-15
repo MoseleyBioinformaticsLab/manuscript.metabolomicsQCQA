@@ -616,7 +616,7 @@ create_percent_missingness_plot = function(not_gray_pca) {
   )
   p_miss_plot = not_gray_pca |>
     ggplot(aes(x = percent_missing, y = measurement_type)) +
-    geom_sina() +
+    geom_sina(alpha = 0.5) +
     labs(x = "% Missingness", y = "Measurement Type", subtitle = max_subtitle)
   p_miss_plot
 }

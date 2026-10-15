@@ -379,3 +379,36 @@ create_new_sample_ids = function(in_sample_ids) {
   )
   return(mapping_df$new_id)
 }
+
+group_by_id = function(internal_ids, group_limit = 200) {
+  # tar_load(sets_qc_confounds_rsd); internal_ids = sets_qc_confounds_rsd$internal_id; group_limit = 2000;
+
+  id_tibble = tibble::tibble(id = internal_ids) |>
+    dplyr::mutate(number = gsub("AN", "", id) |> as.numeric()) |>
+    dplyr::arrange(number)
+  n_seq = ceiling(max(id_tibble$number) / group_limit)
+  lower_limit = seq(1, n_seq * group_limit, by = group_limit)
+  upper_limit = seq(
+    group_limit,
+    (n_seq) * group_limit,
+    by = group_limit
+  )
+
+  group_id = paste0(
+    "AN",
+    stringr::str_pad(upper_limit, width = 6, side = "left", pad = "0")
+  )
+
+  id_tibble_group = purrr::map(seq_len(length(lower_limit)), \(in_group) {
+    out_tibble = id_tibble |>
+      dplyr::filter(
+        dplyr::between(number, lower_limit[in_group], upper_limit[in_group])
+      ) |>
+      dplyr::mutate(group = group_id[in_group])
+    out_tibble
+  }) |>
+    purrr::list_rbind() |>
+    dplyr::select(-number)
+
+  return(id_tibble_group)
+}

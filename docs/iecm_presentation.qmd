@@ -94,7 +94,7 @@ This work was supported by: NSF 2020026 (PI Moseley); NIH P42 ES007380 (PD Penne
 
 ## Omics Data Repositories
 
-- Journals and funders require processed data to be deposited in a repository.
+- Journals and grant agencies require processed data to be deposited in a repository.
 - Gene expression:
   - Gene Expression Omnibus (GEO)
   - Sequence Read Archive (SRA)
@@ -211,7 +211,7 @@ count_nmostcommon_barplot
 
 ## Percent Missing and Left-Censorship (LC)
 
-High percent missingness, especially without the indication of left-censorship (LC); indicates the presence of possible data quality issues.
+High percentage of missing values, especially without the indication of left-censorship (LC); indicates the presence of possible data quality issues.
 
 :::: {.columns}
 
@@ -507,7 +507,7 @@ Mean - median ratio (MMR)
 ## Negatives & Missing Values {visibility="uncounted"}
 
 * MMR and transformation change only a fraction of datasets.
-* Negative valuse withough log-transformation should be physically impossible?
+* Negative values without log-transformation should be physically impossible?
 * What if we treat negative values as missing?
 
 ## Negatives & Missing Values {visibility="uncounted"}
@@ -533,6 +533,15 @@ negatives_as_missing_table |>
   gt::gt() |>
   gt::fmt_scientific(columns= "P-Value", decimals = 2)
 ```
+
+## Percent Missingness Across Datasets {visibility="uncounted"}
+
+```{r}
+#| label: percent-missingness-plot
+#| fig-cap: Sina plot of the percent missing values by measurement type, either NMR or MS.
+percent_missingnes_plot
+```
+
 
 ## Possible Confounding Factors {visibility="uncounted"}
 
