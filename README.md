@@ -2,7 +2,7 @@
 
 This is the code and data repository for the manuscript:
 
-RM Flight, PT Thompson, HNB Moseley; "Evaluation of the quality of deposited datasets in the Metabolomics Workbench data repository."
+RM Flight, PT Thompson, HNB Moseley; "Evaluation of the quality of deposited datasets in the Metabolomics Workbench data repository." *Draft*.
 
 ## Results
 
@@ -17,3 +17,11 @@ The data available there include:
 ## Presentation
 
 The slides used for the presentation at the International Electronic Conference on Metabolomics 2026 (IECM2026) are available [here](outputs/mw_qcq_iecm2026_presentation_2026-10-16.pdf).
+
+## Overview
+
+Here is an overview figure of the workflow that we are running.
+
+Currently, we process 7240 datasets using 7000 lines of R code organized in 230 functions, all orchestrated using the `targets` package.
+
+![Pipeline overview.](resources/qcqa_pipeline_lucid_alt2.png)
