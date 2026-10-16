@@ -160,6 +160,17 @@ loss_waterfall_plot
 
 # [Color]{.my-green} [Grade]{.my-yellow} [Evaluation]{.my-red}
 
+## Overall Color Status
+
+```{r}
+#| label: status-heatmap-1
+#| fig-width: 18
+#| fig-height: 9
+#| fig-cap: Top 90% of status combinations. 
+status_heatmap_top90_presentation_plot
+```
+
+
 ## Subject Sample Factors (SSFs)
 
 - One or more experimentally important metadata about the samples.
