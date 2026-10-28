@@ -79,13 +79,17 @@ create_dataset_sizes_plot = function(sets_qc_color) {
     ggplot(aes(x = log10(`N-Features`))) +
     geom_histogram(bins = 100) +
     facet_wrap(~Source, ncol = 1) +
-    labs(x = "Log10(N-Features)")
+    labs(x = "Log10(N-Features)") +
+    scale_y_continuous(expand = expansion(mult = c(0, NA))) +
+    theme(strip.background = element_blank())
 
   sample_plot = all_sizes |>
     ggplot(aes(x = log10(`N-Samples`))) +
     geom_histogram(bins = 100) +
     facet_wrap(~Source, ncol = 1) +
-    labs(x = "Log10(N-Samples)")
+    labs(x = "Log10(N-Samples)") +
+    scale_y_continuous(expand = expansion(mult = c(0, NA))) +
+    theme(strip.background = element_blank())
 
   (feature_plot | sample_plot) + plot_annotation(tag_levels = "A")
 }
@@ -282,12 +286,14 @@ create_example_confound_plot = function(
     ggplot(aes(x = PC1)) +
     geom_histogram(bins = 30) +
     facet_wrap(~ssf, ncol = 1) +
-    theme(strip.background = element_blank())
+    theme(strip.background = element_blank()) +
+    scale_y_continuous(expand = expansion(mult = c(0, NA)))
   pc2_dist_plot = pca_scores |>
     ggplot(aes(x = PC2)) +
     geom_histogram(bins = 30) +
     facet_wrap(~ssf, ncol = 1) +
-    theme(strip.background = element_blank())
+    theme(strip.background = element_blank()) +
+    scale_y_continuous(expand = expansion(mult = c(0, NA)))
 
   if (jitter %in% "yes") {
     scores_plot = pca_scores |>
@@ -408,7 +414,7 @@ create_status_heatmap = function(
   use_log = "no",
   ...
 ) {
-  # tar_load(parsed_percentage_overall); order_n = "yes"; trim_90 = "yes"; use_log = "no"
+  # tar_load(parsed_percentage_overall); order_n = "yes"; trim_90 = "yes"; use_log = "no"; ... = NULL; tar_source("R")
   color_list = create_color_list()
   if (order_n %in% "yes") {
     parsed_percentage_overall = parsed_percentage_overall |>
@@ -448,6 +454,16 @@ create_status_heatmap = function(
 
   show_colnames = gsub("_status", "", colnames(factor_matrix))
   show_colnames = purrr::map_chr(show_colnames, convert_description_to_sentence)
+
+  test_loc = grepl("Left Censorship Test", show_colnames)
+  show_colnames[test_loc] = "Left Censorship\nTest"
+  med_loc = grepl("MAX Median Correlation", show_colnames)
+  show_colnames[med_loc] = "MAX Median\nCorrelation"
+
+  anova_loc = grepl("PCA Anova Pvalue", show_colnames)
+  show_colnames[anova_loc] = "PCA ANOVA\nPValue"
+
+  ComplexHeatmap::ht_opt("DIMNAME_PADDING" = unit(5, "mm"))
   out_heatmap = ComplexHeatmap::Heatmap(
     factor_matrix,
     col = color_factor,
@@ -537,6 +553,9 @@ create_total_vs_tr_rsd_plot = function(
       facet_wrap(~measurement_type, ncol = 1)
   }
 
+  rsd_plot = rsd_plot +
+    scale_y_continuous(expand = expansion(mult = c(0, NA))) +
+    scale_x_continuous(expand = expansion(mult = c(0, NA)))
   rsd_plot
 }
 

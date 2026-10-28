@@ -124,6 +124,8 @@ add_confounding_factor_status = function(
   }) |>
     purrr::list_rbind()
 
+  dip_min = dip_stats |>
+    dplyr::summarise(min_p = min(dippooled), .by = internal_id)
   dip_pc1 = dip_stats |>
     dplyr::filter(PC %in% "PC1") |>
     dplyr::mutate(

@@ -19,7 +19,7 @@ count_ancillary_missing = function() {
 
 count_code = function() {
   all_r_files = fs::dir_ls(
-    "~/Documents/manuscripts/in_progress/rmflight_metabolomicsDatabaseQCQA/R"
+    "R"
   )
 
   n_r_files = length(all_r_files)
@@ -27,8 +27,14 @@ count_code = function() {
   file_contents = purrr::map(all_r_files, \(in_file) {
     # in_file = all_r_files[25]
     tmp_contents = readLines(in_file)
-    no_comment = grep("\\# ", tmp_contents, value = TRUE, invert = TRUE)
-    n_line = length(no_comment)
+    no_comment = grep(
+      "\\#",
+      tmp_contents,
+      value = TRUE,
+      invert = TRUE
+    )
+    no_zero = no_comment[nzchar(no_comment)]
+    n_line = length(no_zero)
     n_function = length(grep("function\\(", no_comment))
     tibble::tibble(lines = n_line, functions = n_function)
   }) |>
