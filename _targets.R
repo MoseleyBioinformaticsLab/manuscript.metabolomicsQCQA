@@ -103,7 +103,8 @@ sets_map = tar_map(
   tar_target(
     tr_pca,
     sets_calculate_tr_total_rsd(se_pca, sets_qc_color_confounds) #15
-  )
+  ),
+  tar_target(se_confounded, sets_grab_confounded(se_pca, not_gray_pca)) #16
 )
 
 se_negative_information_t = tar_combine(
@@ -195,6 +196,12 @@ sets_tr_total_rsd_t = tar_combine(
 diptest_t = tar_combine(
   sets_diptest,
   sets_map[[13]],
+  command = c(!!!.x)
+)
+
+sets_confounded_t = tar_combine(
+  sets_confounded,
+  sets_map[[16]],
   command = c(!!!.x)
 )
 
@@ -433,6 +440,7 @@ list(
   sets_qc_reports_t,
   sets_tr_total_rsd_t,
   diptest_t,
+  sets_confounded_t,
   actual_analysis_t,
   figures_tables_t,
   docs_t

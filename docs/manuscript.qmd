@@ -822,7 +822,12 @@ Examples we have seen include:
   * positive and negative symbols in sample IDs, that when converted to R safe names were lost, this required writing custom code to handle their presence, which is especially important if the symbols stand for presence and absence of a factor; 
   * duplicated columns of measurements, sometimes several replicated columns, with and without actual values data; 
   * quality-control samples in the metabolite measurements block, but those samples are not included in the SSF (AN000139); 
-  * using ".E" instead of "E" to denote exponents; metabolite ratios in the metabolite measurements (AN005958);
+  * using ".E" instead of "E" to denote exponents (AN005958);
   * metabolite ratios included in the data block, not just metabolite abundances (AN000645);
   * biological replicate information or number included in the subject-sample-factors or the subject-sample-factor name for each sample, creating groups with one sample each, instead of the three or more samples in each group that are actually present (AN002454, and so, so many others);
   * not submitting raw-ish data in the mwTab data file, but rather machine learning feature selected data (AN008161)
+
+  ## Discussion
+
+  * We should bring up that the spectroscopy methods do not have an accepted, inherent measure of quality similar to genomics / transcriptomics / epigenomics with N-50 and q-value.
+  The **closest** thing might be signal-to-noise, or relative standard deviation, but signal-to-noise is often reported as a single cutoff, and AFAWK no one actually calculates RSD across the scans of multi-scan acquired data (reference scan-centric peak characterization manuscript).

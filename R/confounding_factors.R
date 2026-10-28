@@ -214,3 +214,17 @@ examine_confounding_pvalues = function(sets_confounding_factors) {
   }) |>
     purrr::list_rbind()
 }
+
+sets_grab_confounded = function(se_pca, not_gray_pca) {
+  # se_pca = tar_read(se_pca_g01); tar_load(not_gray_pca); tar_source("R")
+  has_confounded = not_gray_pca |>
+    dplyr::filter(confounding_factor_detected %in% "yes")
+
+  match_pca = which(names(se_pca) %in% has_confounded$internal_id)
+
+  if (length(match_pca) > 0) {
+    return(se_pca[match_pca])
+  } else {
+    return(NULL)
+  }
+}
