@@ -236,6 +236,11 @@ actual_analysis_t = tar_assign({
     tar_target()
   non_technical_rsd = calculate_rsd_differences(not_gray_pca) |>
     tar_target()
+
+  confound_is_missing_ssf = sets_determine_confound_is_missing_ssf(
+    sets_confounded
+  ) |>
+    tar_target()
 })
 
 figures_tables_t = tar_assign({

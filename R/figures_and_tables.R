@@ -463,7 +463,6 @@ create_status_heatmap = function(
   anova_loc = grepl("PCA Anova Pvalue", show_colnames)
   show_colnames[anova_loc] = "PCA ANOVA\nPValue"
 
-  ComplexHeatmap::ht_opt("DIMNAME_PADDING" = unit(5, "mm"))
   out_heatmap = ComplexHeatmap::Heatmap(
     factor_matrix,
     col = color_factor,

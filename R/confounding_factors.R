@@ -84,6 +84,44 @@ do_fishers_justp = function(p_vals) {
 }
 
 
+create_final_dipresults = function(sets_diptest) {
+  null_dipres = purrr::map_lgl(sets_diptest, is.null)
+  keep_dipres = sets_diptest[!null_dipres]
+  keep_sets_diptest = purrr::map(keep_dipres, \(in_set) {
+    # in_factor = keep_sets[[1]]
+    # in_factor = keep_sets[[162]]
+    # in_factor = keep_sets[[415]]
+    # in_factor = keep_sets[[1725]]
+
+    if (all(is.na(in_set$anova$p.value)) || nrow(in_set$dip) == 0) {
+      return(NULL)
+    }
+    if (nrow(in_set$dip) == 1) {
+      summarized_dip = tibble::tibble(
+        PC = in_set$dip$PC,
+        dippooled = in_set$dip$p.value
+      )
+    } else {
+      summarized_dip = in_set$dip |>
+        dplyr::summarise(dippooled = do_fishers_justp(padjust), .by = PC)
+    }
+
+    in_set$summarized_dip = summarized_dip
+    in_set
+  })
+
+  null_sets2 = purrr::map_lgl(keep_sets_diptest, is.null)
+  keep_sets_diptest2 = keep_sets_diptest[!null_sets2]
+
+  dip_stats = purrr::map(keep_sets_diptest2, \(in_set) {
+    in_set$summarized_dip |>
+      dplyr::mutate(internal_id = in_set$analysis_id)
+  }) |>
+    purrr::list_rbind()
+
+  dip_stats
+}
+
 add_confounding_factor_status = function(
   sets_qc_color,
   sets_diptest
@@ -227,4 +265,143 @@ sets_grab_confounded = function(se_pca, not_gray_pca) {
   } else {
     return(NULL)
   }
+}
+
+sets_determine_confound_is_missing_ssf = function(
+  sets_confounded
+) {
+  # tar_load(sets_confounded); tar_load(sets_diptest); tar_source("R")
+  is_missing_ssf = furrr::future_map(
+    sets_confounded,
+    determine_confound_is_missing_ssf
+  )
+  is_missing_ssf
+}
+
+determine_confound_is_missing_ssf = function(in_set) {
+  # in_set = sets_confounded[[1]]
+  # in_set = sets_confounded[["se_confounded_g20.AN006863"]]
+  # in_set = sets_confounded[[4]]
+  in_pca = get_last_pca(in_set)
+  factor_types = get_specific_metadata(in_set, "factor_types")
+  additional_factors = factor_types |>
+    dplyr::filter(type %in% "additional_sample_data") |>
+    dplyr::pull(factor)
+
+  if (length(additional_factors) == 0) {
+    return(NULL)
+  }
+
+  use_pca = in_pca$pca$pca
+
+  test_pcs = unique(in_pca$pca$anova$PC)
+  test_factors = c(
+    "ssf",
+    additional_factors,
+    paste0("ssf_", additional_factors)
+  )
+  dip_pc_factor = purrr::map(test_pcs, \(in_pc) {
+    # in_pc = "PC1"
+    out_factor = purrr::map(test_factors, \(in_factor) {
+      # in_factor = "cohort"
+      if (in_factor %in% names(use_pca)) {
+        tmp_df = data.frame(PC = use_pca[[in_pc]], group = use_pca[[in_factor]])
+        dip_df = tmp_df |>
+          dplyr::summarise(dip = calculate_dip(PC), .by = group) |>
+          tidyr::unnest(cols = c(dip)) |>
+          dplyr::mutate(
+            padjust = p.adjust(p.value, method = "bonferroni"),
+            PC = in_pc,
+            variable = in_factor
+          )
+        return(dip_df)
+      } else {
+        return(NULL)
+      }
+    }) |>
+      purrr::list_rbind()
+    out_factor = out_factor |>
+      dplyr::filter_out(is.na(p.value))
+    pooled_p = out_factor |>
+      dplyr::summarise(dippooled = do_fishers_justp(padjust), .by = variable) |>
+      dplyr::mutate(PC = out_factor$PC[1])
+    return(pooled_p)
+  }) |>
+    purrr::list_rbind()
+
+  anova_res = in_pca$pca$anova |>
+    dplyr::filter_out(is.na(p.value))
+
+  # verify that there was a confound on PC1, which is what this is based off of
+  pc1_ssf = dip_pc_factor |>
+    dplyr::filter(variable %in% "ssf", PC %in% "PC1") |>
+    dplyr::pull(dippooled)
+  if (pc1_ssf <= 0.05) {
+    has_confound = "yes"
+  } else {
+    has_confound = "no"
+  }
+
+  compare_dip_bypc = dip_pc_factor |>
+    tidyr::pivot_wider(
+      id_cols = c(PC),
+      names_from = variable,
+      values_from = dippooled
+    )
+  compare_anova_bypc = anova_res |>
+    dplyr::select(tidyselect::all_of(c("PC", "variable", "padjust"))) |>
+    tidyr::pivot_wider(
+      id_cols = PC,
+      names_from = variable,
+      values_from = padjust
+    )
+  if (!"ssf" %in% names(compare_anova_bypc)) {
+    compare_anova_bypc$ssf = 0
+  }
+  if (!"ssf" %in% names(compare_dip_bypc)) {
+    compare_dip_bypc$ssf = 1
+  }
+
+  diff_factors = test_factors[!test_factors %in% "ssf"]
+  diff_factors = diff_factors[diff_factors %in% names(compare_anova_bypc)]
+
+  if (length(diff_factors) == 0) {
+    return(NULL)
+  }
+  diff_bypc = purrr::map(diff_factors, \(in_factor) {
+    # in_factor = "cohort"
+    tibble::tibble(
+      PC = compare_dip_bypc$PC,
+      variable = in_factor,
+      higher_dip = compare_dip_bypc[[in_factor]] >= compare_dip_bypc[["ssf"]],
+      lower_anova = compare_anova_bypc[[in_factor]] <=
+        compare_anova_bypc[["ssf"]]
+    )
+  }) |>
+    purrr::list_rbind()
+  return(list(
+    id = in_set@metadata$mwtab$ID,
+    has_confound = has_confound,
+    diff = diff_bypc
+  ))
+}
+
+calculate_dip = function(values) {
+  if (length(values) < 2) {
+    out_dip = structure(
+      list(
+        statistic = c(D = NA),
+        p.value = NA,
+        nobs = NA_integer_,
+        alternative = NA_character_,
+        method = "Hartigans' dip test for unimodality / multimodality",
+        data.name = NA_character_
+      ),
+      class = "htest"
+    )
+  } else {
+    out_dip = diptest::dip.test(values)
+  }
+  tidy_dip = broom::tidy(out_dip)
+  tidy_dip
 }
