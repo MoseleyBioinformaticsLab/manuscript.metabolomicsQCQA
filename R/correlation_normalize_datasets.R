@@ -25,7 +25,18 @@ sets_calculate_correlations_pca = function(sets_se) {
       run_pca_experimental_design(in_set)
     }
   )
-  pca_sets
+
+  p_dip = progressr::progressor(length(pca_sets))
+  n_set = seq_along(pca_sets)
+  dip_sets = furrr::future_map2(
+    pca_sets,
+    n_set,
+    \(in_set, in_n) {
+      p_dip(sprintf("Dip'ing N=%g", in_n))
+      run_pc_ssfgroup_diptest(in_set)
+    }
+  )
+  dip_sets
 }
 
 get_just_values = function(in_df) {

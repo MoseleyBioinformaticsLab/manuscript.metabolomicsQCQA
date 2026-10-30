@@ -1,76 +1,103 @@
-run_pc_ssfgroup_diptest = function(se_data) {
+run_pc_ssfgroup_diptest = function(se_data, just_ssf = "yes") {
   # sets_pca = tar_read(se_pca_g34); se_data = sets_pca[["AN000923"]]; tar_source("R")
   # sets_pca = tar_read(se_pca_g05); se_data = sets_pca[["AN000262"]]; tar_source("R")
   # sets_pca = tar_read(se_pca_g25); se_data = sets_pca[["AN005412"]]; tar_source("R")
   # sets_pca = tar_read(se_pca_g25); se_data = sets_pca[["AN000118"]]; tar_source("R")
   # sets_pca = tar_read(se_pca_g02); se_data = sets_pca[["AN002914"]]; tar_source("R")
 
-  report_list = check_qc_outputs(se_data)
+  # sets_pca = tar_read(se_pca_g01); sets_pca = sets_pca[1:100]; tar_source("R")
 
-  pca_groups = get_specific_metadata(se_data, "pca_groups")
-  if (!is.null(report_list$pca)) {
-    use_group = pca_groups[report_list$pca[length(report_list$pca)]]
-  } else {
-    return(NULL)
+  if (metadata(se_data) |> check_isstop()) {
+    return(se_data)
   }
+  in_pca = get_last_pca(se_data)$pca
 
-  pca_scores = use_group[[1]]$pca$pca
-  pca_variance = use_group[[1]]$pca$variance
-  pca_anova = use_group[[1]]$pca$anova
+  pca_scores = in_pca$pca
+  pca_variance = in_pca$variance
+  pca_anova = in_pca$anova
 
   if (nrow(pca_scores) < 4) {
-    return(NULL)
+    dip_pc_factor = NULL
+    metadata(se_data)$qc = add_step(
+      metadata(se_data)$qc,
+      "failed",
+      "diptest"
+    )
+    return(se_data)
   }
 
   test_pcs = unique(pca_anova$PC)
 
-  ssf_data = pca_scores[, c("sample_id", "ssf")]
+  if (just_ssf %in% "yes") {
+    test_factors = "ssf"
+  } else {
+    factor_types = get_specific_metadata(se_data, "factor_types")
+    test_factors = factor_types |>
+      dplyr::filter(type %in% c("additional_sample_data", "additional_ssf")) |>
+      dplyr::pull(factor)
+    test_factors = c("ssf", test_factors)
+  }
 
-  samples_ssf = split(ssf_data$sample_id, ssf_data$ssf)
-  dip_pcs = purrr::map(test_pcs, \(in_pc) {
+  dip_pc_factor = purrr::map(test_pcs, \(in_pc) {
     # in_pc = "PC1"
-    dip_ssf = purrr::imap(samples_ssf, \(in_samples, ssf_id) {
-      # in_samples = samples_ssf[[1]]
-      if (length(in_samples) < 2) {
+    out_factor = purrr::map(test_factors, \(in_factor) {
+      # in_factor = "cohort"
+      if (in_factor %in% names(pca_scores)) {
+        tmp_df = data.frame(
+          PC = pca_scores[[in_pc]],
+          group = pca_scores[[in_factor]]
+        )
+        dip_df = tmp_df |>
+          dplyr::summarise(dip = calculate_dip(PC), .by = group) |>
+          tidyr::unnest(cols = c(dip)) |>
+          dplyr::mutate(
+            padjust = p.adjust(p.value, method = "bonferroni"),
+            PC = in_pc,
+            variable = in_factor
+          )
+        return(dip_df)
+      } else {
         return(NULL)
       }
-      use_scores = pca_scores |>
-        dplyr::filter(sample_id %in% in_samples) |>
-        dplyr::pull(tidyselect::all_of(in_pc))
-      out_dip = broom::tidy(diptest::dip.test(use_scores))
-      out_dip$ssf = ssf_id
-      out_dip
     }) |>
       purrr::list_rbind()
-    if (nrow(dip_ssf) > 0) {
-      dip_ssf$PC = in_pc
+    out_factor = out_factor |>
+      dplyr::filter_out(is.na(p.value))
+
+    if (nrow(out_factor) > 0) {
+      pooled_p = out_factor |>
+        dplyr::summarise(
+          dippooled = do_fishers_justp(padjust),
+          .by = variable
+        ) |>
+        dplyr::mutate(PC = out_factor$PC[1])
+    } else {
+      pooled_p = tibble::tibble(
+        variable = in_factor,
+        dippooled = NA,
+        PC = in_PC
+      )
     }
 
-    dip_ssf
+    return(pooled_p)
   }) |>
     purrr::list_rbind()
 
-  if (nrow(dip_pcs) > 1) {
-    dip_pcs = dip_pcs |>
-      dplyr::mutate(
-        padjust = p.adjust(p.value, method = "bonferroni"),
-        .by = ssf
-      )
-  } else if (nrow(dip_pcs) == 1) {
-    dip_pcs = dip_pcs |>
-      dplyr::mutate(padjust = p.value)
-  } else {
-    return(NULL)
+  if (all(is.na(dip_pc_factor$dippooled))) {
+    metadata(se_data)$qc = add_step(
+      metadata(se_data)$qc,
+      "failed",
+      "diptest"
+    )
+    return(se_data)
   }
-
-  list(
-    analysis_id = metadata(se_data)$mwtab$ID,
-    variance = pca_variance,
-    anova = pca_anova,
-    dip = dip_pcs,
-    scores = pca_scores,
-    factor_types = get_specific_metadata(se_data, "factor_types")
+  metadata(se_data)$diptest = dip_pc_factor
+  metadata(se_data)$qc = add_step(
+    metadata(se_data)$qc,
+    "succeeded",
+    "diptest"
   )
+  return(se_data)
 }
 
 sets_run_pc_ssfgroup_diptest = function(sets_pca) {
@@ -282,6 +309,7 @@ determine_confound_is_missing_ssf = function(in_set) {
   # in_set = sets_confounded[[1]]
   # in_set = sets_confounded[["se_confounded_g20.AN006863"]]
   # in_set = sets_confounded[[4]]
+  # in_set = sets_confounded[[12]]
   in_pca = get_last_pca(in_set)
   factor_types = get_specific_metadata(in_set, "factor_types")
   additional_factors = factor_types |>

@@ -336,6 +336,8 @@ determine_outliers = function(icikt_cor, ssf) {
 
 check_matches_ssf = function(ssf_df) {
   # ssf_df = ssf[, c("cognitive_status", "ssf")]
+  ssf_df = ssf_df |>
+    dplyr::arrange(ssf)
   ssf_rle = rle_2_df(rle(ssf_df$ssf))
 
   other_cols = names(ssf_df)
