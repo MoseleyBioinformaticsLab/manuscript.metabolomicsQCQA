@@ -16,6 +16,7 @@ sets_calculate_correlations_pca = function(sets_se) {
   )
 
   p_pca = progressr::progressor(length(sets_se))
+  # p_pca = progressr::with_progress(progressr::progressor(length(sets_se)))
   n_set = seq_along(sets_se)
   pca_sets = furrr::future_map2(
     cor_sets,
@@ -27,8 +28,11 @@ sets_calculate_correlations_pca = function(sets_se) {
   )
 
   p_dip = progressr::progressor(length(sets_se))
+  # p_dip = progressr::with_progress(progressr::progressor(length(sets_se)))
   n_set = seq_along(sets_se)
+
   dip_sets = furrr::future_map2(
+    # dip_sets = purrr::map2(
     pca_sets,
     n_set,
     \(in_set, in_n) {

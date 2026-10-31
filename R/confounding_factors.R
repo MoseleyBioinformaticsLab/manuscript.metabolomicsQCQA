@@ -6,6 +6,7 @@ run_pc_ssfgroup_diptest = function(se_data, just_ssf = "yes") {
   # sets_pca = tar_read(se_pca_g02); se_data = sets_pca[["AN002914"]]; tar_source("R")
 
   # sets_pca = tar_read(se_pca_g01); sets_pca = sets_pca[1:100]; tar_source("R")
+  # sets_pca = readRDS("tests_problems/dip_issue.rds");  se_data = sets_pca[[97]]; just_ssf = "yes"; tar_source("R")
 
   if (metadata(se_data) |> check_isstop()) {
     return(se_data)
@@ -73,9 +74,9 @@ run_pc_ssfgroup_diptest = function(se_data, just_ssf = "yes") {
         dplyr::mutate(PC = out_factor$PC[1])
     } else {
       pooled_p = tibble::tibble(
-        variable = in_factor,
+        variable = NA_character_,
         dippooled = NA,
-        PC = in_PC
+        PC = in_pc
       )
     }
 
