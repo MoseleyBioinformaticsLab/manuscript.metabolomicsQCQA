@@ -434,7 +434,6 @@ list(
   data_limits_t,
   sets_qc_reports_t,
   sets_tr_total_rsd_t,
-  diptest_t,
   sets_confounded_t,
   actual_analysis_t,
   figures_tables_t,
