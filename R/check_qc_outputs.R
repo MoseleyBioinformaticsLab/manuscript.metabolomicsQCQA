@@ -18,8 +18,13 @@ check_qc_outputs = function(se_data) {
     why_failed = "none"
   }
 
-  if (last_succeeded %in% "pca") {
-    report_steps = c("se", "dynamic_range", "correlation", "pca")
+  if (last_succeeded %in% c("diptest", "pca")) {
+    if (last_succeeded %in% "diptest") {
+      report_steps = c("se", "dynamic_range", "correlation", "pca", "diptest")
+    } else if (last_succeeded %in% "pca") {
+      report_steps = c("se", "dynamic_range", "correlation", "pca")
+    }
+
     pca_outputs = metadata(se_data)$pca
 
     pca_has_results = purrr::map_lgl(

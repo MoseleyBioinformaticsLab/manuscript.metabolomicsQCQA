@@ -95,16 +95,15 @@ sets_map = tar_map(
   tar_target(se_qc_eval, sets_evaluate_qc(se_pca, data_limits)), #10
   tar_target(se_rsd, sets_rsd(se_pca)), #11
   tar_target(se_pc_number, sets_get_pc(se_pca)), #12
-  tar_target(se_diptest, sets_run_pc_ssfgroup_diptest(se_pca)), #13
   tar_target(
     qcqa_reports,
-    sets_create_qcqa_reports(se_pca, sets_qc_confounds_rsd, report_files) #14
+    sets_create_qcqa_reports(se_pca, sets_qc_colors_rsd, report_files) #13
   ),
   tar_target(
     tr_pca,
-    sets_calculate_tr_total_rsd(se_pca, sets_qc_color_confounds) #15
+    sets_calculate_tr_total_rsd(se_pca, sets_qc_color) #14
   ),
-  tar_target(se_confounded, sets_grab_confounded(se_pca, not_gray_pca)) #16
+  tar_target(se_confounded, sets_grab_confounded(se_pca, not_gray_pca)) #15
 )
 
 se_negative_information_t = tar_combine(
@@ -183,48 +182,39 @@ data_limits_t = tar_target(
 
 sets_qc_reports_t = tar_combine(
   sets_qc_reports,
-  sets_map[[14]],
+  sets_map[[13]],
   command = dplyr::bind_rows(!!!.x)
 )
 
 sets_tr_total_rsd_t = tar_combine(
   sets_tr_total_rsd,
-  sets_map[[15]],
+  sets_map[[14]],
   command = dplyr::bind_rows(!!!.x)
 )
 
-diptest_t = tar_combine(
-  sets_diptest,
-  sets_map[[13]],
-  command = c(!!!.x)
-)
 
 sets_confounded_t = tar_combine(
   sets_confounded,
-  sets_map[[16]],
+  sets_map[[15]],
   command = c(!!!.x)
 )
 
 actual_analysis_t = tar_assign({
   sets_qc_color = set_overall_color_status(sets_qc_evaluation) |> tar_target()
-  sets_qc_color_confounds = add_confounding_factor_status(
+
+  sets_qc_color_rsd = add_rsd_calculate_modes_status(
     sets_qc_color,
-    sets_diptest
-  ) |>
-    tar_target()
-  sets_qc_confounds_rsd = add_rsd_calculate_modes_status(
-    sets_qc_color_confounds,
     sets_tr_total_rsd
   ) |>
     tar_target()
-  rsd_modes_all = calculate_rsd_modes(sets_qc_confounds_rsd) |>
+  rsd_modes_all = calculate_rsd_modes(sets_qc_color_rsd) |>
     tar_target()
   rsd_modes_measurement = calculate_rsd_modes(
-    sets_qc_confounds_rsd,
+    sets_qc_color_rsd,
     measurement = "yes"
   ) |>
     tar_target()
-  not_gray_pca = find_pca_remove_gray(sets_qc_confounds_rsd) |> tar_target()
+  not_gray_pca = find_pca_remove_gray(sets_qc_color_rsd) |> tar_target()
   parsed_grouped_statuses = parse_statuses(not_gray_pca) |> tar_target()
   parsed_percentage_overall = calculate_percentage_overall(
     parsed_grouped_statuses

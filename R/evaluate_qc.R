@@ -138,6 +138,13 @@ evaluate_qc = function(se_data, data_limits) {
   )
 
   pca_list = check_pca(se_data, data_limits$pca, use_defaults)
+
+  if (!("diptest" %in% report_list$steps)) {
+    use_defaults = TRUE
+  }
+
+  diptest_list = check_diptest(se_data, use_defaults)
+
   score_list = get_scores(se_data, use_defaults)
 
   tech_replicate_list = check_technical_replicates(se_data, use_defaults)
@@ -152,6 +159,7 @@ evaluate_qc = function(se_data, data_limits) {
     median_correlations_list,
     rsd_list,
     pca_list,
+    diptest_list,
     score_list,
     tech_replicate_list,
     data_sizes_list
@@ -504,6 +512,37 @@ check_technical_replicates = function(se_data, use_defaults) {
     technical_replicates_status = technical_replicates_status,
     technical_replicates_df = technical_replicates_df
   ))
+}
+
+check_diptest = function(se_data, default = FALSE) {
+  if (default) {
+    return(list(
+      PC = NA_character_,
+      dippooled = NA,
+      confounding_factor_detected = "not tested"
+    ))
+  }
+  dip_data = metadata(se_data)$diptest
+  pc1_2 = dip_data |>
+    dplyr::filter(PC %in% c("PC1", "PC2")) |>
+    dplyr::filter(dippooled <= 0.05)
+
+  if (nrow(pc1_2) > 0) {
+    pc1_2 = pc1_2 |>
+      dplyr::arrange(dippooled) |>
+      dplyr::slice_head(n = 1)
+    return(list(
+      PC = pc1_2$PC[1],
+      dippooled = pc1_2$dippooled[1],
+      confounding_factor_detected = "yes"
+    ))
+  } else {
+    return(list(
+      PC = dip_data$PC[1],
+      dippooled = dip_data$dippooled[1],
+      confounding_factor_detected = "no"
+    ))
+  }
 }
 
 check_pca = function(se_data, pca_limits, default = FALSE) {
