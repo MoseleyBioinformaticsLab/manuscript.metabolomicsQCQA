@@ -2,7 +2,7 @@
 format: docx
 ---
 
-## Quality-Control and Quality-Assessment of Metabolomics Workbench
+## Evaluation of the quality of deposited datasets in the Metabolomics Workbench data repository.
 
 **Robert M Flight\*, P Travis Thompson, Hunter NB Moseley**
 

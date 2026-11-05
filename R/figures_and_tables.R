@@ -161,7 +161,8 @@ create_technical_replicate_plot = function(se_data) {
     geom_point(alpha = 0.2) +
     geom_vline(xintercept = dist_summary$limit_cor) +
     geom_hline(yintercept = dist_summary$limit_string) +
-    geom_point(data = rep_df, color = "red", alpha = 0.2)
+    geom_point(data = rep_df, color = "red", alpha = 0.2) +
+    labs(x = "Correlation Distance", y = "String Distance")
 
   dist_rle = rle_2_df(rle(dist_df$replicate))
 

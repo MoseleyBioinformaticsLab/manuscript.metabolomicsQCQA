@@ -13,7 +13,8 @@ format:
 #| label: number-plots
 #| include: false
 library(documentNumbering)
-figure_count = dn_counter$new("Figure ", "_")
+fig_num = dn_counter$new("Figure ", "_")
+table_num = dn_counter$new("Table ", "_")
 ```
 
 ```{r}
@@ -62,11 +63,32 @@ data_based_cutoffs_plot,
 study_status_comparison_table,
 negatives_as_missing_table
 ))
+
+n_line_info = count_code()
+run_meta_data = tar_meta(targets_only = TRUE)
 ```
 
 ```{r}
 #| label: load-plots
-figure_count$increment("loss-nose-plot")
+fig_num$increment(c(
+  "loss-nose-plot", 
+"dataset-sizes-plot",
+"status-heatmap-plot",
+"mmr-plot",
+"data-based-cutoffs-plot",
+"negatives-as-missing-plot",
+"percent-missingness-plot",
+"confounding-example-plot-454",
+"confounding-example-plot-6863",
+"technical-replicates-plot"
+))
+
+table_num$increment(c(
+  "datasets-type-source-table",
+  "status-colors-table",
+  "negatives-as-missing-table",
+  "study-status-count-table"
+))
 ```
 
 
@@ -124,7 +146,7 @@ n_gray = nrow(gray_status)
 **Introduction:** While depositing omics data into public repositories is frequently required by grant funders and journals, the quality of deposited data and metadata is not uniform, limiting their reuse in large meta-analyses.
 Here we present a comprehensive evaluation of both data and experimental design metadata quality across all available datasets in Metabolomics Workbench.
 
-**Methods:** We downloaded 7240 datasets from  Metabolomics Workbench in July 2026.
+**Methods:** We downloaded 7240 datasets from  Metabolomics Workbench, downloaded in July 2026.
 Needed harmonizations and repairs were made to downloaded analysis files.
 
 For each dataset, we attempted to:
@@ -152,7 +174,7 @@ Theoretically, they encourage and allow the reuse of data that has historically 
 Notable -omics data repositories include the gene expression omnibus (GEO) and sequence read archive (SRA) for transcriptomics, and the Metabolomics Workbench (MW) and Metabolights for metabolomics.
 Various groups have found ways to reuse and reanalyze transcriptomics data, for example, by combining and aggregating datasets for single diseases, among others [**REFS**].
 However, as with all data, and most especially -omics level data, there are issues both with the ability to reuse the data that is there, and the data quality.
-While some data quality assessments have been carried out on RNA-Seq repositories, to our knowledge no such assessment has been attempted for a metabolomics repository.
+While some data and metadata quality assessments have been carried out on RNA-Seq repositories, to our knowledge no such assessment has been attempted for a metabolomics repository.
 Our lab has previously developed the mwtab python package for parsing and validating mwTab-formatted files and downloading MW deposited datasets [https://doi.org/10.3390/metabo16010076 , https://doi.org/10.3390/metabo11030163 , https://doi.org/10.1007/s11306-018-1356-6], the MESSES package for generating mwTab formatted datasets ready for MW deposition [https://doi.org/10.3390/metabo13070842 ], and the Metabolomics Workbench File Status website [https://doi.org/10.3390/metabo16010076 , https://doi.org/10.1186/s12859-023-05423-9]. 
 Now, we have performed a comprehensive quality-control and quality-assurance assessment analysis of all datasets (analyses) available from the MW.
 
@@ -539,12 +561,12 @@ For each study with multiple datasets, the datasets were ordered by their intern
 
 ### Datasets Removed Along The Process
 
-As the data were parsed and transformed into R and Bioconductor data structures, some datasets were removed for various reasons.
+As the data were parsed and transformed into R and Bioconductor data structures, some datasets were removed for various reasons (see `r fig_num$label_text('loss-nose-plot')`A).
 The most common reason for removing a dataset was for the dataset having $\lt$ 3 samples (622), which precluded many of the analyses in the pipeline, including calculating relative standard deviations (RSD), sample-sample correlations, and principal component analysis.
 The next most common was a dataset being classified as "gray PCA" (247), where the ANOVA test of sample scores *vs* SSF returns a missing value, either due to every sample being in it's own SSF, or there being a single SSF.
 Finally, there were the datasets with no feature metabolite abundance data (167).
 
-The counts and reasons for missing feature abundance data are shown in Figure XB.
+The counts and reasons for missing feature abundance data are shown in `r fig_num$label_text('loss-nose-plot')`B.
 The most common reason for no feature abundance data is that there was no feature data,
 as in no abundance data in the mwTab file, and no ancillary text data found (115).
 It may be that for many of those, there was data contained in an Excel file or zipped directory, but we limited our search to ancillary text files available on the MW ftp server, as they could be easily examined and loaded.
@@ -558,7 +580,7 @@ The other reasons for no data include there being no subject sample factor block
 (free(loss_waterfall_plot) / nose_reasons_bar_plot) + plot_annotation(tag_levels = "A")
 ```
 
-Figure X.
+**`r fig_num$label_caption('loss-nose-plot')`**.
 **A**: Waterfall loss plot showing how many datasets were initially processed (7240), and then how many were removed as the analysis progressed along each stage. No Data: -167, there was no data to construct the summarized experiment object; $\lt$ 3 Samples: -622, datasets had less than three samples after checking that each sample had $\ge 10$ non-missing feature abundances; < 3 Samples After Correlation: -5, datasets had less than three samples after removing samples that generated missing sample-sample correlation values; Gray PCA: -247, datasets that had a single SSF for all samples, or each sample had their own SSF, resulting in missing values in the ANOVA test of SSF vs sample scores on principal components; Analyzed: 6199, the number of datasets analyzed.
 **B**: Counts of the various reasons that the 167 datasets had "No Data", and therefore couldn't create a summarized experiment object to be used for further analysis.
 
@@ -581,16 +603,18 @@ data_by_measurement_source = not_gray_pca |>
   gt::gt()
 ```
 
-The 6199 more useful datasets downloaded from Metabolomics Workbench come in a range of sizes, as shown in Figure X.
+The 6199 more useful datasets downloaded from Metabolomics Workbench come in a range of sizes, as shown in `r fig_num$label_text('dataset-sizes-plot')`.
 
 ```{r}
 #| label: dataset-sizes-plot
 datasets_sizes_plot
 ```
 
-Almost 3/4 of the datasets are measured using mass spectrometry (MS) with the rest measured by nuclear magnetic resonance (NMR), and it is more likely that the abundance data is actually embedded in the mwTab file itself, rather than deposited as a separate ancillary file (see Table Y).
+**`r fig_num$label_caption('dataset-sizes-plot')`**.
 
-Table Y.
+Almost 3/4 of the datasets are measured using mass spectrometry (MS) with the rest measured by nuclear magnetic resonance (NMR), and it is more likely that the abundance data is actually embedded in the mwTab file itself, rather than deposited as a separate ancillary file (see `r table_num$label_text('datasets-type-source-table')`).
+
+**`r table_num$label_caption('datasets-type-source-table')`**.
 Number of datasets by measurement type (MS or NMR) and abundance data source (mwTab or ancillary).
 
 ```{r}
@@ -610,15 +634,16 @@ Using the following quality statuses:
   * principal components accounting for 90% of the variance;
   * ANOVA test of SSF to PC scores;
 
-we obtained the following breakdown of statuses shown in Table X. 
+we obtained the following breakdown of statuses shown in `r table_num$label_text('status-colors-table')`. 
 Although the most common category of statuses contain one or more yellow, two sets of statuses there dominate all others: 1) datasets where one or more SSF groupings have only 3 or 4 samples (1132 or 44%); and 2) datasets where the PCA ANOVA p-value got a status of yellow (379, 15%).
 In both of those cases, all other statuses are green.
 For the red statuses, the most common category was that the PCA ANOVA p-value has a red status (503, 30%), or PCA ANOVA red status and SSF groupings with only 3 or 4 samples (yellow) (343, 21%) with all other statuses being green.
 
-Table X. Number of datasets with all green across the statuses, one or more yellow statuses, and one or more red statuses.
+**`r table_num$label_caption('status-colors-table')`**.
+Number of datasets with all green across the statuses, one or more yellow statuses, and one or more red statuses.
 
 ```{r}
-#| label: status-colors
+#| label: status-colors-table
 tmp_color = n_color |>
   dplyr::transmute(`Overall Status` = overall_status, N = n, `%` = perc_display)
 
@@ -628,7 +653,7 @@ display_color |>
   gt::gt()
 ```
 
-In Figure X, we show a heatmap of the statuses for those that account for 90% of the datasets analyzed (with all statuses shown in Supplemental Figure X).
+In `r fig_num$label_text('status-heatmap-plot')`, we show a heatmap of the statuses for those that account for 90% of the datasets analyzed (with all statuses shown in Supplemental Figure X).
 
 ```{r}
 #| label: status-heatmap-plot
@@ -663,7 +688,7 @@ There were a total of `r format_in_sentence(n_exponentiated[2, ])` datasets wher
 (mmr_logtransform_plot$mmr_distribution / (mmr_logtransform_plot$mmr_vs_neg | mmr_logtransform_plot$less1000)) + plot_annotation(tag_levels = "A")
 ```
 
-Figure X.
+**`r fig_num$label_caption('mmr-plot')`**.
 All plots used datasets with an MMR $\ge$ 0.2 and MMR $\le$ 200.
 **A**: Histogram of Log10(MMR).
 **B**: Log10(MMR) vs fraction of negative data values, after excluding all datasets with zero negative values.
@@ -672,15 +697,15 @@ Vertical lines indicate the MMR cutoffs used of 0.8 (-0.097 on log10 scale) and 
 
 ### Deriving Data Based Cutoffs
 
-Figure X shows the distribution, calculated median, and cutoffs used to determine green, yellow, and red statuses for percent missingness, relative standard deviation (RSD), median sample-sample correlation, and PC that accounts for 90% of the cumulative variance, respectively.
+`r fig_num$label_text('data-based-cutoffs-plot')` shows the distribution, calculated median, and cutoffs used to determine green, yellow, and red statuses for percent missingness, relative standard deviation (RSD), median sample-sample correlation, and PC that accounts for 90% of the cumulative variance, respectively.
 
 ```{r}
 #| label: data-based-cutoffs-plot
 patchwork::wrap_plots(data_based_cutoffs_plot, ncol = 2, nrow = 2) + plot_annotation(tag_levels = "A")
 ```
 
-**Figure X**.
-Distributions and cutoff limits for (A) Percent missingness; (B) Relative standard deviation; (C) Maximum median sample-sample correlation; (D) PC accounting for 90% of the cumulative variance.
+**`r fig_num$label_caption('data-based-cutoffs-plot')`**.
+Distributions and cutoff limits for **A**: Percent missingness; **B**: Relative standard deviation; **C**: Maximum median sample-sample correlation; **D** PC accounting for 90% of the cumulative variance.
 
 ### Negative Values, Missingness and Left-Censorship
 
@@ -693,7 +718,7 @@ Previously, we developed a test for missingness being the result of left-censors
 To verify that the negative values could be interpreted as "missing", for each dataset with at least two negative values present, we calculated the left-censorship test statistic before and after setting values $\le$ 0 to missing.
 We then calculated the ratio of the binomial test p-values and statistic values before and after setting negatives to missing, and calculated a binomial test of the log-ratio, where positive values indicate that treating negative values as missing results in more significant p-values or larger estimates in the binomial test.
 Using a binomial test on the ratios equates to a simple coin toss of direction, where we expect if treating negatives as missing would result in a fraction of positive to negative ratios of 0.5, without including the size of the effect on p-values and estimates.
-The results of the binomial test are shown in Table Y.
+The distribution of log-ratios of p-value and effect sizes are shown in `r fig_num$label_text('negatives-as-missing-plot')`, and the results of the binomial test are shown in `r table_num$label_text('negatives-as-missing-table')`.
 
 
 ```{r}
@@ -701,13 +726,13 @@ The results of the binomial test are shown in Table Y.
 (negatives_as_missing_plot$p_histogram / negatives_as_missing_plot$estimate_histogram) + plot_annotation(tag_levels = "A")
 ```
 
-**Figure X**.
+**`r fig_num$label_caption('negatives-as-missing-plot')`**.
 **A**: Histogram of the $Log_{10}$ ratio of the left-censorship p-values when considering negative values as missing (Neg-p) compared to just having missing values (Missing-p).
 Red line indicates a log-ratio of 0, or no change.
 **B**: Histogram of the $Log_{2}$ ratio of the left-censorship test estimates when considering negative values as missing (Neg-p) compared to just having actual missing values (Missing-p).
 Red line indicates a log-ratio of 0, or no change.
 
-Table Y.
+`r table_num$label_caption('negatives-as-missing-table')`.
 Results of binomial test on the log-ratios of p-value and estimate of treating negatives as missing vs not in the left-censorship test.
 
 ```{r}
@@ -717,7 +742,7 @@ negatives_as_missing_table |>
   gt::fmt_scientific(columns= "P-Value", decimals = 2)
 ```
 
-Figure X shows a sina plot of the percent missingness observed in the analyzed datasets.
+`r fig_num$label_text('percent-missingness-plot')` shows a sina plot of the percent missingness observed in the analyzed datasets.
 NMR measured datasets range from 0 to 73% missingness, while MS datasets range from 0 to 98% missingness.
 
 ```{r}
@@ -725,7 +750,7 @@ NMR measured datasets range from 0 to 73% missingness, while MS datasets range f
 percent_missingnes_plot
 ```
 
-**Figure X**:
+**`r fig_num$label_caption('percent-missingness-plot')`**:
 Sina plot of the percent missing values by measurement type, either NMR or MS.
 
 
@@ -741,11 +766,11 @@ n_confounded = sets_qc_color_confounds |>
 
 
 
-Using Hartigans dip test, we detected `r n_confounded |> dplyr::filter(overall_status %in% "green") |> format_in_sentence()` green, `r n_confounded |> dplyr::filter(overall_status %in% "yellow") |> format_in_sentence()` yellow, and `r n_confounded |> dplyr::filter(overall_status %in% "red") |> format_in_sentence()` red datasets with likely confounding factors.
-Figure X shows the sample PC scores plot for dataset AN000454. 
+Using Hartigans dip test to detect multi-modality of sample scores by SSF on PC1 and PC2, we detected `r n_confounded |> dplyr::filter(overall_status %in% "green") |> format_in_sentence()` green, `r n_confounded |> dplyr::filter(overall_status %in% "yellow") |> format_in_sentence()` yellow, and `r n_confounded |> dplyr::filter(overall_status %in% "red") |> format_in_sentence()` red datasets with likely confounding factors (total of `r sum(n_confounded$n)`).
+`r fig_num$label_text('confounding-example-plot-454')` shows the sample PC scores plot for dataset AN000454. 
 Here, the samples separate into four distinct groups along PC1 and PC2, with all of the groupings containing a mixture of Control and CLFS SSF groups. In addition, none of the sample PC scores scored highly on the ANOVA test. 
-The detection of multi-modal sample scores on PC1 (detected by the dip test), indicates there is likely a confounding factor present that is not noted in the metadata. 
-Moreover, Figure X is a prime example of a dataset with a potential confounding factor that is likely due to multiple processed batches being present, since each cluster includes samples from the two SSF groups in arrangements that cannot be separated into the two SSF groups.
+The detection of multi-modal sample scores on PC1 and PC2 (detected by the dip test), indicates there is likely a confounding factor present that is not noted in the metadata. 
+Moreover, `r fig_num$label_text('confounding-example-plot-454')` is a prime example of a dataset with a potential confounding factor that is likely due to multiple processed batches being present, since each cluster includes samples from the two SSF groups in arrangements that cannot be separated into the two SSF groups.
 
 
 ```{r}
@@ -753,56 +778,64 @@ Moreover, Figure X is a prime example of a dataset with a potential confounding 
 (example_confound_plot_454$pc1_histogram | example_confound_plot_454$pc2_histogram) / (example_confound_plot_454$scores) + plot_annotation(tag_levels = "A")
 ```
 
-**Figure X**.
+**`r fig_num$label_caption('confounding-example-plot-454')`**.
 PCA plots for dataset AN000454.
 **A**: Histogram of sample scores for the two SSF groups on PC1.
 **B**: Histogram of sample scores for the two SSF groups on PC2.
 **C**: Sample scores on PC1 and PC2, colored by SSF group.
+
+In contrast to dataset AN000454, for AN006863, we were able to verify that including the additional sample data, **cohort**, to the SSFs, would remove the multi-modal distribution of sample scores on PC1 (`r fig_num$label_text('confounding-example-plot-6863')`).
+AN006863 is one analysis of metabolomics from serum of patients with gestational dibetes mellitus (GDM) in the first and second trimester.
+The original SSFs are a combination of GDM status (GDM and non-GDM), and type of sample (serum).
+However, the values of cohort include: First Trimester; First Trimester(External Test); Second Trimester; Second Trimester(External Cohort); Second Trimester(External Test).
+It is likely that for an actual analysis, **cohort** should be included as part of the SSFs.
+This conclusion is supported by the PCA ANOVA analysis, where the adjusted p-value for the original SSFs is 0.008, whereas the combination of SSFs + cohort is < $1 \times 10^{-16}$.
+
 
 ```{r}
 #| label: confounding-example-plot-6863
 example_confound_plot_6863$pc1_histogram + example_confound_plot_6863$pc2_histogram + example_confound_plot_6863$scores + free(example_confound_plot_6863$confound_sinaplot) + plot_layout(ncol = 2, nrow = 2) + plot_annotation(tag_levels = "A")
 ```
 
-**Figure X**.
+**`r fig_num$label_caption('confounding-example-plot-6863')`**.
 PCA plots for dataset AN006863.
 **A**: Histogram of sample scores for the two SSF groups on PC1.
 **B**: Histogram of sample scores for the two SSF groups on PC2.
 **C**: Sample scores on PC1 and PC2, colored by SSF group.
 **D**: Sina and boxplots of sample scores on PC1 by an additional sample subject data, cohort.
 
+Examining all of the datasets where a likely confound was detected, there were **XX** datasets where we are also confident that the confound is due to a missing piece of metadata that should be part of the SSFs.
 
 ### Technical Replicates
 
+We used a combination of sample distances based on ICI-Kt correlation, and sample name text differences, along with ordering by hierarchical clustering of the ICI-Kt correlations to detect likely technical replicates (see the example with three technical replicates in `r fig_num$label_text('technical-replicates-plot')`A and B).
 In addition to the RSD of the technical replicates, we also calculate the RSD of the SSF grouped samples (total RSD).
-The median technical replicate and total RSD values from each dataset are shown in Figure XC.
+The median technical replicate and total RSD values from each dataset are shown in `r fig_num$label_text('technical-replicates-plot')`C.
 As expected, the mode of the technical replicate RSD is much lower than the total RSD (`r format(rsd_modes_all$tr_mode, digits = 3)` *vs* `r format(rsd_modes_all$total_mode, digits = 3)`), implying that methods for detecting them are likely correct (if somewhat conservative).
-
 With the technical replicate RSD and total RSD available for 200 datasets, we can subtract them to determine the RSD due to non-technical sources.
-The density curves of the total, technical, and non-technical RSDs are shown in Figure XD.
 
 ```{r}
 #| label: technical-replicates-plot
 #| fig-width: 11
 heatmap_grob = ComplexHeatmap::draw(technical_replicates_plot$heatmap) |> grid::grid.grabExpr()
-(technical_replicates_plot$dotplot | heatmap_grob) / (total_vs_tr_rsd_plot | non_technical_rsd_plot) + plot_annotation(tag_levels = "A")
+(free(technical_replicates_plot$dotplot) | heatmap_grob) / (non_technical_rsd_plot) + plot_annotation(tag_levels = "A")
 ```
 
-Figure X.
+**`r `r fig_num$label_caption('technical-replicates-plot')`**.
 **A**: Sample-sample ICI-Kt correlation based distances and cosine string distances between all samples in dataset AN006191.
 Black lines indicate cutoffs for correlation and string distances, respectively.
 Red dots are distances that indicate possible technical replicates.
 **B**: Sample-sample ICI-Kt correlation heatmap, with technical replicate groups indicated on the rows.
-**C**: Density plot of the median technical replicate RSD from each dataset where technical replicates were detected, and the total RSD using SSF groups from each dataset.
-**D**: Density plots of the total, technical replicate, and non-technical-RSD, i.e. the total RSD minus the technical-replicate RSD.
+**C**: Sina plots of the total, technical replicate, and non-technical-RSD, i.e. the total RSD minus the technical-replicate RSD for all datasets where technical replicates were detected.
+Values are the modes of the distributions.
 
 ### Comparison of Dataset Statuses
 
 The counts were aggregated across all dataset comparisons for the `r study_status_comparison_table$n_studies` studies that had multiple datasets.
-Table Y shows that in general, whatever the status a dataset has, the other datasets within that study will more than likely share that same status (70 - 75% in each case).
+`r table_num$label_text('study-status-count-table')` shows that in general, whatever the status a dataset has, the other datasets within that study will more than likely share that same status (70 - 75% in each case).
 Interestingly, starting with a green status, is 2x more likely to encounter a yellow status than a red, and starting with a red status is 2x more likely to share a study with a yellow status than a green.
 
-Table Y.
+`r table_num$label_caption('study-status-count-table')`.
 Number of datasets that share the initial-status color with another dataset in the same study.
 
 ```{r}
@@ -825,9 +858,37 @@ Examples we have seen include:
   * using ".E" instead of "E" to denote exponents (AN005958);
   * metabolite ratios included in the data block, not just metabolite abundances (AN000645);
   * biological replicate information or number included in the subject-sample-factors or the subject-sample-factor name for each sample, creating groups with one sample each, instead of the three or more samples in each group that are actually present (AN002454, and so, so many others);
-  * not submitting raw-ish data in the mwTab data file, but rather machine learning feature selected data (AN008161)
+  * not submitting raw-ish data in the mwTab data file, but rather machine learning feature selected data (AN008161);
+  * analysis mwtab files that are missing the analysis, study and project IDs (56 datasets).
 
-  ## Discussion
+### Computing Resources
 
-  * We should bring up that the spectroscopy methods do not have an accepted, inherent measure of quality similar to genomics / transcriptomics / epigenomics with N-50 and q-value.
-  The **closest** thing might be signal-to-noise, or relative standard deviation, but signal-to-noise is often reported as a single cutoff, and AFAWK no one actually calculates RSD across the scans of multi-scan acquired data (reference scan-centric peak characterization manuscript).
+For the QC/QA analyses, we wrote `r sum(n_line_info$lines)` lines of R code organized across `r sum(n_line_info$functions)` functions.
+The analysis ran on a single computer with 64 GB of RAM, taking a total of approximately `r floor(sum(run_meta_data$seconds) / 3600 / 24)` days of compute time.
+We do note that a full half of that compute time (48 hours) is for the sample-sample ICI-Kt correlation, and PCA ANOVA testing.
+
+## Discussion
+
+We have conducted a quality control and quality assessment (QC/QA) of all datasets available in the Metabolomics Workbench, where we primarily focussed at the level of individual samples across experimental conditions.
+All of the genomic read based -omics methods (DNA and RNA-seq, and their derivations), have various base-read quality metrics, such as the phred-score and N50 [**refs**].
+Metabolomics, in contrast, has no single accepted quality score of the measurements themselves.
+Potential scores could be derived from the signal-to-noise ratio, frequently used in mass-spectrometry however; it is generally reported as a cutoff to determine which peaks are useful.
+Another potential metric could be the relative standard deviation (RSD) or coefficient of variation (CV), calculated for each peak across scans when available (see [**scan centric peak characterization ref**]) or evan across samples of the same condition when not.
+To our knowledge, neither singal-to-noise nor RSD are routinely reported for each measurement in metabolomics data, and there is no field appropriate to hold that data in the current mwtab file format.
+In this work, we calculated feature wise RSD's across samples within the same subject-sample-factors (SSFs) before and after normalization to provide information about whether the median abundance normalization performed was appropriate, and to provide a measure of total variance, technical variance, and non-technical variance where possible.
+This was the only feature level quality assesement possible due to the lack of other feature level quality measurements.
+
+We are grateful that MW explicitly devides the SSFs metadata fields into the SSFs and additional data, enabling experimenters to easily denote the metadata that delineates the experimental phenotypes of interest.
+This made the overall QC/QA analysis much easier.
+However, as the results demonstrate, there seems to be some confusion for data depositors as to which metadata should be included as SSF *vs* additional sample data.
+This appears most prominently in the confounding factor analysis, where several datasets turned up additional sample data that removed the multi-modal distribution of principal component scores, and where the PCA results showed a combination of SSF and additional sample data had lower p-values than the SSF itself.
+This is a better situation than using the metadata in other -omics data archives, such as the sequence read archive (SRA), where there are frequently several sample attributes recorded, but there is nothing to indicate which attributes were under investigation of the experimental design.
+
+Overall, the quality of datasets are relatively high, with only a quarter of those we analyzed having one or more red statuses.
+While this may seem alarming to some
+
+
+### Data Availability
+
+Primary outputs of this work (CSV file of dataset metadata and statuses, HTML reports, and RDS files of summarized experiments) have been made available on Zenodo (10.5281/zenodo.23269017).
+The code and manuscript are available on GitHub at https://github.com/MoseleyBioinformaticsLab/manuscript.metabolomicsQCQA.
