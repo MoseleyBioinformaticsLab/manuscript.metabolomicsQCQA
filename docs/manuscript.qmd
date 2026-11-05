@@ -7,6 +7,8 @@ format:
     toc: true
     embed-resources: true
   docx: default
+bibliography: metabolomics_databases_qcqa.json
+csl: plos-computational-biology.csl
 ---
 
 ```{r}
@@ -71,6 +73,7 @@ run_meta_data = tar_meta(targets_only = TRUE)
 ```{r}
 #| label: load-plots
 fig_num$increment(c(
+  "overall-pipeline-plot",
   "loss-nose-plot", 
 "dataset-sizes-plot",
 "status-heatmap-plot",
@@ -175,7 +178,7 @@ Notable -omics data repositories include the gene expression omnibus (GEO) and s
 Various groups have found ways to reuse and reanalyze transcriptomics data, for example, by combining and aggregating datasets for single diseases, among others [**REFS**].
 However, as with all data, and most especially -omics level data, there are issues both with the ability to reuse the data that is there, and the data quality.
 While some data and metadata quality assessments have been carried out on RNA-Seq repositories, to our knowledge no such assessment has been attempted for a metabolomics repository.
-Our lab has previously developed the mwtab python package for parsing and validating mwTab-formatted files and downloading MW deposited datasets [https://doi.org/10.3390/metabo16010076 , https://doi.org/10.3390/metabo11030163 , https://doi.org/10.1007/s11306-018-1356-6], the MESSES package for generating mwTab formatted datasets ready for MW deposition [https://doi.org/10.3390/metabo13070842 ], and the Metabolomics Workbench File Status website [https://doi.org/10.3390/metabo16010076 , https://doi.org/10.1186/s12859-023-05423-9]. 
+Our lab has previously developed the mwtab python package for parsing and validating mwTab-formatted files and downloading MW deposited datasets [@thompsonMajorUpdateImproved2026a; @powellMwtabPythonLibrary2021; @smelterPythonLibraryFAIRer2018], the MESSES package for generating mwTab formatted datasets ready for MW deposition [@thompsonMESSESSoftwareTransforming2023a], and the Metabolomics Workbench File Status website [@thompsonMajorUpdateImproved2026a; @powellMetabolomicsWorkbenchFile2023]. 
 Now, we have performed a comprehensive quality-control and quality-assurance assessment analysis of all datasets (analyses) available from the MW.
 
 We used the following measures to assess the data and experimental design metadata quality of each dataset:
@@ -194,17 +197,20 @@ We also provide HTML quality-control reports and the processed, analysis ready s
 
 ## Methods
 
-We developed a QC/QA analysis pipeline as a series of R scripts that totals approximately X lines of code. 
-The pipeline uses the targets vXXX package for workflow management of the execution of pipeline steps. 
+We developed a QC/QA pipeline in R, with `r sum(n_line_info$lines)` lines of R code organized across `r sum(n_line_info$functions)` functions
+The pipeline uses the targets v 1.12.0 package for workflow management of the execution of pipeline steps [@landauTargetsPackageDynamic2021a]. 
 Use of the targets package greatly sped up the many development and testing cycles needed to generate a robust pipeline by minimizing unnecessary recalculation of steps where code had not changed. 
-Figure X provides an overview of the QC/QA analysis pipeline. 
+`r fig_num$label_text('overall-pipeline-plot')` provides an overview of the QC/QA analysis pipeline. 
 Individual analysis steps of the pipeline are described below.
 
-![Overall QC/QA pipeline steps.](../resources/qcqa_pipeline_lucid_alt2.png)
+![](../resources/qcqa_pipeline_pipeline_lucid_2026-11-05.png)
+
+**`r fig_num$label_caption('overall-pipeline-plot')`**.
+Overview of the QC/QA pipeline, starting from repaired and harmonized data ingestion, to generation of HTML reports.
 
 ### Parsing and Transformation to Summarized Experiment
 
-After datasets were repaired and ancillary data files downloaded, parsed, and repaired, the pipeline attempts to read in the JSONized data and transform it into an R SummarizedExperiment object, which is ideal for holding feature metadata, abundances, and sample metadata, as well as hold any extra data that does not map directly to features and samples in the metadata slot.
+After datasets were repaired and ancillary data files downloaded, parsed, and repaired, the pipeline attempts to read in the JSONized data and transform it into an R SummarizedExperiment object, which is ideal for holding feature metadata, abundances, and sample metadata, as well as hold any extra data that does not map directly to features and samples in the metadata slot [@morganSummarizedExperimentContainerS42026].
 
 #### Matching Samples and Features Between Data Blocks
 
@@ -225,7 +231,9 @@ When reading in the metabolite abundances, the string ".E" had to be replaced wi
 ### Removing Factors That Cause Single Sample Grouping
 
 For later sample-sample correlation and principal component analysis (PCA), it is important to know the experimental groupings of biological samples.
-The groupings are constructed from the various subject-sample-factors (SSF) into a single character string representing the overall SSF group for each sample, easily allowing them to be grouped by a single variable in the data associated with each biological sample.
+Like other omics data repositories, MW allows submitters to add a variety of metadata about the samples when submitting.
+More specifically, MW also allows (requires?) that submitters indicate metadata that are subject-sample-factors, or the factors that are being varied in the experiment.
+Sample groupings are constructed from the various subject-sample-factors (SSFs) into a single character string representing the overall SSF group for each sample, easily allowing them to be grouped by a single variable in the data associated with each biological sample.
 However, some datasets include the replicate (biological, technical, etc.) number in one of the SSF, causing each sample to have it's own distinct SSF, i.e. each SSF has only single samples.
 This is sometimes the design of the experiment, but in our investigation, more often than not it was not the intention of those running the experiment, but rather a misunderstanding of how the SSF vs additional sample data should be defined in the sample metadata of the mwTab formatted analysis file.
 
@@ -235,14 +243,15 @@ The pipeline attempts to mitigate these by checking the sample to SSF mapping as
 ### Detecting Possible Quality-Control Samples
 
 Possible quality-control samples were determined by searching the regular expressions `".*pool.*|.*qc.*|.*blank.*|.*quality.*"` (ignoring case) in the sample ID, subject ID, and item description for each sample.
-If *all* samples in the dataset matched the regular expression, the pipeline removes the additional sample data from the sample information, and tried detecting them again.
+If *all* samples in the dataset matched the regular expression, the pipeline removes the additional sample data from the sample information, and tries detecting them again.
 If *all* samples were still noted as quality-control, the pipeline deems this incorrect, and sets all the samples to be experimental samples.
 
 ### Detection of Log-Transformed Datasets
 
 
-Some deposited dataset abundances are already log-transformed.
-For processing through the pipeline, it needs to be able to detect them, un-transform them (exponentiate with base 2), and pass them to the next step of the pipeline.
+While the majority of deposited dataset abundances are equivalent to a *raw* value generated by minimal processing, some deposited dataset abundances are log-transformed.
+For processing through the pipeline, the values should be equivalent to a *raw* value.
+Therefore, the pipeline needs to be able to detect log-transformed datasets, un-transform them (exponentiate with base 2), and pass them to the next step of the pipeline.
 In our experience, non-transformed dataset distributions tend to be heavily skewed with long-tailed distributions, i.e. look much like a log-normal distribution, and then the log-transformed data appears much more "normal-like".
 Therefore, we can detect already log-transformed data by determining if it is "normal".
 However, tests for normality are notoriously fickle and prone to return non-significant values if the data is at all different from expectations, which is highly likely for these real world datasets.
@@ -254,12 +263,12 @@ If the maximum observed value is $\le$ 1000, and the ratio of the mean to median
 ### Negatives to Missing
 
 The pipeline treats negative and zero values as missing and replaces them with the missing value indicator in R of "NA".
-Next, the pipeline calculates percent data missingnessas the fraction of NA values over the total number of features and samples.
-The missingness being the result of left-censorship is tested using the left_censorship_test function from the ICIKendallTau package (vXXX)[reference].
+Next, the pipeline calculates percent data missingness as the fraction of NA values over the total number of features and samples.
+The missingness being the result of left-censorship is tested using the left_censorship_test function from the ICIKendallTau package (v 1.2.21)[@flightInformationContentInformedKendallTauCorrelation2026].
 This test calculates the ranks of every feature in every sample, and checks the non-missing rank of features that have missingness in any sample, and records their rank as above or below the median rank in the non-missing instances.
 The test function aggregates above and below counts across the features and evaluates them using a binomial test.
-We expect if features are not being left-censored, then being above or below the median rank would have a probability of 0.5.
-Deviation from that probability indicates that the missing features are due to left-censorship.
+We expect if left-censorship is not causing missing values, then being above or below the median rank would have a probability of 0.5.
+Deviation from that probability indicates that the missing values are due to left-censorship.
 
 Next, the pipeline evaluates the percentage of missing values across each dataset, and uses the distribution of non-zero percentages to calculate a standard deviation and set cutoffs at two and four times the standard deviation for yellow and red statuses, respectively.
 
@@ -271,13 +280,13 @@ The pipeline calculates the median abundance of each sample, and the abundance v
 
 Some datasets clearly indicate technical replicates in the sample metadata.
 However, many other datasets may have technical replicates but have no metadata to identify technical replicate sets, and / or the metadata is not consistently structured.
-Using a dataset with clearly indicated technical replicates as a guide, we derived correlation distance and string distance based distributional cutoffs, in combination with the hierarchical dendrogram reordering to determine likely technical replicates.
+Using a dataset with clearly indicated technical replicates as a guide (ST003770, AN006191), we derived correlation distance and string distance based distributional cutoffs, in combination with the hierarchical dendrogram reordering to determine likely technical replicates.
 
-The correlation distance is calculated as 1 - ICI-Kt, and the string distance is the cosine based distance between sample IDs.
+The correlation distance is calculated as 1 - ICI-Kt, and the string distance is the Jaccard based distance between sample IDs (stringdist package v 0.9.17 [@vanderlooStringdistPackageApproximate2014]).
 After the removal of self distances, the mean and standard deviation of each set of distances are calculated.
-Those sample-sample correlation distances $\le \mu_{cor} - sd_{cor}\times 2.5$ and $\le \mu_{string} - sd_{string}$ are considered possible replicates (red points in Figure X, black lines indicate cutoffs).
+Those sample-sample correlation distances $\le \mu_{cor} - sd_{cor}\times 2.5$ and $\le \mu_{string} - sd_{string}$ are considered possible replicates.
 
-With the pairwise distances ordered according to the hierchical clustering performed for the sample-sample correlation heatmaps, the pipeline then looks for runs of technical replicate distances, which naturally define the sets.
+With the pairwise distances ordered according to the hierarchical clustering performed for the sample-sample correlation heatmaps, the pipeline then looks for runs of technical replicate distances, which naturally define the sets.
 However, if the process groups the same sample in multiple technical replicate sets, we assume something has gone wrong and don't report them.
 Additionally, for most datasets, we expect that technical replicates will encompass the **majority** of samples, unless they are a small number of pooled or quality-control samples.
 Therefore, if the technical replicate sets include pooled or quality-control samples, the pipeline reports them, otherwise, they must account for $\gt$ 50% of the samples to be reported.
@@ -294,12 +303,12 @@ A technical replicate median RSD was calculated using all features in all techni
 
 ### Calculating Sample-Sample Correlations
 
-The pipeline calculates sample-sample correlations using the information-content-informed Kendall-$\tau$ (ICI-Kt)[reference], which incorporates missing values directly into the correlation coefficient.
-We used the R package ICIKendallTau vXXX for all calculations.
+The pipeline calculates sample-sample correlations using the information-content-informed Kendall-$\tau$ (ICI-Kt)[@flightInformationContentInformedKendallTauCorrelation2026], which incorporates missing values directly into the correlation coefficient.
+We used the R package ICIKendallTau v 1.2.21 for all calculations.
 
 ### Removing Outliers
 
-Using the median sample-sample ICI-Kt correlation values within each SSF group, we define outliers as samples that fall outside the lower interquartile range of median ICI-Kt correlation values within the SSF group, using the boxplot.stats function wrapped in visualizationQualityControl::determine_outliers (vXXX)[reference].
+Using the median sample-sample ICI-Kt correlation values within each SSF group, we define outliers as samples that fall outside the lower interquartile range of median ICI-Kt correlation values within the SSF group, using the boxplot.stats function wrapped in visualizationQualityControl::determine_outliers (v 0.5.8)[@MoseleyBioinformaticsLabVisualizationQualityControl2025].
 
 ### Principal Component Analysis
 
@@ -865,7 +874,7 @@ Examples we have seen include:
 
 For the QC/QA analyses, we wrote `r sum(n_line_info$lines)` lines of R code organized across `r sum(n_line_info$functions)` functions.
 The analysis ran on a single computer with 64 GB of RAM, taking a total of approximately `r floor(sum(run_meta_data$seconds) / 3600 / 24)` days of compute time.
-We do note that a full half of that compute time (48 hours) is for the sample-sample ICI-Kt correlation, and PCA ANOVA testing.
+We do note that a full half of that compute time (48 hours) is for the sample-sample ICI-Kt correlation and PCA ANOVA testing.
 
 ## Discussion
 
@@ -873,7 +882,7 @@ We have conducted a quality control and quality assessment (QC/QA) of all datase
 All of the genomic read based -omics methods (DNA and RNA-seq, and their derivations), have various base-read quality metrics, such as the phred-score and N50 [**refs**].
 Metabolomics, in contrast, has no single accepted quality score of the measurements themselves.
 Potential scores could be derived from the signal-to-noise ratio, frequently used in mass-spectrometry however; it is generally reported as a cutoff to determine which peaks are useful.
-Another potential metric could be the relative standard deviation (RSD) or coefficient of variation (CV), calculated for each peak across scans when available (see [**scan centric peak characterization ref**]) or evan across samples of the same condition when not.
+Another potential metric could be the relative standard deviation (RSD) or coefficient of variation (CV), calculated for each peak across scans when available ([see @flightScanCentricFrequencyBasedMethod2022]) or even across samples of the same condition when not.
 To our knowledge, neither singal-to-noise nor RSD are routinely reported for each measurement in metabolomics data, and there is no field appropriate to hold that data in the current mwtab file format.
 In this work, we calculated feature wise RSD's across samples within the same subject-sample-factors (SSFs) before and after normalization to provide information about whether the median abundance normalization performed was appropriate, and to provide a measure of total variance, technical variance, and non-technical variance where possible.
 This was the only feature level quality assesement possible due to the lack of other feature level quality measurements.
@@ -890,5 +899,7 @@ While this may seem alarming to some
 
 ### Data Availability
 
-Primary outputs of this work (CSV file of dataset metadata and statuses, HTML reports, and RDS files of summarized experiments) have been made available on Zenodo (10.5281/zenodo.23269017).
-The code and manuscript are available on GitHub at https://github.com/MoseleyBioinformaticsLab/manuscript.metabolomicsQCQA.
+Primary outputs of this work (CSV file of dataset metadata and statuses, HTML reports, and RDS files of summarized experiments) have been made available on Zenodo [@flightEvaluationQualityDeposited2026].
+The code and manuscript are available on GitHub at https://github.com/MoseleyBioinformaticsLab/manuscript.metabolomicsQCQA, and Zenodo [ref].
+
+## References
