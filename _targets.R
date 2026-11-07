@@ -316,7 +316,7 @@ figures_tables_t = tar_assign({
     tar_target()
 
   count_nmostcommon_barplot = create_count_nmostcommon_barplot(
-    sets_qc_color_confounds
+    sets_qc_color_rsd
   ) |>
     tar_target()
 
@@ -352,7 +352,7 @@ figures_tables_t = tar_assign({
     out_file = "outputs/parsed_percentage_overall.csv"
   ) |>
     tar_target()
-  sets_qc_color_confounds_csv = create_csv_file(
+  sets_qc_color_csv = create_csv_file(
     sets_qc_color_rsd,
     out_file = "outputs/sets_qc_color_status.csv"
   ) |>
