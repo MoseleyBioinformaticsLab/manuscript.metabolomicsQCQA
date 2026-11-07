@@ -1,12 +1,36 @@
 ---
 title: "Evaluation of the quality of deposited datasets in the Metabolomics Workbench data repository."
-author: "Robert M Flight, P Travis Thompson and Hunter NB Moseley"
+author:
+  - name: Robert M Flight
+    orcid: 0000-0001-8141-7788
+    corresponding: false
+    email: robert.flight@uky.edu
+    roles: []
+    affiliations:
+      - College of Medicine, University of Kentucky
+      - Markey Cancer Center, University of Kentucky
+  - name: P Travis Thompson
+    orcid: 0000-0002-8198-1327
+    corresponding: false
+    email: ptth222@uky.edu
+    roles: []
+    affiliations:
+      - College of Medicine, University of Kentucky
+      - Markey Cancer Center, University of Kentucky
+  - name: Hunter N B Moseley
+    orcid: 0000-0003-3995-5368
+    corresponding: true
+    email: hunter.moseley@uky.edu
+    affiliations:
+      - College of Medicine, University of Kentucky
+      - Markey Cancer Center, University of Kentucky
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 format: 
   html: 
     toc: true
     embed-resources: true
   docx: default
+  jats: default
 bibliography: metabolomics_databases_qcqa.json
 csl: plos-computational-biology.csl
 ---
@@ -30,7 +54,7 @@ knitr::opts_chunk$set(
   fig.height = 8,
   # fig.process = figure_count$modify_path,
   dev = "png",
-  dpi = 150
+  dpi = 300
 )
 ```
 
@@ -42,7 +66,7 @@ library(targets)
 tar_source(c("packages.R", "R"))
 tar_load(c(
   # analysis pieces
-sets_qc_color_confounds,
+sets_qc_color_rsd,
 potential_confound_info,
 technical_replicate_info,
 rsd_modes_all,
@@ -99,8 +123,8 @@ table_num$increment(c(
 
 ```{r}
 #| label: summarize_steps
-summary_qc = summarize_qc_results_table(sets_qc_color_confounds)
-n_parsed = nrow(sets_qc_color_confounds)
+summary_qc = summarize_qc_results_table(sets_qc_color_rsd)
+n_parsed = nrow(sets_qc_color_rsd)
 
 n_completed = summary_qc |>
   dplyr::filter(completed_steps %in% "se; dynamic_range; correlation; pca")
@@ -172,14 +196,24 @@ Among the `{r} n_total` remaining, `{r} format_in_sentence(n_green)` had all **g
 
 ## Introduction
 
-Data repositories, and in particular, -omics level data repositories are a net good.
-Theoretically, they encourage and allow the reuse of data that has historically been expensive to obtain (although most costs have dropped significantly).
-Notable -omics data repositories include the gene expression omnibus (GEO) and sequence read archive (SRA) for transcriptomics, and the Metabolomics Workbench (MW) and Metabolights for metabolomics.
-Various groups have found ways to reuse and reanalyze transcriptomics data, for example, by combining and aggregating datasets for single diseases, among others [**REFS**].
+Data repositories have a long history in the sciences, even before the world-wide-web made data sharing almost as easy as connecting a computer to the internet [@CrystallographyProteinData1971].
+Technically, -omics level data sharing probably started with the formation of the International Nucleotide Sequence Database Collaboration (INSDC) in 1982, to capture and present nucleic acid sequencing information [@karsch-mizrachiInternationalNucleotideSequence2012].
+The appearance of DNA microarrays for transcriptomics, heavily dependent on the sequence information being deposited in INSDC member databases such as GenBank; and the desire for a centrally managed location for the transcriptomics data, seems to have brought about the next -omics level database, the Gene Expression Omnibus (GEO) and related INSDC repositories in 2000 [@barrettNCBIGEOArchive2011].
+Since then, there has been an explosion of -omics databases for public deposition of datasets.
+Outside of transcriptomics and related sequencing, examples of proteomics databases include MassIVE and PRIDE, and in metabolomics there is Metabolomics Workbench (MW) and Metabolights.
+
+Various groups have found ways to reuse and reanalyze genomics and transcriptomics data, for example, by combining and aggregating datasets for single diseases, among others [**REFS**].
 However, as with all data, and most especially -omics level data, there are issues both with the ability to reuse the data that is there, and the data quality.
-While some data and metadata quality assessments have been carried out on RNA-Seq repositories, to our knowledge no such assessment has been attempted for a metabolomics repository.
+While various data and metadata quality assessments have been carried out on RNA-Seq repositories, to our knowledge no such assessment has been attempted for a metabolomics repository.
+
 Our lab has previously developed the mwtab python package for parsing and validating mwTab-formatted files and downloading MW deposited datasets [@thompsonMajorUpdateImproved2026a; @powellMwtabPythonLibrary2021; @smelterPythonLibraryFAIRer2018], the MESSES package for generating mwTab formatted datasets ready for MW deposition [@thompsonMESSESSoftwareTransforming2023a], and the Metabolomics Workbench File Status website [@thompsonMajorUpdateImproved2026a; @powellMetabolomicsWorkbenchFile2023]. 
-Now, we have performed a comprehensive quality-control and quality-assurance assessment analysis of all datasets (analyses) available from the MW.
+Now, we have performed a comprehensive quality-control and quality-assurance (QC/QA) assessment analysis of all datasets (analyses) available from the MW.
+
+Designing the QC/QA steps is not trivial.
+In contrast to RNA-Seq, there are no universally accepted measurement metrics for metabolomics data.
+For example, we can't just run STAR aligner and collate the metrics, or FastQC, as has been done for the recount3 project or run on all of the sequence read archive (SRA) [refs].
+Therefore, we designed our QC/QA analysis around metrics and scenarios we have frequently used in our own analyses of transcriptomics, proteomics, and metabolomics data, with specific considerations given we are trying to analyze **all** available datasets in the MW.
+Many of these had to have added to them an actual metric and definition of color grade from our usual practice of examining them by eye and declaring that "it looks good", or "it looks like there might be a problem".
 
 We used the following measures to assess the data and experimental design metadata quality of each dataset:
 
