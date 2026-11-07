@@ -5,6 +5,7 @@ sets_evaluate_qc = function(sets_se, data_limits) {
   # sets_se = tar_read(se_pca_g22); se_data = sets_se[[75]]; tar_source("R"); tar_load(data_limits)
   # sets_se = tar_read(se_pca_g35); se_data = sets_se[[75]]; tar_source("R"); tar_load(data_limits)
   # sets_se = tar_read(se_pca_g13); se_data = sets_se[["AN000778"]]; tar_source("R"); tar_load(data_limits)
+  # sets_se = tar_read(se_pca_g20); se_data = sets_se[[88]]; tar_source("R"); tar_load(data_limits)
   sets_qc = purrr::map(sets_se, \(x) {
     tmp_res = evaluate_qc(x, data_limits)
     to_tibble = !(names(tmp_res) %in%
@@ -53,6 +54,9 @@ evaluate_qc = function(se_data, data_limits) {
   organism_list = get_mwtab_organism_sample(mwtab_info)
 
   report_list = check_qc_outputs(se_data)
+  if (report_list$failed[["last"]] %in% "diptest") {
+    report_list$failed = c(report_list$failed, "why" = "all NA values")
+  }
   last_step = get_qc(se_data)
   internal_id = last_step$id
 
