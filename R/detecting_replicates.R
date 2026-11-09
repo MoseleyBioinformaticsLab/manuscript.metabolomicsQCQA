@@ -362,9 +362,9 @@ add_rsd_calculate_modes_status = function(
   return(sets_merged)
 }
 
-calculate_rsd_differences = function(sets_qc_confounds_rsd) {
-  # tar_load(sets_qc_confounds_rsd)
-  has_rsd = sets_qc_confounds_rsd |>
+calculate_rsd_differences = function(sets_qc_color_rsd) {
+  # tar_load(sets_qc_color_rsd)
+  has_rsd = sets_qc_color_rsd |>
     dplyr::filter_out(
       is.na(total_rsd_median) |
         is.na(technical_replicate_rsd_median)
