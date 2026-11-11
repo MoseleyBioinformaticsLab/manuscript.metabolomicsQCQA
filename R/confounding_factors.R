@@ -320,6 +320,7 @@ determine_confound_is_missing_ssf = function(se_data) {
   # se_data = sets_confounded[[5]]
   # se_data = sets_confounded[[12]]
   # se_data = sets_confounded[[15]]
+  # se_data = sets_confounded[[107]]
 
   se_tmp = run_pc_ssfgroup_diptest(se_data, just_ssf = "no")
 
@@ -478,6 +479,8 @@ replace_zero_pvalue = function(in_df) {
       replace_pval = 1e-100
     } else if (min_nonzero > 1e-199) {
       replace_pval = 1e-200
+    } else if (min_nonzero > 1e-250) {
+      replace_pval = 1e-300
     }
 
     plocs = names(in_df)[names(in_df) %in% pval_cols]
