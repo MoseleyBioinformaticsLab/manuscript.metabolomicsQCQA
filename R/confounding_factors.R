@@ -299,11 +299,9 @@ sets_determine_confound_is_missing_ssf = function(
   sets_confounded
 ) {
   # tar_load(sets_confounded); tar_source("R")
-  n_cores = future::nbrOfWorkers()
-  plan(multicore, workers = ceiling(n_cores / 2))
   p_do = progressr::progressor(length(sets_confounded))
   n_do = seq_along(sets_confounded)
-  is_missing_ssf = furrr::future_map2(
+  is_missing_ssf = purrr::map2(
     sets_confounded,
     n_do,
     \(in_set, in_n) {
@@ -313,7 +311,6 @@ sets_determine_confound_is_missing_ssf = function(
   ) |>
     purrr::list_rbind()
 
-  plan(multicore, workers = n_cores)
   is_missing_ssf
 }
 
