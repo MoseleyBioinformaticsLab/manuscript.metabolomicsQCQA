@@ -357,6 +357,15 @@ figures_tables_t = tar_assign({
     out_file = "outputs/sets_qc_color_status.csv"
   ) |>
     tar_target()
+
+  poster_images = write_poster_images(list(
+    count_nmostcommon_barplot = count_nmostcommon_barplot,
+    percent_missing_plot = data_based_cutoffs_plot$pm,
+    max_observed_rsd = data_based_cutoffs_plot$rsd,
+    median_correlation = data_based_cutoffs_plot$med_cor,
+    pc_90 = data_based_cutoffs_plot$pc_90
+  )) |>
+    tar_target()
 })
 
 docs_t = tar_assign({

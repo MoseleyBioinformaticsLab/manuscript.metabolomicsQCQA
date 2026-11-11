@@ -910,3 +910,30 @@ get_last_pca = function(se_data) {
 
   pca_data_use
 }
+
+write_poster_images = function(figure_list) {
+  save_loc = "docs/posterimages"
+
+  default_size = c(12, 4)
+
+  out_paths = purrr::iwalk(figure_list, function(in_figure, figure_id) {
+    if (length(in_figure) == 1) {
+      out_figure = in_figure
+      out_size = default_size
+    } else {
+      out_figure = in_figure[[1]]
+      out_size = in_figure[[2]]
+    }
+    final_path = fs::path(save_loc, figure_id, ext = "png")
+    ragg::agg_png(
+      filename = final_path,
+      width = out_size[1],
+      height = out_size[2],
+      units = "in",
+      res = 300
+    )
+    print(out_figure)
+    dev.off()
+  })
+  out_paths
+}
