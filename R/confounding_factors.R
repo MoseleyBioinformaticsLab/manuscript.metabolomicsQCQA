@@ -321,6 +321,7 @@ determine_confound_is_missing_ssf = function(se_data) {
   # se_data = sets_confounded[[12]]
   # se_data = sets_confounded[[15]]
   # se_data = sets_confounded[[107]]
+  # se_data = sets_confounded[[449]]
 
   se_tmp = run_pc_ssfgroup_diptest(se_data, just_ssf = "no")
 
@@ -452,6 +453,12 @@ determine_confound_is_missing_ssf = function(se_data) {
   out_res
 }
 
+break_exponent_mantissa = function(x) {
+  e = ifelse(x == 0, 0, floor(log10(x)))
+  m = x / 10^e
+  c("mantissa" = m, "exponent" = e)
+}
+
 replace_zero_pvalue = function(in_df) {
   # in_df = anova_compare
   if (nrow(in_df) == 0) {
@@ -471,17 +478,9 @@ replace_zero_pvalue = function(in_df) {
 
   min_nonzero = min(all_pval[all_pval > 0])
   if (any(all_pval == 0)) {
-    if (min_nonzero > 1e-16) {
-      replace_pval = 1e-16
-    } else if (min_nonzero > 1e-32) {
-      replace_pval = 1e-32
-    } else if (min_nonzero > 1e-99) {
-      replace_pval = 1e-100
-    } else if (min_nonzero > 1e-199) {
-      replace_pval = 1e-200
-    } else if (min_nonzero > 1e-250) {
-      replace_pval = 1e-300
-    }
+    m_e = break_exponent_mantissa(min_nonzero)
+    new_exponent = m_e["exponent"] - 3
+    replace_pval = 1 * 10^new_exponent
 
     plocs = names(in_df)[names(in_df) %in% pval_cols]
 

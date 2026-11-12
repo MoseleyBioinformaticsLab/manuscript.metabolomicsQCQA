@@ -937,3 +937,41 @@ write_poster_images = function(figure_list) {
   })
   out_paths
 }
+
+plot_cutoffs_with_formulas = function(plot_list) {
+  # plot_list = colored_cutoffs_plots$n_ssf
+  # plot_list = colored_cutoffs_plots$pm
+  use_size = 6
+  use_dpi = 600
+  use_hjust = "left"
+  if (length(plot_list$formula) == 1) {
+    final_plot = plot_list$plot +
+      geom_latex(
+        x = plot_list$location[1],
+        y = plot_list$location[2],
+        label = plot_list$formula,
+        dpi = use_dpi,
+        size = use_size,
+        hjust = use_hjust
+      )
+  } else if (length(plot_list$formula) == 2) {
+    final_plot = plot_list$plot +
+      geom_latex(
+        x = plot_list$location[1],
+        y = plot_list$location[2],
+        label = plot_list$formula[1],
+        dpi = use_dpi,
+        size = use_size,
+        hjust = use_hjust
+      ) +
+      geom_latex(
+        x = plot_list$location[3],
+        y = plot_list$location[4],
+        label = plot_list$formula[2],
+        dpi = use_dpi,
+        size = use_size,
+        hjust = use_hjust
+      )
+  }
+  return(final_plot)
+}
