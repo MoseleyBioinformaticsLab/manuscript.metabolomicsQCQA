@@ -1,0 +1,249 @@
+---
+title: "Evaluation Of The Quality Of Deposited Datasets In The Metabolomics Workbench Data Repository."
+citeproc: true
+bibliography: metabolomics_databases_qcqa.json
+csl: minimal_citation.csl
+format:
+  poster-typst: 
+    size: "48x36"
+    poster-authors: "R.M. Flight, P.T. Thompson, H.N.B. Moseley"
+    departments: "University of Kentucky Markey Cancer Center"
+    institution-logo: "posterimages/ukmarkeylogo.png"
+    footer-text: "Cancer Immunotherapy and Metabolism Symposium 2026"
+    footer-url: "https://doi.org/10.5281/zenodo.23269017"
+    footer-emails: "robert.flight@uky.edu"
+    footer-color: "ebcfb2"
+    keywords: ["Quality-Control", "Quality-Assurance", "Metabolomics"]
+    keep-typ: true
+---
+
+
+```{r}
+#| label: knitr-chunks
+#| echo: false
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = TRUE,
+  warning = FALSE,
+  fig.width = 16,
+  fig.height = 4,
+  dev = "png",
+  dpi = 300
+)
+```
+
+```{r}
+#| label: load-targets
+#| message: false
+#| warning: false
+library(targets)
+tar_source(c("packages.R", "R"))
+tar_load(c(
+  # analysis pieces
+sets_qc_color_confounds,
+potential_confound_info,
+technical_replicate_info,
+rsd_modes_all,
+not_gray_pca,
+# plots
+nose_reasons_bar_plot,
+loss_waterfall_plot,
+datasets_sizes_plot,
+mmr_logtransform_plot,
+status_heatmap_top90_plot,
+technical_replicates_plot,
+total_vs_tr_rsd_plot,
+example_confound_plot_454,
+example_confound_plot_6863,
+negatives_as_missing_plot,
+non_technical_rsd_plot,
+percent_missingnes_plot,
+colored_cutoffs_plots,
+pca_example_green_1,
+pca_example_green_2,
+pca_example_green_3,
+pca_example_red_1,
+pca_example_red_2,
+pca_example_red_3,
+# tables
+study_status_comparison_table,
+negatives_as_missing_table
+))
+
+n_line_info = count_code()
+run_meta_data = tar_meta(targets_only = TRUE)
+```
+
+
+# Quality-Control & Quality-Assurance for Metabolomics
+
+![Overview of the QC/QA pipeline, starting from repaired and harmonized data ingestion, to generation of HTML reports.](posterimages/qcqa_pipeline_pipeline_lucid_2026-11-05.png){#fig-pipeline}
+
+Omics data can be messy.
+Anywhere from tens to thousands of features (genes, transcripts, exons, metabolites, or proteins) are measured in a high-throughput manner across several samples from multiple phenotypes.
+Although metabolomics doesn't have a single measure for the quality of a metabolite abundance, nor the ability to judge the quality of the equivalent of called bases, there are many measures of experiment quality that can be measured and reported.
+
+Our quality-control and quality-assurance (QC/QA) pipeline (see @fig-pipeline) was designed to assign quality metrics to all of the Metabolomics Workbench datasets (analyses) we could download in July of 2026.
+
+# Metabolomics Workbench
+
+- NIH Common Fund's National Metabolomics Data Repository.
+- Established in 2012.
+- Organized by:
+  - Project: a biological question, contains one or more **related** studies.
+  - Study: contains one or more analyses.
+  - Analysis: typically one analysis method or sample type, e.g. NMR, MS + chromatography, +ve / -ve mode, etc.
+- Currently hosts 4261 studies, from 60 countries.
+  - 7240 analysis datasets (2026-07-21).
+- Our lab has years of experience working with MW data [@thompsonMajorUpdateImproved2026a; @powellMwtabPythonLibrary2021; @smelterPythonLibraryFAIRer2018; @thompsonMESSESSoftwareTransforming2023a; @powellMetabolomicsWorkbenchFile2023].
+
+
+# Removed Samples
+
+```{r}
+#| label: fig-loss-nose-plot
+#| fig-width: 18
+#| fig-cap: "**A**: Waterfall loss plot showing how many datasets were initially processed (7240), and then how many were removed as the analysis progressed along each stage. No Data: -167, there was no data to construct the summarized experiment object; ≤ 3 Samples: -622, datasets had less than three samples after checking that each sample had ≥ 10 non-missing feature abundances; < 3 Samples After Correlation: -5, datasets had less than three samples after removing samples that generated missing sample-sample correlation values; Gray PCA: -247, datasets that had a single SSF for all samples, or each sample had their own SSF, resulting in missing values in the ANOVA test of SSF vs sample scores on principal components; Analyzed: 6199, the number of datasets analyzed. **B**: Counts of the various reasons that the 167 datasets had No Data, and therefore couldn't create a summarized experiment object to be used for further analysis."
+(free(loss_waterfall_plot) | nose_reasons_bar_plot) + plot_annotation(tag_levels = "A")
+```
+
+# Overall Color Status
+
+```{r}
+#| label: fig-status-heatmap-plot
+#| fig-width: 16
+#| fig-height: 10
+#| fig-cap: Colored statuses and numbers of datasets with those statuses.
+ComplexHeatmap::ht_opt("DIMNAME_PADDING" = unit(5, "mm"))
+status_heatmap_top90_plot
+ComplexHeatmap::ht_opt(RESET = TRUE)
+```
+
+
+```{=typst}
+#colbreak()
+```
+
+# Number of Samples in SSF Groups
+
+- Subject sample factors (SSFs):
+  - One or more experimentally important metadata about the samples.
+  - E.g. Cancerous vs normal, high-fat diet vs normal diet, etc.
+- We combine multiple SSFs to make a unique label that defines the **experimental groups** of samples.
+- Additional sample data includes things like the raw file name, biological replicate.
+- The number of samples per SSF group indicates if the experimental design is statistically powerful or not, based on general rule of thumb.
+- The counts are **after** removing samples with < 10 present metabolites and any outliers.
+
+```{r}
+#| label: fig-n-mostcommon-ssf
+#| fig-cap: Barplot of the most common number of samples per SSF grouping, colored by the status they were given for that number.
+plot_cutoffs_with_formulas(colored_cutoffs_plots$n_ssf)
+```
+
+# Percent Missingness & Left-Censorship
+
+High percentage of missing values, especially without the indication of left-censorship (LC); indicates the presence of possible data quality issues.
+
+```{r}
+#| label: fig-percent-missing
+#| fig-cap: Number of datasets by their percent missing, colored by status.
+plot_cutoffs_with_formulas(colored_cutoffs_plots$pm)
+```
+
+
+# Maximum Observed Median Relative Standard Deviation (RSD)
+
+High maximum observed median RSD indicates high variability in the measurements.
+
+```{=typst}
+#grid(
+  columns: (30%, 70%),
+  rows: 1,
+  gutter: 8pt,
+  align: horizon,
+$ upright("status")_(r s d) = cases(delim: "{", upright("green") & upright("if") med med x lt.eq tilde(x) + 2 S D, upright("yellow") & upright("if") med med tilde(x) + 2 S D < x lt.eq tilde(x) + 4 S D, upright("red") & upright("if") med med x > tilde(x) + 4 S D) $,
+  box(image("posterimages/max_observed_rsd.png", width: 100%))
+
+)
+```
+
+# Median Within SSF Group Sample-Sample Correlations
+
+Low maximum median within SSF group sample-sample ICI-Kt correlations indicate high biological variance between samples.
+
+```{=typst}
+#grid(
+  columns: (30%, 70%),
+  rows: 1,
+  gutter: 8pt,
+  align: horizon,
+$ upright("status")_(c o r) = cases(delim: "{", upright("green") & upright("if") med med x gt.eq tilde(x) - 2 S D, upright("yellow") & upright("if") med med tilde(x) - 2 S D med > x gt.eq tilde(x) - 4 S D, upright("red") & upright("if") med med x < tilde(x) - 4 S D) $,
+  box(image("posterimages/median_correlation.png", width: 100%))
+
+)
+```
+
+
+# References
+
+
+```{=typst}
+#colbreak()
+```
+
+# Principal Component Analysis (PCA) Scores - PC-90
+
+As more principal components (PC) are needed to account for 90% of the variance in the data (PC-90), it indicates weak signal variance within the dataset in comparison to other sources of variance present.
+
+
+```{=typst}
+#grid(
+  columns: (30%, 70%),
+  rows: 1,
+  gutter: 8pt,
+  align: horizon,
+$ upright("status")_90 = cases(delim: "{", upright("green") & upright("if") med med x lt.eq tilde(x) + 2 S D, upright("yellow") & upright("if") med med tilde(x) + 2 S D med < x lt.eq tilde(x) + 4 S D, upright("red") & upright("if") med med x > tilde(x) + 4 S D) $,
+  box(image("posterimages/pc_90.png", width: 100%))
+
+)
+```
+
+# PCA Scores - ANOVA
+
+Lack of separation of SSF groups across meaningful PCs indicates weak signal variance within the dataset.
+
+$$\text{status}_{anova} = \begin{cases} 
+  \text{green} & \text{if}\  \ \text{SSF} \ \text{p}_{adj} \le 0.05 \ \& \ \text{PC}\text{perc} \gt 5 \% \\
+  \text{yellow} & \text{if}\  \ \text{SSF} \ \text{p}_{adj} \le 0.05 \ \& \ \text{PC}\text{perc} \gt 1 \% \ \text{or} \ \text{Add} \ \text{p}_{adj} \le 0.05 \ \& \ \text{PC}\text{perc} \gt 5 \%\\
+  \text{red} & \text{if}\  \ \text{SSF} \ \text{p}_{adj} \le 0.05 \ \& \ \text{PC}\text{perc} \lt 1 \% \ \text{or} \ \text{SSF} \ \text{p}_{adj} \gt 0.05\\
+   \end{cases}
+$$
+
+```{r}
+#| label: fig-pca-green-1
+#| fig-cap: Examples of low and high p-value ANOVA PC scores.
+pca_example_green_1 + pca_example_red_1
+```
+
+# Confounding Factors
+
+```{r}
+#| label: confounding-example-plot-6863
+#| fig-cap: "PCA plots for dataset AN006863. **A**: Histogram of sample scores for the two SSF groups on PC1. **B**: Histogram of sample scores for the two SSF groups on PC2. **C**: Sample scores on PC1 and PC2, colored by SSF group. **D**: Sina and boxplots of sample scores on PC1 by an additional sample subject data, cohort."
+#| fig-height: 8
+example_confound_plot_6863$pc1_histogram + example_confound_plot_6863$pc2_histogram + example_confound_plot_6863$scores + free(example_confound_plot_6863$confound_sinaplot) + plot_layout(ncol = 2, nrow = 2) + plot_annotation(tag_levels = "A")
+```
+
+# Technical Replicates
+
+```{r}
+#| label: fig-technical-replicates
+#| fig-cap: "**A**: Sample-sample correlation heatmap showing technical replicates; **B**: point plot of correlation distances and string distances between samples, with replicates noted in red; **C**: Sina plot of total RSD, technical RSD, and non-technical RSD for datasets with technical replicates."
+#| fig-height: 8
+#| eval: false
+heatmap_grob = grid::grid.grabExpr(ComplexHeatmap::draw(technical_replicates_plot$heatmap))
+
+((heatmap_grob | technical_replicates_plot$dotplot) / non_technical_rsd_plot) + plot_annotation(tag_levels = "A")
+```
+
+

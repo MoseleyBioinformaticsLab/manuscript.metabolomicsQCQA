@@ -320,6 +320,38 @@ figures_tables_t = tar_assign({
   ) |>
     tar_target()
 
+  colored_cutoffs_plots = list(
+    n_ssf = list(
+      plot = count_nmostcommon_barplot,
+      formula = "$\n\\text{status}_{n} = \\begin{cases} \\text{red} & \\text{if}\\ \\ N \\le 2 \\\\ \\text{yellow} & \\text{if}\\ \\ 2 < N \\le 4 \\\\ \\text{green} & \\text{if}\\ \\ N \\ge 5\\end{cases}$",
+      location = c(15, 600)
+    ),
+    pm = list(
+      plot = data_based_cutoffs_plot$pm,
+      formula = c(
+        "$\\text{status}_{pm} = \\begin{cases} \\text{green} & \\text{if}\\ \\ x \\le \\tilde{x} + 2  SD \\\\ \\text{yellow} & \\text{if}\\ \\ \\tilde{x} + 2 SD < x \\le \\tilde{x} + 4  SD\\\\  \\text{red} & \\text{if}\\ \\ x > \\tilde{x} + 4  SD \\end{cases} $",
+        "$\\text{status}_{lc} = \\begin{cases} \\text{green} & \\text{if}\\  \\ \\text{pm} > 10\\% \\ \\& \\ \\text{P}_{LC} \\le 0.05 \\\\ \\text{yellow} & \\text{if}\\  \\ \\text{pm} > 10\\% \\ \\& \\ \\text{P}_{LC} > 0.05 \\\\ \\end{cases}$"
+      ),
+      location = c(50, 400, 50, 300)
+    ),
+    rsd = list(
+      plot = data_based_cutoffs_plot$rsd,
+      formula = "$\\text{status}_{rsd} = \\begin{cases} \\text{green} & \\text{if}\\  \\ x \\le \\tilde{x} + 2  SD \\\\ \\text{yellow} & \\text{if}\\ \\ \\tilde{x} + 2 SD < x \\le \\tilde{x} + 4  SD\\\\ \\text{red} & \\text{if}\\ \\ x > \\tilde{x} + 4  SD \\end{cases}$",
+      location = c(1.5, 1000)
+    ),
+    med_cor = list(
+      plot = data_based_cutoffs_plot$med_cor,
+      formula = "$\\text{status}_{pm} = \\begin{cases} \\text{green} & \\text{if}\\ \\ x \\le \\tilde{x} + 2  SD \\\\ \\text{yellow} & \\text{if}\\ \\ \\tilde{x} + 2  SD < x \\le \\tilde{x} + 4  SD\\\\ \\text{red} & \\text{if}\\ \\ x > \\tilde{x} + 4  SD \\end{cases}$",
+      location = c(0, 300)
+    ),
+    pc_90 = list(
+      plot = data_based_cutoffs_plot$pc_90,
+      formula = "$\\text{status}_{90} = \\begin{cases} \\text{green} & \\text{if}\\  \\ x \\le \\tilde{x} + 2  SD \\\\ \\text{yellow} & \\text{if}\\ \\ \\tilde{x} + 2  SD \\ < x \\le \\tilde{x} + 4  SD\\\\ \\text{red} & \\text{if}\\ \\ x > \\tilde{x} + 4  SD \\end{cases} $",
+      location = c(2, 200)
+    )
+  ) |>
+    tar_target()
+
   pca_example_green_1 = create_pca_example_plots(
     se_pca_g01[["AN002342"]]
   ) |>
