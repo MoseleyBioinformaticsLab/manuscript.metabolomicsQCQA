@@ -858,7 +858,7 @@ create_count_nmostcommon_barplot = function(sets_qc_color_confounds) {
     scale_fill_manual(values = color_list) +
     theme(legend.position = "none") +
     scale_y_continuous(expand = expansion(c(0, NA))) +
-    labs(x = "Most Frequent N-Sample / SSF Group", y = "Count") +
+    labs(x = "Most Frequent N-Sample / SSF Group", y = "# Datasets") +
     scale_x_continuous(expand = expansion(c(0, NA)))
   out_plot
 }

@@ -332,22 +332,22 @@ figures_tables_t = tar_assign({
         "$\\text{status}_{pm} = \\begin{cases} \\text{green} & \\text{if}\\ \\ x \\le \\tilde{x} + 2  SD \\\\ \\text{yellow} & \\text{if}\\ \\ \\tilde{x} + 2 SD < x \\le \\tilde{x} + 4  SD\\\\  \\text{red} & \\text{if}\\ \\ x > \\tilde{x} + 4  SD \\end{cases} $",
         "$\\text{status}_{lc} = \\begin{cases} \\text{green} & \\text{if}\\  \\ \\text{pm} > 10\\% \\ \\& \\ \\text{P}_{LC} \\le 0.05 \\\\ \\text{yellow} & \\text{if}\\  \\ \\text{pm} > 10\\% \\ \\& \\ \\text{P}_{LC} > 0.05 \\\\ \\end{cases}$"
       ),
-      location = c(50, 400, 50, 300)
+      location = c(57, 450, 57.6, 250)
     ),
     rsd = list(
       plot = data_based_cutoffs_plot$rsd,
       formula = "$\\text{status}_{rsd} = \\begin{cases} \\text{green} & \\text{if}\\  \\ x \\le \\tilde{x} + 2  SD \\\\ \\text{yellow} & \\text{if}\\ \\ \\tilde{x} + 2 SD < x \\le \\tilde{x} + 4  SD\\\\ \\text{red} & \\text{if}\\ \\ x > \\tilde{x} + 4  SD \\end{cases}$",
-      location = c(1.5, 1000)
+      location = c(1.16, 1000)
     ),
     med_cor = list(
       plot = data_based_cutoffs_plot$med_cor,
       formula = "$\\text{status}_{pm} = \\begin{cases} \\text{green} & \\text{if}\\ \\ x \\le \\tilde{x} + 2  SD \\\\ \\text{yellow} & \\text{if}\\ \\ \\tilde{x} + 2  SD < x \\le \\tilde{x} + 4  SD\\\\ \\text{red} & \\text{if}\\ \\ x > \\tilde{x} + 4  SD \\end{cases}$",
-      location = c(0, 300)
+      location = c(-.5, 300)
     ),
     pc_90 = list(
       plot = data_based_cutoffs_plot$pc_90,
       formula = "$\\text{status}_{90} = \\begin{cases} \\text{green} & \\text{if}\\  \\ x \\le \\tilde{x} + 2  SD \\\\ \\text{yellow} & \\text{if}\\ \\ \\tilde{x} + 2  SD \\ < x \\le \\tilde{x} + 4  SD\\\\ \\text{red} & \\text{if}\\ \\ x > \\tilde{x} + 4  SD \\end{cases} $",
-      location = c(2, 200)
+      location = c(2.15, 250)
     )
   ) |>
     tar_target()

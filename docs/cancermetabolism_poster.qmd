@@ -126,6 +126,10 @@ ComplexHeatmap::ht_opt(RESET = TRUE)
 
 # Number of Samples in SSF Groups
 
+```{=typst}
+#columns(2, gutter: 2pt)[
+```
+
 - Subject sample factors (SSFs):
   - One or more experimentally important metadata about the samples.
   - E.g. Cancerous vs normal, high-fat diet vs normal diet, etc.
@@ -134,9 +138,21 @@ ComplexHeatmap::ht_opt(RESET = TRUE)
 - The number of samples per SSF group indicates if the experimental design is statistically powerful or not, based on general rule of thumb.
 - The counts are **after** removing samples with < 10 present metabolites and any outliers.
 
+
+```{=typst}
+#colbreak()
+```
+
+![Subject sample factors (SSFs) for AN006863.](posterimages/example_ssf_data.png)
+
+```{=typst}
+]
+```
+
+
 ```{r}
 #| label: fig-n-mostcommon-ssf
-#| fig-cap: Barplot of the most common number of samples per SSF grouping, colored by the status they were given for that number.
+#| fig-cap: Number of datasets with the most common number of samples per SSF grouping, colored by status.
 plot_cutoffs_with_formulas(colored_cutoffs_plots$n_ssf)
 ```
 
@@ -155,57 +171,35 @@ plot_cutoffs_with_formulas(colored_cutoffs_plots$pm)
 
 High maximum observed median RSD indicates high variability in the measurements.
 
-```{=typst}
-#grid(
-  columns: (30%, 70%),
-  rows: 1,
-  gutter: 8pt,
-  align: horizon,
-$ upright("status")_(r s d) = cases(delim: "{", upright("green") & upright("if") med med x lt.eq tilde(x) + 2 S D, upright("yellow") & upright("if") med med tilde(x) + 2 S D < x lt.eq tilde(x) + 4 S D, upright("red") & upright("if") med med x > tilde(x) + 4 S D) $,
-  box(image("posterimages/max_observed_rsd.png", width: 100%))
-
-)
+```{r}
+#| label: fig-rsd
+#| fig-cap: Number of datasets by the maximum observed median RSD, colored by status.
+plot_cutoffs_with_formulas(colored_cutoffs_plots$rsd)
 ```
 
 # Median Within SSF Group Sample-Sample Correlations
 
 Low maximum median within SSF group sample-sample ICI-Kt correlations indicate high biological variance between samples.
 
-```{=typst}
-#grid(
-  columns: (30%, 70%),
-  rows: 1,
-  gutter: 8pt,
-  align: horizon,
-$ upright("status")_(c o r) = cases(delim: "{", upright("green") & upright("if") med med x gt.eq tilde(x) - 2 S D, upright("yellow") & upright("if") med med tilde(x) - 2 S D med > x gt.eq tilde(x) - 4 S D, upright("red") & upright("if") med med x < tilde(x) - 4 S D) $,
-  box(image("posterimages/median_correlation.png", width: 100%))
-
-)
+```{r}
+#| label: fig-correlation
+#| fig-cap: Number of datasets by their maximum median within SSF group sample-sample ICI-Kt, colored by status.
+plot_cutoffs_with_formulas(colored_cutoffs_plots$med_cor)
 ```
 
-
-# References
-
-
-```{=typst}
-#colbreak()
-```
 
 # Principal Component Analysis (PCA) Scores - PC-90
 
 As more principal components (PC) are needed to account for 90% of the variance in the data (PC-90), it indicates weak signal variance within the dataset in comparison to other sources of variance present.
 
+```{r}
+#| label: fig-pc90
+#| fig-cap: Number of datasets by the Log10 of the principal component that contains 90% of the variance in the data (PC-90), colored by status.
+plot_cutoffs_with_formulas(colored_cutoffs_plots$pc_90)
+```
 
 ```{=typst}
-#grid(
-  columns: (30%, 70%),
-  rows: 1,
-  gutter: 8pt,
-  align: horizon,
-$ upright("status")_90 = cases(delim: "{", upright("green") & upright("if") med med x lt.eq tilde(x) + 2 S D, upright("yellow") & upright("if") med med tilde(x) + 2 S D med < x lt.eq tilde(x) + 4 S D, upright("red") & upright("if") med med x > tilde(x) + 4 S D) $,
-  box(image("posterimages/pc_90.png", width: 100%))
-
-)
+#colbreak()
 ```
 
 # PCA Scores - ANOVA
@@ -240,10 +234,9 @@ example_confound_plot_6863$pc1_histogram + example_confound_plot_6863$pc2_histog
 #| label: fig-technical-replicates
 #| fig-cap: "**A**: Sample-sample correlation heatmap showing technical replicates; **B**: point plot of correlation distances and string distances between samples, with replicates noted in red; **C**: Sina plot of total RSD, technical RSD, and non-technical RSD for datasets with technical replicates."
 #| fig-height: 8
-#| eval: false
 heatmap_grob = grid::grid.grabExpr(ComplexHeatmap::draw(technical_replicates_plot$heatmap))
 
-((heatmap_grob | technical_replicates_plot$dotplot) / non_technical_rsd_plot) + plot_annotation(tag_levels = "A")
+layout = "ABBB
+CCCC"
+free(wrap_elements(heatmap_grob)) + technical_replicates_plot$dotplot + non_technical_rsd_plot + plot_layout(design = layout) + plot_annotation(tag_levels = "A")
 ```
-
-
