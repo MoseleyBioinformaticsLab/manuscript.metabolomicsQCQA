@@ -352,6 +352,9 @@ figures_tables_t = tar_assign({
   ) |>
     tar_target()
 
+  colored_cutoffs_files = render_colored_cutoffs_plots(colored_cutoffs_plots) |>
+    tar_target()
+
   pca_example_green_1 = create_pca_example_plots(
     se_pca_g01[["AN002342"]]
   ) |>

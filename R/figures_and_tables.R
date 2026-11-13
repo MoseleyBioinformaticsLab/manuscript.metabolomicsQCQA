@@ -975,3 +975,25 @@ plot_cutoffs_with_formulas = function(plot_list) {
   }
   return(final_plot)
 }
+
+render_colored_cutoffs_plots = function(colored_cutoffs_plots) {
+  fig_width = 16
+  fig_height = 4
+  fig_res = 300
+
+  out_files = purrr::imap(colored_cutoffs_plots, \(x, id) {
+    # x = colored_cutoffs_plots[[1]]; id = names(colored_cutoffs_plots)[1]
+    file_path = fs::path("docs", "posterimages", id, ext = "png")
+    ragg::agg_png(
+      file_path,
+      width = fig_width,
+      height = fig_height,
+      units = "in",
+      res = fig_res
+    )
+    print(plot_cutoffs_with_formulas(x))
+    dev.off()
+
+    list(file = file_path, digest = digest::digest(file_path, algo = "md5"))
+  })
+}

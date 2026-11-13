@@ -58,7 +58,7 @@ example_confound_plot_6863,
 negatives_as_missing_plot,
 non_technical_rsd_plot,
 percent_missingnes_plot,
-colored_cutoffs_plots,
+colored_cutoffs_files,
 pca_example_green_1,
 pca_example_green_2,
 pca_example_green_3,
@@ -77,16 +77,11 @@ run_meta_data = tar_meta(targets_only = TRUE)
 
 # Quality-Control & Quality-Assurance for Metabolomics
 
-```{#typst}
-#columns(2)
+Omics data can be messy. Anywhere from tens to thousands of features (genes, transcripts, exons, metabolites, or proteins) are measured in a high-throughput manner across several samples from multiple phenotypes. Although metabolomics doesn't have a single measure for the quality of a metabolite abundance, nor the ability to judge the quality of the equivalent of called bases, there are many measures of experiment quality that can be measured and reported. \n\n Our quality-control and quality-assurance (QC/QA) pipeline (see @fig-pipeline) was designed to assign quality metrics to all of the Metabolomics Workbench datasets (analyses) we could download in July of 2026.
+
 
 ![Overview of the QC/QA pipeline, starting from repaired and harmonized data ingestion, to generation of HTML reports.](posterimages/qcqa_pipeline_pipeline_lucid_2026-11-05.png){#fig-pipeline}
 
-Omics data can be messy.
-Anywhere from tens to thousands of features (genes, transcripts, exons, metabolites, or proteins) are measured in a high-throughput manner across several samples from multiple phenotypes.
-Although metabolomics doesn't have a single measure for the quality of a metabolite abundance, nor the ability to judge the quality of the equivalent of called bases, there are many measures of experiment quality that can be measured and reported.
-
-Our quality-control and quality-assurance (QC/QA) pipeline (see @fig-pipeline) was designed to assign quality metrics to all of the Metabolomics Workbench datasets (analyses) we could download in July of 2026.
 
 # Metabolomics Workbench
 
@@ -156,54 +151,39 @@ This research was funded by NSF grant number 2020026 (PI Moseley); and NIH, gran
 ]
 ```
 
+![Number of datasets with the most common number of samples per SSF grouping, colored by status.](`r gsub("docs/", "", colored_cutoffs_files$n_ssf$file)`){#fig-n-ssf}
 
-```{r}
-#| label: fig-n-mostcommon-ssf
-#| fig-cap: Number of datasets with the most common number of samples per SSF grouping, colored by status.
-plot_cutoffs_with_formulas(colored_cutoffs_plots$n_ssf)
-```
 
 # Percent Missingness & Left-Censorship
 
 High percentage of missing values, especially without the indication of left-censorship (LC); indicates the presence of possible data quality issues.
 
-```{r}
-#| label: fig-percent-missing
-#| fig-cap: Number of datasets by their percent missing, colored by status.
-plot_cutoffs_with_formulas(colored_cutoffs_plots$pm)
-```
+![Number of datasets by their percent missing, colored by status.](`r gsub("docs/", "", colored_cutoffs_files$pm$file)`){#fig-pm}
+
 
 
 # Maximum Observed Median Relative Standard Deviation (RSD)
 
 High maximum observed median RSD indicates high variability in the measurements.
 
-```{r}
-#| label: fig-rsd
-#| fig-cap: Number of datasets by the maximum observed median RSD, colored by status.
-plot_cutoffs_with_formulas(colored_cutoffs_plots$rsd)
-```
+![Number of datasets by the maximum observed median RSD, colored by status.](`r gsub("docs/", "", colored_cutoffs_files$rsd$file)`){#fig-rsd}
+
+
 
 # Median Within SSF Group Sample-Sample Correlations
 
 Low maximum median within SSF group sample-sample ICI-Kt correlations [@flightInformationContentInformedKendallTauCorrelation2026] indicate high biological variance between samples.
 
-```{r}
-#| label: fig-correlation
-#| fig-cap: Number of datasets by their maximum median within SSF group sample-sample ICI-Kt, colored by status.
-plot_cutoffs_with_formulas(colored_cutoffs_plots$med_cor)
-```
+![Number of datasets by their maximum median within SSF group sample-sample ICI-Kt, colored by status.](`r gsub("docs/", "", colored_cutoffs_files$med_cor$file)`){#fig-med-cor}
+
 
 
 # Principal Component Analysis (PCA) Scores - PC-90
 
 As more principal components (PC) are needed to account for 90% of the variance in the data (PC-90), it indicates weak signal variance within the dataset in comparison to other sources of variance present.
 
-```{r}
-#| label: fig-pc90
-#| fig-cap: Number of datasets by the Log10 of the principal component that contains 90% of the variance in the data (PC-90), colored by status.
-plot_cutoffs_with_formulas(colored_cutoffs_plots$pc_90)
-```
+![Number of datasets by the Log10 of the principal component that contains 90% of the variance in the data (PC-90), colored by status.](`r gsub("docs/", "", colored_cutoffs_files$pc_90$file)`){#fig-pc-90}
+
 
 ```{=typst}
 #colbreak()
@@ -230,6 +210,7 @@ pca_example_green_1 + pca_example_red_1
 
 * Possible confounding factors can be detected using Hartigan's dip test for multi-modal distributions [@hartiganDipTestUnimodality1985] on the sample scores by SSF group on PC1 and PC2.
 * When there is additional sample factors present, they can be checked to see if adding it to the SSFs removes the multi-modal distribution, or improves the ANOVA results compared to the original SSFs.
+* We detected **XXX (X%)** datasets with likely confounding factors, and of those, **XXX (X%)** appear to have an additional sample factor that when included removes the confounding.
 
 ```{r}
 #| label: confounding-example-plot-6863
