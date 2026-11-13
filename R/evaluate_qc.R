@@ -6,6 +6,7 @@ sets_evaluate_qc = function(sets_se, data_limits) {
   # sets_se = tar_read(se_pca_g35); se_data = sets_se[[75]]; tar_source("R"); tar_load(data_limits)
   # sets_se = tar_read(se_pca_g13); se_data = sets_se[["AN000778"]]; tar_source("R"); tar_load(data_limits)
   # sets_se = tar_read(se_pca_g20); se_data = sets_se[[88]]; tar_source("R"); tar_load(data_limits)
+  # sets_se = tar_read(se_pca_g01); tar_source("R"); tar_load(data_limits); se_data = sets_se[["AN003912"]]
   sets_qc = purrr::map(sets_se, \(x) {
     tmp_res = evaluate_qc(x, data_limits)
     to_tibble = !(names(tmp_res) %in%

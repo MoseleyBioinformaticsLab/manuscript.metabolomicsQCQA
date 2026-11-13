@@ -323,6 +323,7 @@ determine_confound_is_missing_ssf = function(se_data) {
   # se_data = sets_confounded[[107]]
   # se_data = sets_confounded[[449]]
 
+  analysis_id = metadata(se_data)$mwtab$ID
   se_tmp = run_pc_ssfgroup_diptest(se_data, just_ssf = "no")
 
   dip_all = get_specific_metadata(se_tmp, "diptest")
@@ -347,6 +348,12 @@ determine_confound_is_missing_ssf = function(se_data) {
   )
   dip_compare_nozero = replace_zero_pvalue(dip_compare)
 
+  if (any(dip_ssf$dippooled <= 0.05)) {
+    verify_confound = "yes"
+  } else {
+    verify_confound = "not confounded"
+  }
+
   anova_ssf = use_anova |>
     dplyr::filter(
       variable %in% dip_all$variable,
@@ -370,39 +377,40 @@ determine_confound_is_missing_ssf = function(se_data) {
     dplyr::filter_out(is.na(padjust.other) | is.na(padjust.ssf)) |>
     replace_zero_pvalue()
 
-  dip_compare_nozero = dip_compare_nozero |>
-    dplyr::mutate(
-      diff = -1 * log10(dippooled.other / dippooled.ssf)
-    )
-
-  analysis_id = metadata(se_data)$mwtab$ID
-
-  if (any(dip_compare_nozero$dippooled.ssf <= 0.05)) {
-    verify_confound = "yes"
-  } else {
-    verify_confound = "not confounded"
-  }
-
-  less_dip = dip_compare_nozero |>
-    dplyr::filter(diff < 0)
-  if (nrow(less_dip) > 0) {
-    notsig_dip = less_dip |>
-      dplyr::filter(dippooled.other > 0.2)
-    if (nrow(notsig_dip) > 0) {
-      dip_possible_missing_ssf = gsub("ssf_", "", notsig_dip$variable.other) |>
-        unique() |>
-        paste0(collapse = "; ")
-      dip_pdiff = min(notsig_dip$diff)
-      dip_possible_missing_evidence = "high"
-    } else {
-      dip_pdiff = min(less_dip$diff)
-      dip_possible_missing_ssf = "unknown"
-      dip_possible_missing_evidence = "medium"
-    }
-  } else {
+  if (nrow(dip_compare_nozero) == 0) {
     dip_pdiff = NA
     dip_possible_missing_ssf = "unknown"
-    dip_possible_missing_evidence = "low"
+    dip_possible_missing_evidence = "none"
+  } else {
+    dip_compare_nozero = dip_compare_nozero |>
+      dplyr::mutate(
+        diff = -1 * log10(dippooled.other / dippooled.ssf)
+      )
+    less_dip = dip_compare_nozero |>
+      dplyr::filter(diff < 0)
+    if (nrow(less_dip) > 0) {
+      notsig_dip = less_dip |>
+        dplyr::filter(dippooled.other > 0.2)
+      if (nrow(notsig_dip) > 0) {
+        dip_possible_missing_ssf = gsub(
+          "ssf_",
+          "",
+          notsig_dip$variable.other
+        ) |>
+          unique() |>
+          paste0(collapse = "; ")
+        dip_pdiff = min(notsig_dip$diff)
+        dip_possible_missing_evidence = "high"
+      } else {
+        dip_pdiff = min(less_dip$diff)
+        dip_possible_missing_ssf = "unknown"
+        dip_possible_missing_evidence = "medium"
+      }
+    } else {
+      dip_pdiff = NA
+      dip_possible_missing_ssf = "unknown"
+      dip_possible_missing_evidence = "none"
+    }
   }
 
   if (nrow(anova_compare_nozero) == 0) {
@@ -436,7 +444,7 @@ determine_confound_is_missing_ssf = function(se_data) {
     } else {
       anova_pdiff = NA
       anova_possible_missing_ssf = "unknown"
-      anova_possible_missing_evidence = "low"
+      anova_possible_missing_evidence = "none"
     }
   }
 
