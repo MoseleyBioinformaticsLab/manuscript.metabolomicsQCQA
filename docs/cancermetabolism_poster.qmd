@@ -77,6 +77,9 @@ run_meta_data = tar_meta(targets_only = TRUE)
 
 # Quality-Control & Quality-Assurance for Metabolomics
 
+```{#typst}
+#columns(2)
+
 ![Overview of the QC/QA pipeline, starting from repaired and harmonized data ingestion, to generation of HTML reports.](posterimages/qcqa_pipeline_pipeline_lucid_2026-11-05.png){#fig-pipeline}
 
 Omics data can be messy.
@@ -119,6 +122,10 @@ status_heatmap_top90_plot
 ComplexHeatmap::ht_opt(RESET = TRUE)
 ```
 
+
+# Acknowledgements
+
+This research was funded by NSF grant number 2020026 (PI Moseley); and NIH, grant number 1R03LM014928-01 (PI Moseley).
 
 ```{=typst}
 #colbreak()
@@ -179,7 +186,7 @@ plot_cutoffs_with_formulas(colored_cutoffs_plots$rsd)
 
 # Median Within SSF Group Sample-Sample Correlations
 
-Low maximum median within SSF group sample-sample ICI-Kt correlations indicate high biological variance between samples.
+Low maximum median within SSF group sample-sample ICI-Kt correlations [@flightInformationContentInformedKendallTauCorrelation2026] indicate high biological variance between samples.
 
 ```{r}
 #| label: fig-correlation
@@ -219,7 +226,10 @@ $$
 pca_example_green_1 + pca_example_red_1
 ```
 
-# Confounding Factors
+# Detecting the Presence of Likely Confounding Factors
+
+* Possible confounding factors can be detected using Hartigan's dip test for multi-modal distributions [@hartiganDipTestUnimodality1985] on the sample scores by SSF group on PC1 and PC2.
+* When there is additional sample factors present, they can be checked to see if adding it to the SSFs removes the multi-modal distribution, or improves the ANOVA results compared to the original SSFs.
 
 ```{r}
 #| label: confounding-example-plot-6863
@@ -228,7 +238,13 @@ pca_example_green_1 + pca_example_red_1
 example_confound_plot_6863$pc1_histogram + example_confound_plot_6863$pc2_histogram + example_confound_plot_6863$scores + free(example_confound_plot_6863$confound_sinaplot) + plot_layout(ncol = 2, nrow = 2) + plot_annotation(tag_levels = "A")
 ```
 
-# Technical Replicates
+# Detection of Technical Replicates
+
+Technical replicates can be detected through a combination of:
+
+* unusually high sample-sample correlation;
+* unusually low differences in sample IDs;
+* runs of both when arranged by hiearchical clustering.
 
 ```{r}
 #| label: fig-technical-replicates
@@ -240,3 +256,6 @@ layout = "ABBB
 CCCC"
 free(wrap_elements(heatmap_grob)) + technical_replicates_plot$dotplot + non_technical_rsd_plot + plot_layout(design = layout) + plot_annotation(tag_levels = "A")
 ```
+
+
+# References
