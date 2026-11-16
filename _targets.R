@@ -416,6 +416,8 @@ docs_t = tar_assign({
   )
   iecm2026_abstract = tar_quarto("docs/iecm2026_abstract.qmd")
   iecm2026_presentation = tar_quarto("docs/iecm_presentation.qmd")
+
+  cancer_metabolism_poster = tar_quarto("docs/cancermetabolism_poster.qmd")
 })
 
 # manuscript_t = tar_quarto(

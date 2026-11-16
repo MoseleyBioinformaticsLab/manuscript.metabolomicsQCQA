@@ -78,7 +78,7 @@ run_meta_data = tar_meta(targets_only = TRUE)
 # Quality-Control & Quality-Assurance for Metabolomics
 
 Omics data can be messy. Anywhere from tens to thousands of features (genes, transcripts, exons, metabolites, or proteins) are measured in a high-throughput manner across several samples from multiple geno- / metabo- / pheno-types. 
-Metabolomics doesn't have an accepted single measure for the quality of a metabolite abundance, nor the equivalent of called bases scores.
+Metabolomics doesn't have an accepted single measure for the quality of a metabolite abundance, nor the equivalent of sequenced nucleotide base scores.
 However, there are many measures of experiment quality that can be measured and reported. 
 
 Our quality-control and quality-assurance (QC/QA) pipeline (see @fig-pipeline) was designed to assign quality metrics to all of the Metabolomics Workbench datasets (analyses) downloaded in July of 2026.
@@ -104,7 +104,6 @@ Our quality-control and quality-assurance (QC/QA) pipeline (see @fig-pipeline) w
 
 ```{r}
 #| label: fig-loss-nose-plot
-#| fig-width: 18
 #| fig-cap: "**A**: Waterfall loss plot showing how many datasets were initially processed (7240), and then how many were removed as the analysis progressed along each stage. No Data: -167, there was no data to construct the summarized experiment object; ≤ 3 Samples: -622, datasets had less than three samples after checking that each sample had ≥ 10 non-missing feature abundances; < 3 Samples After Correlation: -5, datasets had less than three samples after removing samples that generated missing sample-sample correlation values; Gray PCA: -247, datasets that had a single SSF for all samples, or each sample had their own SSF, resulting in missing values in the ANOVA test of SSF vs sample scores on principal components; Analyzed: 6199, the number of datasets analyzed. **B**: Counts of the various reasons that the 167 datasets had No Data, and therefore couldn't create a summarized experiment object to be used for further analysis."
 (free(loss_waterfall_plot) | nose_reasons_bar_plot) + plot_annotation(tag_levels = "A")
 ```
@@ -117,7 +116,7 @@ A heatmap of status combinations and barplots of the number of datasets is shown
 ```{r}
 #| label: fig-status-heatmap-plot
 #| fig-width: 16
-#| fig-height: 10
+#| fig-height: 10.5
 #| fig-cap: Colored statuses and numbers of datasets with those statuses.
 ComplexHeatmap::ht_opt("DIMNAME_PADDING" = unit(5, "mm"))
 status_heatmap_top90_plot
@@ -125,7 +124,6 @@ ComplexHeatmap::ht_opt(RESET = TRUE)
 ```
 
 
-# Acknowledgements
 
 This research was funded by NSF grant number 2020026 (PI Moseley); and NIH grant number 1R03LM014928-01 (PI Moseley).
 
@@ -172,6 +170,8 @@ A high percentage of missing values, especially without the indication of left-c
 # Maximum Observed Median Relative Standard Deviation (RSD)
 
 A high maximum observed median RSD indicates high variability in the measurements, which may lead to high variances and difficulty with calculating differential statistics.
+The RSD is calculated for all features with at least three non-missing values, within each SSF, and the median RSD calculated.
+The maximum of the median RSD for the dataset is then reported, and used to determine the overall status.
 
 ![Number of datasets by the maximum observed median RSD, colored by status.](`r gsub("docs/", "", colored_cutoffs_files$rsd$file)`){#fig-rsd}
 
@@ -180,6 +180,7 @@ A high maximum observed median RSD indicates high variability in the measurement
 # Median Within SSF Group Sample-Sample Correlations
 
 Low maximum median within SSF group sample-sample ICI-Kt correlations [@flightInformationContentInformedKendallTauCorrelation2026] may indicate high biological variance between samples, indicating issues with the overall experimental design.
+Within each SSF group, the median ICI-Kt correlation of each sample with all other SSF group samples is calculated, and then the maximum median sample ICI-Kt correlation used to determine the dataset's overall status.
 
 ![Number of datasets by their maximum median within SSF group sample-sample ICI-Kt, colored by status.](`r gsub("docs/", "", colored_cutoffs_files$med_cor$file)`){#fig-med-cor}
 
@@ -199,6 +200,8 @@ As more principal components (PC) are needed to account for 90% of the variance 
 # PCA Scores - ANOVA
 
 Lack of separation of SSF groups across meaningful PCs indicates weak signal variance within the dataset.
+We used adjusted ANOVA p-values and the percent variance accounted for by the principal component to define overall status.
+@fig-pca-green-1 gives examples of green and red PC-ANOVA status datasets.
 
 $$\text{status}_{anova} = \begin{cases} 
   \text{green} & \text{if}\  \ \text{SSF} \ \text{p}_{adj} \le 0.05 \ \& \ \text{PC}\text{perc} \gt 5 \% \\
@@ -264,5 +267,15 @@ AACC"
 free(wrap_elements(heatmap_grob)) + technical_replicates_plot$dotplot + non_technical_rsd_plot + plot_layout(design = layout) + plot_annotation(tag_levels = "A")
 ```
 
+
+# Conclusions
+
+- This is the first large-scale QC/QA evaluation of metabolomics data.
+- 33% of the datasets appear straightforward to reanalyze, 41% would need more caution or work before reanalysis, and 26% would need careful evaluation.
+- Technical replicate RSD 
+- We have provided: 
+  - A single table with much of the summary data for each dataset, as well as the statuses and metrics of our quality control and quality assessment (QC/QA) criteria.
+  - HTML QC/QA reports for every dataset.
+  - Processed summarized experiments saved as R serialized rds files for every dataset.
 
 # References
