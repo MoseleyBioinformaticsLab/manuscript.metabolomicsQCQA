@@ -747,7 +747,11 @@ create_databased_cutoffs_plot = function(
     scale_fill_manual(values = color_list) +
     scale_y_continuous(expand = expansion(mult = c(0, NA))) +
     scale_x_continuous(expand = expansion(mult = c(0, NA))) +
-    labs(x = "Median(RSD)", y = "# Datasets", subtitle = rsd_limit_string) +
+    labs(
+      x = "Max(Median(RSD))",
+      y = "# Datasets",
+      subtitle = rsd_limit_string
+    ) +
     theme(legend.position = "none", plot.subtitle = element_markdown())
 
   med_cor_histogram = ggplot_build(
@@ -783,7 +787,7 @@ create_databased_cutoffs_plot = function(
     scale_y_continuous(expand = expansion(mult = c(0, NA))) +
     scale_x_continuous(expand = expansion(mult = c(0, NA))) +
     labs(
-      x = "Max(Median(Correlation))",
+      x = "Max(Median(Sample-Sample ICI-Kt))",
       y = "# Datasets",
       subtitle = med_cor_limit_string
     ) +

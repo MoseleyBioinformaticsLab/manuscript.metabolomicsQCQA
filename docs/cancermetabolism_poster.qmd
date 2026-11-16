@@ -131,7 +131,7 @@ This research was funded by NSF grant number 2020026 (PI Moseley); and NIH grant
 #colbreak()
 ```
 
-# Number of Samples in Subject Sample Factor (SSF) Groups
+## Number of Samples in Subject Sample Factor (SSF) Groups
 
 ```{=typst}
 #columns(2, gutter: 2pt)[
@@ -159,7 +159,7 @@ This research was funded by NSF grant number 2020026 (PI Moseley); and NIH grant
 ![Number of datasets with the most common number of samples per SSF grouping, colored by status.](`r gsub("docs/", "", colored_cutoffs_files$n_ssf$file)`){#fig-n-ssf}
 
 
-# Percent Missingness & Left-Censorship
+## Percent Missingness & Left-Censorship
 
 A high percentage of missing values, especially without the indication of left-censorship (LC); indicates the presence of possible data quality issues.
 
@@ -167,7 +167,7 @@ A high percentage of missing values, especially without the indication of left-c
 
 
 
-# Maximum Observed Median Relative Standard Deviation (RSD)
+## Maximum Observed Median Relative Standard Deviation (RSD)
 
 A high maximum observed median RSD indicates high variability in the measurements, which may lead to high variances and difficulty with calculating differential statistics.
 The RSD is calculated for all features with at least three non-missing values, within each SSF, and the median RSD calculated.
@@ -177,7 +177,7 @@ The maximum of the median RSD for the dataset is then reported, and used to dete
 
 
 
-# Median Within SSF Group Sample-Sample Correlations
+## Median Within SSF Group Sample-Sample Correlations
 
 Low maximum median within SSF group sample-sample ICI-Kt correlations [@flightInformationContentInformedKendallTauCorrelation2026] may indicate high biological variance between samples, indicating issues with the overall experimental design.
 Within each SSF group, the median ICI-Kt correlation of each sample with all other SSF group samples is calculated, and then the maximum median sample ICI-Kt correlation used to determine the dataset's overall status.
@@ -186,7 +186,7 @@ Within each SSF group, the median ICI-Kt correlation of each sample with all oth
 
 
 
-# Principal Component Analysis (PCA) Scores - PC-90
+## Principal Component Analysis (PCA) Scores - PC-90
 
 As more principal components (PC) are needed to account for 90% of the variance in the data (PC-90), it indicates weak signal variance within the dataset in comparison to other sources of variance present.
 
@@ -197,7 +197,7 @@ As more principal components (PC) are needed to account for 90% of the variance 
 #colbreak()
 ```
 
-# PCA Scores - ANOVA
+## PCA Scores - ANOVA
 
 Lack of separation of SSF groups across meaningful PCs indicates weak signal variance within the dataset.
 We used adjusted ANOVA p-values and the percent variance accounted for by the principal component to define overall status.
@@ -225,7 +225,7 @@ pca_example_green_1 + pca_example_red_1
 ```{r}
 #| label: fig-confounding-example-plot-6863
 #| fig-cap: "PCA plots for dataset AN006863. **A**: Histogram of sample scores for the two SSF groups on PC1. **B**: Histogram of sample scores for the two SSF groups on PC2. **C**: Sample scores on PC1 and PC2, colored by SSF group. **D**: Sina and boxplots of sample scores on PC1 by an additional sample subject data, cohort."
-#| fig-height: 8
+#| fig-height: 6
 example_confound_plot_6863$pc1_histogram + example_confound_plot_6863$pc2_histogram + example_confound_plot_6863$scores + free(example_confound_plot_6863$confound_sinaplot) + plot_layout(ncol = 2, nrow = 2) + plot_annotation(tag_levels = "A")
 ```
 
@@ -259,7 +259,7 @@ Using the **XXX** datasets with technical replicates, we calculated:
 ```{r}
 #| label: fig-technical-replicates
 #| fig-cap: "**A**: Sample-sample correlation heatmap showing technical replicates; **B**: point plot of correlation distances and string distances between samples, with replicates noted in red; **C**: sina plot of total RSD, technical RSD, and non-technical RSD for datasets with technical replicates."
-#| fig-height: 8
+#| fig-height: 6
 heatmap_grob = grid::grid.grabExpr(ComplexHeatmap::draw(technical_replicates_plot$heatmap))
 
 layout = "AABB
