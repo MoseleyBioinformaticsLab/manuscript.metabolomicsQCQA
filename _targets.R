@@ -214,6 +214,12 @@ actual_analysis_t = tar_assign({
     measurement = "yes"
   ) |>
     tar_target()
+  rsd_technical_bootstrap = bootstrap_mode(
+    non_technical_rsd |>
+      dplyr::filter_out(is.na(non_technical_rsd) | total_rsd_median > 1) |>
+      dplyr::pull(technical_replicate_rsd_median)
+  ) |>
+    tar_target()
   not_gray_pca = find_pca_remove_gray(sets_qc_color_rsd) |> tar_target()
   parsed_grouped_statuses = parse_statuses(not_gray_pca) |> tar_target()
   parsed_percentage_overall = calculate_percentage_overall(
@@ -229,6 +235,11 @@ actual_analysis_t = tar_assign({
 
   confound_is_missing_ssf = sets_determine_confound_is_missing_ssf(
     sets_confounded
+  ) |>
+    tar_target()
+  confound_summary = summarize_confound_is_missing_ssf(
+    confound_is_missing_ssf,
+    not_gray_pca
   ) |>
     tar_target()
 })

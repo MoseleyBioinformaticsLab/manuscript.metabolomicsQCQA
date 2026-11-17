@@ -40,7 +40,7 @@ library(targets)
 tar_source(c("packages.R", "R"))
 tar_load(c(
   # analysis pieces
-sets_qc_color_confounds,
+sets_qc_color_rsd,
 potential_confound_info,
 technical_replicate_info,
 rsd_modes_all,
@@ -65,6 +65,8 @@ pca_example_green_3,
 pca_example_red_1,
 pca_example_red_2,
 pca_example_red_3,
+confound_summary,
+rsd_technical_bootstrap,
 # tables
 study_status_comparison_table,
 negatives_as_missing_table
@@ -171,7 +173,7 @@ A high percentage of missing values, especially without the indication of left-c
 
 A high maximum observed median RSD indicates high variability in the measurements, which may lead to high variances and difficulty with calculating differential statistics.
 The RSD is calculated for all features with at least three non-missing values, within each SSF, and the median RSD calculated.
-The maximum of the median RSD for the dataset is then reported, and used to determine the overall status.
+The maximum across SSFs of the median RSDs for the dataset is then reported, and used to determine the overall status.
 
 ![Number of datasets by the maximum observed median RSD, colored by status.](`r gsub("docs/", "", colored_cutoffs_files$rsd$file)`){#fig-rsd}
 
@@ -180,7 +182,7 @@ The maximum of the median RSD for the dataset is then reported, and used to dete
 ## Median Within SSF Group Sample-Sample Correlations
 
 Low maximum median within SSF group sample-sample ICI-Kt correlations [@flightInformationContentInformedKendallTauCorrelation2026] may indicate high biological variance between samples, indicating issues with the overall experimental design.
-Within each SSF group, the median ICI-Kt correlation of each sample with all other SSF group samples is calculated, and then the maximum median sample ICI-Kt correlation used to determine the dataset's overall status.
+Within each SSF group, the median ICI-Kt correlation of each sample with all other SSF group samples is calculated, and then the maximum across SSFs of the median sample-sample ICI-Kt correlations used to determine the dataset's overall status.
 
 ![Number of datasets by their maximum median within SSF group sample-sample ICI-Kt, colored by status.](`r gsub("docs/", "", colored_cutoffs_files$med_cor$file)`){#fig-med-cor}
 
@@ -220,7 +222,7 @@ pca_example_green_1 + pca_example_red_1
 
 * Possible confounding factors can be detected using Hartigan's dip test for multi-modal distributions [@hartiganDipTestUnimodality1985] on the sample scores by SSF group on PC1 and PC2 (see @fig-confounding-example-plot-6863 A, B, C).
 * When there is additional sample factors present, they can be checked to see if adding it to the SSFs removes the multi-modal distribution, or improves the ANOVA results compared to the original SSFs (@fig-confounding-example-plot-6863 D).
-* We detected **XXX (X%)** datasets with likely confounding factors, and of those, **XXX (X%)** appear to have an additional sample factor that when included removes the confounding.
+* We detected `r format_in_sentence(confound_summary$total)` datasets with likely confounding factors, and of those, `r format_in_sentence(confound_summary$confound |> dplyr::filter(dip_missing_evidence %in% "high", anova_missing_evidence %in% "high"))` appear to have an additional sample factor that when included removes the confounding.
 
 ```{r}
 #| label: fig-confounding-example-plot-6863
@@ -245,7 +247,7 @@ Technical replicates can be detected through a combination of:
 #colbreak()
 ```
 
-Using the **XXX** datasets with technical replicates, we calculated:
+Using the `r rsd_technical_bootstrap$n_values` datasets with technical replicates, we calculated:
 
 * total median RSD in the dataset (mode of 0.303);
 * technical replicate median RSD in the dataset (mode of 0.066);
@@ -267,12 +269,20 @@ AACC"
 free(wrap_elements(heatmap_grob)) + technical_replicates_plot$dotplot + non_technical_rsd_plot + plot_layout(design = layout) + plot_annotation(tag_levels = "A")
 ```
 
+```{r}
+#| label: make-ci-bootstrap
+bootstrap_ci = quantile(rsd_technical_bootstrap$boot_dist, c(0.025, 0.975))
+
+rsd_string = paste0(format(rsd_technical_bootstrap$mode, digits = 2), " (95% CI ", format(bootstrap_ci[1], digits = 2), " - ", format(bootstrap_ci[2], digits = 2), ")")
+```
+
 
 # Conclusions
 
 - This is the first large-scale QC/QA evaluation of metabolomics data.
 - 33% of the datasets appear straightforward to reanalyze, 41% would need more caution or work before reanalysis, and 26% would need careful evaluation.
-- Technical replicate RSD 
+- `r format_in_sentence(confound_summary$total)` datasets appear to have likely confounding factors.
+- The technical replicate RSD across MS and NMR datasets is `r rsd_string`.
 - We have provided: 
   - A single table with much of the summary data for each dataset, as well as the statuses and metrics of our quality control and quality assessment (QC/QA) criteria.
   - HTML QC/QA reports for every dataset.
