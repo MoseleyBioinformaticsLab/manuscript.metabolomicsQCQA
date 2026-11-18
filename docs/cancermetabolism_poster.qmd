@@ -192,7 +192,7 @@ Within each SSF group, the median ICI-Kt correlation of each sample with all oth
 
 As more principal components (PC) are needed to account for 90% of the variance in the data (PC-90), it indicates weak signal variance within the dataset in comparison to other sources of variance present.
 
-![Number of datasets by the Log10 of the principal component that contains 90% of the variance in the data (PC-90), colored by status.](`r gsub("docs/", "", colored_cutoffs_files$pc_90$file)`){#fig-pc-90}
+![Number of datasets by the Log10 of the principal component that contains 90% of the variance in the data (PC-90), colored by status. Cutoffs are listed as both the Log10(value) and raw value.](`r gsub("docs/", "", colored_cutoffs_files$pc_90$file)`){#fig-pc-90}
 
 
 ```{=typst}
@@ -260,13 +260,13 @@ Using the `r rsd_technical_bootstrap$n_values` datasets with technical replicate
 
 ```{r}
 #| label: fig-technical-replicates
-#| fig-cap: "**A**: Sample-sample correlation heatmap showing technical replicates; **B**: point plot of correlation distances and string distances between samples, with replicates noted in red; **C**: sina plot of total RSD, technical RSD, and non-technical RSD for datasets with technical replicates."
+#| fig-cap: "**A**: Sample-sample ICI-Kt correlation heatmap showing technical replicates; **B**: point plot of correlation distances (1 - ICI-Kt) and string distances (Jaccard based) between samples, with replicates noted in red; **C**: sina plot of total RSD, technical RSD, and non-technical RSD for datasets with technical replicates. Values displayed are the mode of the distributions."
 #| fig-height: 6
 heatmap_grob = grid::grid.grabExpr(ComplexHeatmap::draw(technical_replicates_plot$heatmap))
 
 layout = "AABB
 AACC"
-free(wrap_elements(heatmap_grob)) + technical_replicates_plot$dotplot + non_technical_rsd_plot + plot_layout(design = layout) + plot_annotation(tag_levels = "A")
+free(wrap_elements(heatmap_grob)) + free(technical_replicates_plot$dotplot) + non_technical_rsd_plot + plot_layout(design = layout) + plot_annotation(tag_levels = "A")
 ```
 
 ```{r}

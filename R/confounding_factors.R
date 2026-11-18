@@ -1,3 +1,25 @@
+summarize_confound_is_missing_ssf = function(
+  confound_is_missing_ssf,
+  not_gray_pca
+) {
+  # tar_load(confound_is_missing_ssf); tar_source("R")
+  summary_confound = confound_is_missing_ssf |>
+    dplyr::summarise(
+      n = dplyr::n(),
+      .by = c(dip_missing_evidence, anova_missing_evidence)
+    ) |>
+    dplyr::mutate(
+      perc = n / sum(n),
+      perc_display = paste0(format(perc * 100, digits = 2), "%")
+    )
+  n_total = tibble::tibble(n = nrow(confound_is_missing_ssf)) |>
+    dplyr::mutate(
+      perc = n / nrow(not_gray_pca),
+      perc_display = paste0(format(perc * 100, digits = 2), "%")
+    )
+  list(confound = summary_confound, total = n_total)
+}
+
 run_pc_ssfgroup_diptest = function(se_data, just_ssf = "yes") {
   # sets_pca = tar_read(se_pca_g34); se_data = sets_pca[["AN000923"]]; tar_source("R")
   # sets_pca = tar_read(se_pca_g05); se_data = sets_pca[["AN000262"]]; tar_source("R")

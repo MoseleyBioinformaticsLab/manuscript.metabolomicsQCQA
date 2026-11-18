@@ -566,6 +566,23 @@ calculate_mode = function(values) {
   mode_value
 }
 
+bootstrap_mode = function(values, n_boot = 1000) {
+  values = values[!is.na(values)]
+  density_estimate = stats::density(values)
+  mode_value = density_estimate$x[which.max(density_estimate$y)]
+
+  boot_estimates = numeric(n_boot)
+
+  for (iboot in seq_len(n_boot)) {
+    boot_values = sample(values, length(values), replace = TRUE)
+    boot_density_estimate = stats::density(boot_values)
+    boot_estimates[iboot] = boot_density_estimate$x[which.max(
+      boot_density_estimate$y
+    )]
+  }
+  list(mode = mode_value, n_values = length(values), boot_dist = boot_estimates)
+}
+
 calculate_rsd_modes = function(sets_qc_confounds_rsd, measurement = "no") {
   if (measurement %in% "no") {
     rsd_modes = sets_qc_confounds_rsd |>
@@ -812,9 +829,10 @@ create_databased_cutoffs_plot = function(
       )
     )
 
+  pca_loglimits = format(log10(data_limits$pca), digits = 2)
   pca_limits = format(data_limits$pca) |> trimws()
   pca_limit_string = glue::glue(
-    "Cutoffs of <span style='color:{color_list['green']};'>{pca_limits[1]}</span>; <span style='color:{color_list['yellow']};'>{pca_limits[2]}</span>"
+    "Cutoffs of <span style='color:{color_list['green']};'>{pca_loglimits[1]} ({pca_limits[1]})</span>; <span style='color:{color_list['yellow']};'>{pca_loglimits[2]} ({pca_limits[2]})</span>"
   )
   pc_90_plot = pc_90_data |>
     ggplot(aes(x = x, y = y, fill = status)) +
