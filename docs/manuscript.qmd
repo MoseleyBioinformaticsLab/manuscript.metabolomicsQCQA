@@ -71,6 +71,7 @@ potential_confound_info,
 technical_replicate_info,
 rsd_modes_all,
 not_gray_pca,
+confound_summary,
 # plots
 nose_reasons_bar_plot,
 loss_waterfall_plot,
@@ -405,8 +406,7 @@ Number of SSF Groups (can indicate missing sample metadata):
 $$
 \text{status}_{SSF} = \begin{cases}
 \text{green} &\text{if}\ \ \text{N SSF} \lt 10\\
-\text{yellow} & \text{if}\ \ 10 \lt \text{N SSF} \le 20\\
-\text{yellow} & \text{if}\ \ \text{N SSF} = 1\\
+\text{yellow} & \text{if}\ \ 10 \lt \text{N SSF} \le 20 \ \text{or} \  \text{N SSF} = 1\\
 \text{red} & \text{if}\ \ \text{N SSF} \gt 20
 \end{cases}
 $$
@@ -582,12 +582,21 @@ $$
 
 ### Detection of Possible Confounding Factors
 
-The pipeline takes the last set of PCA results (all samples, no outliers, no QC/QA samples, or no QC/QA and outliers), the same PCs tested for ANOVA,and tests the sample scores from a PC, within an SSF group for multi-modality using Hartigans dip test (from the diptest package vXXX, [REF]).
+The pipeline takes the last set of PCA results (all samples, no outliers, no QC/QA samples, or no QC/QA and outliers), the same PCs tested for ANOVA,and tests the sample scores from a PC, within one or more SSF groups for multi-modality using Hartigans dip test (from the diptest package v 0.77.2, [@hartiganDipTestUnimodality1985]).
 The presence of multi-modality is a possible indicator of the presence of a confounding factor in the data that presents visually in the PCA plot. 
 For each SSF group, their test p-values are adjusted for the multiple comparisons across all PCs using the Dunn-Bonferroni correction. 
-Combined p-values are calculated using Fishers method (using the poolr package vXXX [REF]).
-A combined p-value $\le$ 0.05 for PC1 is used to indicate a possible confounding factor.
+Combined p-values are calculated using Fishers method (using the poolr package v 1.2.0 [@cinarPoolrPackageCombining2022]).
+A combined p-value $\le$ 0.05 on PC1 or PC2 for any SSF group of samples is indicates a likely confounding factor.
 
+For each dataset with a likely confounding factor, any available additional sample data factors were checked to see if they alone or in combination with the SSF created sample groups that did not result in multi-modal distributions on PC1 and PC2.
+Additionally, the ANOVA p-value of additional factor group PC scores against the factor groupings are also calculated.
+The difference between the SSF p-value and the SSF plus additional factors p-value for both the dip test and ANOVA are reported.
+If there were additional sample factors that resulted in dip test p-values $\gt$ 0.2, we report the factors, and that there is "high" evidence for the factor being missing from the SSF causing the confounding, as well as recording which factors were responsible.
+If there are factors that result in higher p-values, but not above the 0.2 threshold, we don't record the factors, and provide "medium" evidence.
+If there are no factors with higher p-values, then there is "none" evidence.
+Similarly, the p-values from the ANOVA analysis were compared, and if there were ANOVA p-values lower than the SSF p-values, and less than 0.05, then there is "high" evidence for the factor being missing from the SSF.
+Having factors with lower p-values, but not less than 0.05 provided "medium" evidence.
+If there are no factors with lower p-values, then there is "none".
 
 ### Creation of QC/QA Reports
 
@@ -757,7 +766,7 @@ This is important, as measuring physical entities should not result in negative 
 However, only a small fraction of datasets containing negative values match the criteria we used to detect log-transformation.
 Given that negative values *should* be theoretically impossible, we decided that they should be interpreted as missing values for all subsequent calculations.
 
-Previously, we developed a test for missingness being the result of left-censorship [ref], where we posit that the most likely reason for a value to be missing in metabolomics is the result of left-censorship, where the missing value is the result of being below the limit of detection.
+Previously, we developed a test for missingness being the result of left-censorship [@flightInformationContentInformedKendallTauCorrelation2026], where we posit that the most likely reason for a value to be missing in metabolomics is the result of left-censorship, and the missing value is the result of being below the limit of detection.
 To verify that the negative values could be interpreted as "missing", for each dataset with at least two negative values present, we calculated the left-censorship test statistic before and after setting values $\le$ 0 to missing.
 We then calculated the ratio of the binomial test p-values and statistic values before and after setting negatives to missing, and calculated a binomial test of the log-ratio, where positive values indicate that treating negative values as missing results in more significant p-values or larger estimates in the binomial test.
 Using a binomial test on the ratios equates to a simple coin toss of direction, where we expect if treating negatives as missing would result in a fraction of positive to negative ratios of 0.5, without including the size of the effect on p-values and estimates.
@@ -801,10 +810,11 @@ Sina plot of the percent missing values by measurement type, either NMR or MS.
 
 ```{r}
 #| label: calculate-confounding-percentage
-n_confounded = sets_qc_color_confounds |>
+n_confounded = not_gray_pca |>
   dplyr::summarise(n = sum(confounding_factor_detected %in% "yes", na.rm = TRUE), all = dplyr::n(), .by = overall_status) |>
   dplyr::mutate(perc = n / all, perc_display = paste0(format(perc * 100, digits = 2), "%"))
-
+n_confound_missing_high = confound_summary$confound |>
+  dplyr::filter(dip_missing_evidence %in% "high", anova_missing_evidence %in% "high")
 ```
 
 
@@ -847,7 +857,7 @@ PCA plots for dataset AN006863.
 **C**: Sample scores on PC1 and PC2, colored by SSF group.
 **D**: Sina and boxplots of sample scores on PC1 by an additional sample subject data, cohort.
 
-Examining all of the datasets where a likely confound was detected, there were **XX** datasets where we are also confident that the confound is due to a missing piece of metadata that should be part of the SSFs.
+Examining all of the datasets where a likely confound was detected, there were `r n_confound_missing_high |> format_in_sentence()` datasets where we are also confident that the confound is due to a piece of present metadata that should be added to the SSFs.
 
 ### Technical Replicates
 

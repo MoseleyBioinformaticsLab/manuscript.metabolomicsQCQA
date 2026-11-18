@@ -221,7 +221,7 @@ pca_example_green_1 + pca_example_red_1
 # Detecting the Presence of Likely Confounding Factors
 
 * Possible confounding factors can be detected using Hartigan's dip test for multi-modal distributions [@hartiganDipTestUnimodality1985] on the sample scores by SSF group on PC1 and PC2 (see @fig-confounding-example-plot-6863 A, B, C).
-* When there is additional sample factors present, they can be checked to see if adding it to the SSFs removes the multi-modal distribution, or improves the ANOVA results compared to the original SSFs (@fig-confounding-example-plot-6863 D).
+* When there are additional sample factor data present that are not labelled directly as part of the SSFs, they can be checked to see if adding them to the SSFs removes the multi-modal distribution, or improves the ANOVA results compared to the original SSFs (@fig-confounding-example-plot-6863 D).
 * We detected `r format_in_sentence(confound_summary$total)` datasets with likely confounding factors, and of those, `r format_in_sentence(confound_summary$confound |> dplyr::filter(dip_missing_evidence %in% "high", anova_missing_evidence %in% "high"))` appear to have an additional sample factor that when included removes the confounding.
 
 ```{r}
@@ -260,7 +260,7 @@ Using the `r rsd_technical_bootstrap$n_values` datasets with technical replicate
 
 ```{r}
 #| label: fig-technical-replicates
-#| fig-cap: "**A**: Sample-sample ICI-Kt correlation heatmap showing technical replicates; **B**: point plot of correlation distances (1 - ICI-Kt) and string distances (Jaccard based) between samples, with replicates noted in red; **C**: sina plot of total RSD, technical RSD, and non-technical RSD for datasets with technical replicates. Values displayed are the mode of the distributions."
+#| fig-cap: "**A**: Sample-sample ICI-Kt correlation heatmap showing technical replicates; **B**: point plot of correlation distances (1 - ICI-Kt) and string distances (1 - Jaccard index of q-grams) between samples, with replicates noted in red; **C**: sina plot of total RSD, technical RSD, and non-technical RSD for datasets with technical replicates. Values displayed are the mode of the distributions."
 #| fig-height: 6
 heatmap_grob = grid::grid.grabExpr(ComplexHeatmap::draw(technical_replicates_plot$heatmap))
 
