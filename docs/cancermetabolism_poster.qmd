@@ -58,7 +58,7 @@ colored_cutoffs_files,
 pca_example_green_1,
 pca_example_red_1,
 confound_summary,
-rsd_technical_bootstrap,
+rsd_technical_bootstrap
 # tables
 ))
 
