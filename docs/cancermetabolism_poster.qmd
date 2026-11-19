@@ -48,28 +48,18 @@ not_gray_pca,
 # plots
 nose_reasons_bar_plot,
 loss_waterfall_plot,
-datasets_sizes_plot,
-mmr_logtransform_plot,
 status_heatmap_top90_plot,
 technical_replicates_plot,
 total_vs_tr_rsd_plot,
-example_confound_plot_454,
 example_confound_plot_6863,
-negatives_as_missing_plot,
 non_technical_rsd_plot,
 percent_missingnes_plot,
 colored_cutoffs_files,
 pca_example_green_1,
-pca_example_green_2,
-pca_example_green_3,
 pca_example_red_1,
-pca_example_red_2,
-pca_example_red_3,
 confound_summary,
 rsd_technical_bootstrap,
 # tables
-study_status_comparison_table,
-negatives_as_missing_table
 ))
 
 n_line_info = count_code()
@@ -107,6 +97,7 @@ Our quality-control and quality-assurance (QC/QA) pipeline (see @fig-pipeline) w
 ```{r}
 #| label: fig-loss-nose-plot
 #| fig-cap: "**A**: Waterfall loss plot showing how many datasets were initially processed (7240), and then how many were removed as the analysis progressed along each stage. No Data: -167, there was no data to construct the summarized experiment object; ≤ 3 Samples: -622, datasets had less than three samples after checking that each sample had ≥ 10 non-missing feature abundances; < 3 Samples After Correlation: -5, datasets had less than three samples after removing samples that generated missing sample-sample correlation values; Gray PCA: -247, datasets that had a single SSF for all samples, or each sample had their own SSF, resulting in missing values in the ANOVA test of SSF vs sample scores on principal components; Analyzed: 6199, the number of datasets analyzed. **B**: Counts of the various reasons that the 167 datasets had No Data, and therefore couldn't create a summarized experiment object to be used for further analysis."
+#| fig-width: 20
 (free(loss_waterfall_plot) | nose_reasons_bar_plot) + plot_annotation(tag_levels = "A")
 ```
 
@@ -118,7 +109,7 @@ A heatmap of status combinations and barplots of the number of datasets is shown
 ```{r}
 #| label: fig-status-heatmap-plot
 #| fig-width: 16
-#| fig-height: 10.5
+#| fig-height: 11
 #| fig-cap: Colored statuses and numbers of datasets with those statuses.
 ComplexHeatmap::ht_opt("DIMNAME_PADDING" = unit(5, "mm"))
 status_heatmap_top90_plot
@@ -260,7 +251,7 @@ Using the `r rsd_technical_bootstrap$n_values` datasets with technical replicate
 
 ```{r}
 #| label: fig-technical-replicates
-#| fig-cap: "**A**: Sample-sample ICI-Kt correlation heatmap showing technical replicates; **B**: point plot of correlation distances (1 - ICI-Kt) and string distances (1 - Jaccard index of q-grams) between samples, with replicates noted in red; **C**: sina plot of total RSD, technical RSD, and non-technical RSD for datasets with technical replicates. Values displayed are the mode of the distributions."
+#| fig-cap: "**A**: Sample-sample ICI-Kt correlation heatmap for dataset AN006191, with three technical replicates for each sample; **B**: point plot of correlation distances (1 - ICI-Kt) and string distances (1 - Jaccard index of q-grams) between samples, with replicates noted in red, and black lines indicating the data distribution derived cutoffs used to determine likely technical replicates; **C**: sina plot of total RSD, technical RSD, and non-technical RSD for datasets with technical replicates. Values displayed are the mode of the distributions."
 #| fig-height: 6
 heatmap_grob = grid::grid.grabExpr(ComplexHeatmap::draw(technical_replicates_plot$heatmap))
 

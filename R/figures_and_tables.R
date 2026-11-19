@@ -288,13 +288,15 @@ create_example_confound_plot = function(
     geom_histogram(bins = 30) +
     facet_wrap(~ssf, ncol = 1) +
     theme(strip.background = element_blank()) +
-    scale_y_continuous(expand = expansion(mult = c(0, NA)))
+    scale_y_continuous(expand = expansion(mult = c(0, NA))) +
+    labs(y = "# Samples")
   pc2_dist_plot = pca_scores |>
     ggplot(aes(x = PC2)) +
     geom_histogram(bins = 30) +
     facet_wrap(~ssf, ncol = 1) +
     theme(strip.background = element_blank()) +
-    scale_y_continuous(expand = expansion(mult = c(0, NA)))
+    scale_y_continuous(expand = expansion(mult = c(0, NA))) +
+    labs(y = "# Samples")
 
   if (jitter %in% "yes") {
     scores_plot = pca_scores |>

@@ -125,21 +125,11 @@ table_num$increment(c(
 ```{r}
 #| label: summarize_steps
 summary_qc = summarize_qc_results_table(sets_qc_color_rsd)
+
 n_parsed = nrow(sets_qc_color_rsd)
 
 n_completed = summary_qc |>
-  dplyr::filter(completed_steps %in% "se; dynamic_range; correlation; pca")
-
-n_no_se = summary_qc |>
-  dplyr::filter(is.na(failed_why) & completed_steps %in% "none")
-
-n_few = summary_qc |>
-  dplyr::filter(failed_steps %in% "none", failed_why %in% "too few samples")
-
-n_parsed = nrow(sets_qc_color_confounds)
-
-n_completed = summary_qc |>
-  dplyr::filter(completed_steps %in% "se; dynamic_range; correlation; pca")
+  dplyr::filter(completed_steps %in% c("se; dynamic_range; correlation; pca", "se; dynamic_range; correlation; pca; diptest"))
 
 n_no_se = summary_qc |>
   dplyr::filter(is.na(failed_why) & completed_steps %in% "none")
@@ -150,14 +140,14 @@ n_dropped = summary_qc |>
 n_few = summary_qc |>
   dplyr::filter(failed_steps %in% "none", failed_why %in% "too few samples")
 
-gray_status = sets_qc_color_confounds |>
+gray_status = sets_qc_color_rsd |>
   dplyr::filter(
-    completed_steps %in% "se; dynamic_range; correlation; pca",
+    completed_steps %in% c("se; dynamic_range; correlation; pca", "se; dynamic_range; correlation; pca; diptest"),
     overall_status %in% "gray"
   )
-color_status = sets_qc_color_confounds |>
+color_status = sets_qc_color_rsd |>
   dplyr::filter(
-    completed_steps %in% "se; dynamic_range; correlation; pca",
+    completed_steps %in% c("se; dynamic_range; correlation; pca", "se; dynamic_range; correlation; pca; diptest"),
     !overall_status %in% "gray"
   )
 
@@ -721,7 +711,7 @@ ComplexHeatmap::ht_opt(RESET = TRUE)
 
 ```{r}
 #| label: n-exponentiated
-n_exponentiated = sets_qc_color_confounds |>
+n_exponentiated = sets_qc_color_rsd |>
   dplyr::filter_out(is.na(transformation)) |>
   dplyr::summarize(n = dplyr::n(), .by = transformation) |>
   dplyr::mutate(perc_display = format_percentage(n / sum(n)) |> trimws())
